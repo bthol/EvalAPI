@@ -1,4 +1,4 @@
-# hello world program
+# routes
 from flask import Flask, jsonify
 
 # environment variables

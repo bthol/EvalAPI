@@ -7,5 +7,5 @@
 **Data Security**: Contrary to most cases, security is of minimal concern for the Eval API. This is primarily due to the fact that there is no database involved in its operations, and secondarily due to the nature of the data involved, which is neither sensitive nor personal.
 
 ## Developer Resources
-Flask commands:
+**Flask commands**:
 -run development server:    `$flask run`
