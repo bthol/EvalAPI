@@ -8,4 +8,4 @@
 
 ## Developer Resources
 **Flask commands**:
--run development server:    `$flask run`
+ - run development server:    `$flask run`
