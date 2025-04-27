@@ -14,7 +14,7 @@ load_dotenv()
 # Description: Analyzes problem string to create structure from string data and analyzes structure to identify program entities from structure data, including and limited to multi-digit numbers, negative numbers, decimal numbers, mathematical operators, parenthesis, sets and keywords.
 
 # Phase II: Structural Manipulation
-# Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case, a test for distribution is run, where either there is distribution and the distribution and section functions manipulate the structure accordingly or there isn't distribution and only the section function manipulates the structure accordingly.
+# Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
 
 # Phase III: Key Functions
 # Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions.
@@ -54,12 +54,8 @@ algebraic_mode = False
 system_operation = False
 
 # is_paren indicates whether there are parenthesis, True, or not, False
-# If False, bypasses distribute and section functions
+# If False, bypasses section function
 is_paren = False
-
-# is_dist indicates whether there is distribution, True, or not, False
-# If False, bypasses distribute function
-is_dist = False
 
 # is_brack indicates whether there are square brackets, True, or not, False
 # If False, bypasses key_functions function
@@ -237,6 +233,7 @@ def evaluator(input):
             process_log["%s" % new_key] = log
   
     # STRUCTURE START
+
     def num_cast(str):
         # a single data type converter for all your data type conversion needs!
         try:
@@ -356,18 +353,6 @@ def evaluator(input):
                     is_paren = True
                     break
         
-        # identify distribution
-        global is_dist
-        if is_dist == False:
-            if (is_paren):
-                end = len(arr) - 1
-                for i in range(0, len(arr)):
-                    if i != 0 and i != end:
-                        if (arr[i] == "(" and arr[i - 1] == "*") or (arr[i] == ")" and i < len(arr) - 1 and arr[i + 1] == "*"):
-                            # multiplicative distribution
-                            is_dist = True
-                            break
-        
         # Identify exponentiation
         global is_exp
         if is_exp == False:
@@ -402,11 +387,10 @@ def evaluator(input):
         
         # Identify division
         global is_div
-        if is_dist == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "/":
-                    is_div = True
-                    break
+        for i in range(0, len(arr)):
+            if arr[i] == "/":
+                is_div = True
+                break
         
         # Identify addition
         global is_add
@@ -427,6 +411,7 @@ def evaluator(input):
     # STRUCTURE END
 
     # OPERATIONS START
+
     def exponentiate(base, exponent):
         base = float(base)
         if base / 1 % 1 == 0:
@@ -721,7 +706,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -751,7 +736,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
                 
                 # perform calculation using numeral set
@@ -808,7 +793,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -837,7 +822,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -873,7 +858,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -904,7 +889,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -934,7 +919,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(1/x)
                     else:
-                        x = calculate(section(distribute(i)))
+                        x = calculate(section(i))
                         set_2.append(1/x)
 
                 # perform calculation using numeral set
@@ -960,7 +945,7 @@ def evaluator(input):
                         x = float(i)
                         set_2 = set_2 * x
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2 = set_2 * x
 
                 # perform calculation using numeral set
@@ -1021,7 +1006,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1048,7 +1033,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1079,7 +1064,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1148,7 +1133,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1193,7 +1178,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(distribute(i))
+                        x = section(i)
                         set_2.append(x)
                 
                 x = set_2[0]
@@ -1248,7 +1233,7 @@ def evaluator(input):
                     args[1] = x
                 else:
                     # simplify power expression then append power value
-                    x = section(distribute(args[1]))
+                    x = section(args[1])
                     args[1] = x
 
                 # perform algebraic operation using numeral set
@@ -1515,6 +1500,7 @@ def evaluator(input):
     # KEY FUNCTIONS END
 
     # Phase III and IV Process
+
     def calculate(arr):
         # scans for operations and calculates
         log_process("Calculating")
@@ -1684,6 +1670,7 @@ def evaluator(input):
             return arrVar[0]
 
     # Phase II Process START
+
     def section(arr):
         # performs calculations in order of parenthesis nesting
         global is_paren
@@ -1729,383 +1716,7 @@ def evaluator(input):
 
         arrVar = calculate(arrVar)
         return arrVar
- 
-    def distribute(arr):
-        # restructures with distributed terms
-        global is_dist
-        arrVar = arr
 
-        x = 0
-        while is_dist == True and x < paren_limit:
-            # runs distribution process
-            x += 1
-            log_process("Distribution")
-            
-            refer = []
-            for i in range(0, len(arrVar)):
-                if arrVar[i] == "(" or arrVar[i] == ")" or arrVar[i] == "*":
-                    refer.append({"char": arrVar[i], "index": i})
-
-            # search for a case of distribution
-            
-            # get nest center index
-            center = 0
-            nest = 0
-            for i in range(0, len(refer)):
-                if refer[i]["char"] == "(":
-                    nest += 1
-                elif refer[i]["char"] == ")":
-                    nest -= 1
-                elif refer[i]["char"] == "*" and nest > 0 and refer[i]["index"] + 1 < len(arrVar) and arrVar[refer[i]["index"] + 1] == "(":
-                    # print("pass")
-                    center = i
-                    break
-            
-            # # if no nest center index
-            if center == 0:
-                # get first center index tested from left-to-right
-                for i in range(0, len(refer)):
-                    # by testing if the current object's index value (only a "*") and previous object's index value are 1 index away from each other in arrVar and are the ")" and "*" characters
-                    # or if the current object's index value (only a "*") and next object's index values are 1 index away from each other in arrVar and are the "*" and "(" characters
-                    if refer[i]["char"] == "*" and i > 0 and arrVar[refer[i]["index"] - 1] == ")" or refer[i]["char"] == "*" and refer[i]["index"] + 1 < len(arrVar) and arrVar[refer[i]["index"] + 1] == "(":
-                        # case of distribution
-                        center = i
-                        break
-            
-            # print(refer[center])
-
-            # get section for distribution
-            start = 0
-            end = 0
-            section = []
-
-            # search for start
-            if center > 0 and refer[center - 1]["char"] == ")" and refer[center]["index"] == refer[center - 1]["index"] + 1:
-                a = 0
-                for j in range(0, center):
-                    # backtrack to find start
-                    if refer[center - j - 1]["char"] == "(":
-                        a += 1
-                        if a == 0:
-                            start = refer[center - j - 1]["index"]
-                            break
-                    elif refer[center - j - 1]["char"] == ")":
-                        a -= 1
-            else:
-                # first nomial is a monomial
-                start = refer[center]["index"] - 1
-            
-            # search for end
-            # if the current and next objects have characters that are right next to each other in arrVar
-            if center + 1 < len(refer) and refer[center]["index"] == refer[center + 1]["index"] - 1:
-                # and the character in the next object is a "("
-                if refer[center + 1]["char"] == "(":
-                    # fronttrack to find end
-                    nest = 0
-                    for j in range(refer[center]["index"], len(arrVar)):
-                        if arrVar[j] == "(":
-                            nest += 1
-                        elif arrVar[j] == ")":
-                            nest -= 1
-                            if nest == 0:
-                                # if at last character
-                                if j == len(arrVar) - 1:
-                                    end = j
-                                    break
-                                # else next character is "*"
-                                elif arrVar[j + 1] != "*":
-                                    end = j
-                                    break
-            else:
-                # test for last nomial
-                if center + 1 == len(refer):
-                    # end of structure
-                    end = refer[center]["index"] + 1
-                elif refer[center]["index"] + 2 < len(arrVar) and arrVar[refer[center]["index"] + 2] == "*":
-                    # case of the intermittent monomial
-                    for j in range(center, len(refer)):
-                        # search for next case of distribution
-                        if refer[j]["char"] == "*" and refer[j]["index"] + 1 < len(arrVar) and arrVar[refer[j]["index"] + 1] == "(":
-                            # fronttrack to find end
-                            nest = 0
-                            for k in range(refer[j]["index"], len(arrVar)):
-                                if arrVar[k] == "(":
-                                    nest += 1
-                                elif arrVar[k] == ")":
-                                    nest -= 1
-                                    if nest == 0:
-                                        # if at last character
-                                        if k == len(arrVar) - 1:
-                                            end = k
-                                            break
-                                        # else next character isn't "*"
-                                        elif arrVar[k + 1] != "*":
-                                            end = k
-                                            break
-
-                elif refer[center]["index"] + 2 < len(arrVar) and arrVar[refer[center]["index"] + 2] != "*":
-                    # no further multiplication in case of distribution
-                    end = refer[center]["index"] + 1
-            
-            # build section
-            for j in range(start, end + 1):
-                section.append(arrVar[j])
-            log_process(section)
-
-            # print(section)
-            
-            # add parens to intermittent monomials in section for distribution
-            for i in range(1, len(section) - 1):
-                if section[i + 1] == "*" and section[i - 1] == "*":
-                    # restrtucture with parens for each case of intermittent monomials
-                    section = restructure(["(", section[i], ")"], i, i, section)
-
-            # reference structure for section with distribution
-            sect_struct = []
-
-            # Use section for distribution to create sect_struct
-            
-            # test for leading monomial
-            if section[0] != "(":
-                sect_struct.append([[section[0]]]) # monomial
-            
-            # test middle of sect_struct
-            count = 0
-            for i in range(0, len(section)):
-                # only test on update to prevent false positives
-                # positive case indicates index in section for the end of the first nomial
-                is_zero = False
-                if section[i] == "(":
-                    # update count
-                    count += 1
-                    # test count
-                    if count == 0:
-                        is_zero = True
-                elif section[i] == ")":
-                    # update count
-                    count -= 1
-                    # test count
-                    if count == 0:
-                        is_zero = True
-                
-                if is_zero == True:
-                    # each zero counted after update count is the last index of another nomial
-                    nomial = []
-                    term = []
-                    nest = 0
-                    # backtrack to start of nomial
-                    # + identify terms as-you-go
-                    for k in range(0, i + 1):
-                        char = section[i - k]
-                        try:
-                            # test for number
-                            int(char)
-                            # insert character at start of term structure since iterating backward
-                            term.insert(0, char)
-                        except:
-                            # count zeros
-                            if char == "(":
-                                nest += 1
-                                if nest == 0:
-                                    # zero identified
-                                    nomial.insert(0, term) # add term to polynomial
-                                    term = [] # clear term buffer
-                                    break
-
-                                elif nest > -2:
-                                    # add first character of expression term
-                                    term.insert(0, char)
-
-                            elif char == ")":
-                                nest -= 1
-                            
-                            elif nest == -1:
-                                if char == "+":
-                                    # different term if added
-                                    nomial.insert(0, term)
-                                    term = [] # clear term buffer
-                                elif char == "-":
-                                    # different term if subtracted
-                                    if section[i - k + 1] == "(":
-                                        # negate expression term
-                                        term.insert(0, "*")
-                                        term.insert(0, "-1")
-                                        nomial.insert(0, term)
-                                        term = [] # clear term buffer
-                                    else:
-                                        # negate previous term
-                                        term.pop(0) # remove positive value
-                                        term.insert(0, "-%s" % section[i - k + 1]) # add negated value
-                                        nomial.insert(0, term)
-                                        term = [] # clear term buffer
-                                elif char == "*" or char == "/":
-                                    # same term if multiplied or divided
-                                    term.insert(0, char)
-
-                            if nest < -1:
-                                term.insert(0, char)
-
-                    sect_struct.append(nomial)
-            
-            # test for ending monomial
-            if section[len(section) - 1] != ")":
-                sect_struct.append([[section[len(section) - 1]]])
-
-            # print(sect_struct)
-
-            # total number of nomials
-            nomials_total = len(sect_struct)
-
-            # total number of terms
-            terms_total = 0
-            for i in range(0, len(sect_struct)):
-                terms_total += len(sect_struct[i])
-            
-            # total number of terms in product of distribution
-            # calculates the number of terms in the product expression of a nomial multiplication
-            # using the nested summation method
-            # where it works for:
-            #  - any number of nomials
-            #  - any number of terms in nomial
-            #  - different number of terms in different nomials
-
-            product_terms_total = 0
-            for i in range(0, len(sect_struct)):
-                # get terms of current nomial
-                k = len(sect_struct[i])
-                # sum previous terms
-                s = 0
-                for l in range(0, i):
-                    s += len(sect_struct[l])
-                s += k
-                product_terms_total += k * (terms_total - s)
-            
-            # print(nomials_total)
-            # print(terms_total)
-            # print(product_terms_total)
-
-            # construct product expression
-
-            # now that the number of terms in the product expression is known, the number of multiplications is also known,
-            # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
-
-            # the design of product expression construction is thus:
-            #  - to access two terms in the reference structure of unique combination, 
-            #  - build a list which includes those terms separated by a multication symbol,
-            #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
-            #  - and repeating this process for the number of multiplications,
-            #  - except for the last multiplication, which should have no addition symbol following it.
-
-            # multiplier indexes
-            term1 = 0
-            nomial1 = 0
-
-            # multiplicand indexes
-            term2 = 0
-            nomial2 = 0
-
-            # structures
-            multiplier = []
-            multiplicand = []
-            product = []
-
-            for i in range(0, product_terms_total - 1):
-                # initialize
-                if nomial2 == 0:
-                    # first term in product expression
-                    multiplier = sect_struct[nomial1][term1]
-                    nomial2 += 1
-                    multiplicand = sect_struct[nomial2][term2]
-                
-                # update indexes
-                # multiplicand term
-                    # multiplicand nomial
-                        # multiplier term
-                            # multiplier nomial
-
-                # multiplicand term
-                elif term2 + 1 != len(sect_struct[nomial2]):
-                    # mid term in nomial for the multiplicand
-                    term2 += 1
-                else:
-                    # last term of nomial for the multiplicand
-                    term2 = 0 # first term of next nomial
-
-                    
-                    # multiplicand nomial
-                    if nomial2 + 1 != nomials_total:
-                        # mid nomial for multiplicand
-                        nomial2 += 1
-                    else:
-                        # last nomial for multiplicand
-                        nomial2 = nomial1 + 1
-
-
-                        # multiplier term
-                        if term1 + 1 != len(sect_struct[nomial1]):
-                            # mid term of nomial for multiplier
-                            term1 += 1
-                        else:
-                            # last term of nomial for multiplier
-                            term1 = 0 # first term of next nomial
-                            
-                            
-                            # multiplier nomial
-                            if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
-                                # mid nomial for multiplier
-                                nomial1 += 1
-                                nomial2 = nomial1 + 1
-                                term2 = 0
-                            else:
-                                # last nomial for multiplier
-                                break
-
-                # update multiplier
-                multiplier = sect_struct[nomial1][term1]
-                # update multiplicand
-                multiplicand = sect_struct[nomial2][term2]
-
-                # print("nomial: %s" % str(int(nomial2) + 1))
-                # print("term: %s" % str(int(term2) + 1))
-                # print(multiplier)
-                # print(multiplicand)
-
-                # concatenate multiplier and multiplicand with product
-                product = product + multiplier + ["*"] + multiplicand + ["+"]
-
-            # last term
-            if len(sect_struct[len(sect_struct) - 1]) > 1:
-                # for ending monomial
-                term2 += 1
-                multiplicand = sect_struct[nomial2][term2]
-                product = product + multiplier + ["*"] + multiplicand
-            else:
-                term1 += 1
-                multiplier = sect_struct[nomial1][term1]
-                product = product + multiplier + ["*"] + multiplicand
-            
-            log_process(product)
-
-            # restructure with product expression
-            arrVar = restructure(product, start, end, arrVar)
-
-            # print(arrVar)
-
-            # identify further distribution
-            is_dist = False
-            end = len(arrVar) - 1
-            for i in range(0, len(arrVar)):
-                if i != 0 and i != end:
-                    if (arrVar[i] == "(" and arrVar[i - 1] == "*") or (arrVar[i] == ")" and i < len(arrVar) - 1 and arrVar[i + 1] == "*"):
-                        is_dist = True
-                        break
-            
-            if is_dist == False:
-                # update bypasses to reflect changes from distribution
-                identify_entities(arrVar)
-
-        return arrVar
-    
     # Phase II Process END
 
     # System Operations
@@ -2248,9 +1859,6 @@ def evaluator(input):
             # Identify program entities in structured string
             identify_entities(structure)
             
-            # restructure to distribute out terms
-            structure = distribute(structure)
-            
             # generates substructures, i.e. "sets", within structure
             # sets exist so that an expression can be accessed at a single index for key functions
             global is_brack
@@ -2264,7 +1872,7 @@ def evaluator(input):
                         sets_ref.append({"char": "[", "index": i})
                     elif structure[i] == "]":
                         sets_ref.append({"char": "]", "index": i})
-                # identify next set to structure using reference
+                # identify next set to structure using sets_ref
                 while len(sets_ref) > 0:
                     for i in range(0, len(sets_ref)):
                         if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
@@ -2290,6 +1898,8 @@ def evaluator(input):
 
             # solve section by section
             structure = section(structure)
+
+            return structure
 
     # Evaluation
     use_logs = input["use_logs"]
@@ -2318,13 +1928,13 @@ def evaluator(input):
 
 # # test data
 # input = {
-#     "problem": "sin(0)+1",
+#     "problem": "1+1",
 #     "use_logs": "1", # 1 = yes
 # }
 # evaluator(input)
 
 
-# instance of flask application
+# Flask application
 app = Flask(__name__)
 
 # ROUTES for Flask API
@@ -2339,11 +1949,41 @@ def index():
 def hello_world():
     return "<p>%s</p>" % os.environ['greeting']
 
-# string evaluator route
+
+# string evaluator test data
+input = {
+    "problem": "1+1",
+    "use_logs": "1",
+}
+
+# evaluator data root
 @app.route("/eval")
 def eval():
-    input = {
-        "problem": "1+1",
-        "use_logs": "1",
-    }
-    return jsonify(evaluator(input))
+    try:
+        return jsonify(evaluator(input))
+    except Exception as e:
+        return "Error:", e
+    
+# evaluator problem data
+@app.route("/eval/problem")
+def eval_problem():
+    try:
+        return jsonify(evaluator(input)["problem"])
+    except Exception as e:
+        return "Error:", e
+
+# evaluator answer data
+@app.route("/eval/answer")
+def eval_answer():
+    try:
+        return jsonify(evaluator(input)["answer"])
+    except Exception as e:
+        return "Error:", e
+
+# evaluator log data
+@app.route("/eval/logs")
+def eval_logs():
+    try:
+        return jsonify(evaluator(input)["logs"])
+    except Exception as e:
+        return "Error:", e
