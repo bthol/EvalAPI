@@ -1944,12 +1944,12 @@ CORS(app)
 # ROUTES
 
 # index route
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return "<div>Index route accessed.</div>"
 
 # hello world environment variable demonstration
-@app.route("/hello-world")
+@app.route("/hello-world", methods=["GET"])
 def hello_world():
     return "<p>%s</p>" % os.environ['greeting']
 
@@ -1961,7 +1961,7 @@ input = {
 }
 
 # evaluator data root
-@app.route("/eval")
+@app.route("/eval", methods=["GET", "POST"])
 def eval():
     try:
         return jsonify(evaluator(input))
@@ -1969,7 +1969,7 @@ def eval():
         return "Error:", e
     
 # evaluator problem data
-@app.route("/eval/problem")
+@app.route("/eval/problem", methods=["GET", "POST"])
 def eval_problem():
     try:
         return jsonify(evaluator(input)["problem"])
@@ -1977,7 +1977,7 @@ def eval_problem():
         return "Error:", e
 
 # evaluator answer data
-@app.route("/eval/answer")
+@app.route("/eval/answer", methods=["GET", "POST"])
 def eval_answer():
     try:
         return jsonify(evaluator(input)["answer"])
@@ -1985,7 +1985,7 @@ def eval_answer():
         return "Error:", e
 
 # evaluator log data
-@app.route("/eval/logs")
+@app.route("/eval/logs", methods=["GET", "POST"])
 def eval_logs():
     try:
         return jsonify(evaluator(input)["logs"])
