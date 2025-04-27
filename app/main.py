@@ -2,6 +2,7 @@
 import math
 import numpy as np
 from flask import Flask, jsonify
+from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
@@ -1934,10 +1935,13 @@ def evaluator(input):
 # evaluator(input)
 
 
-# Flask application
+# Flask APP
 app = Flask(__name__)
 
-# ROUTES for Flask API
+# CORS wrapper
+CORS(app)
+
+# ROUTES
 
 # index route
 @app.route("/")
