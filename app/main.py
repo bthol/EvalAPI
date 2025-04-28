@@ -1,7 +1,7 @@
 # dependencies
 import math
 import numpy as np
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -1953,41 +1953,34 @@ def index():
 def hello_world():
     return "<p>%s</p>" % os.environ['greeting']
 
-
-# string evaluator test data
-input = {
-    "problem": "1+1",
-    "use_logs": "1",
-}
-
 # evaluator data root
-@app.route("/eval", methods=["GET", "POST"])
+@app.route("/eval", methods=["POST"])
 def eval():
     try:
-        return jsonify(evaluator(input))
+        return jsonify(evaluator(request.get_json()))
     except Exception as e:
         return "Error:", e
     
 # evaluator problem data
-@app.route("/eval/problem", methods=["GET", "POST"])
+@app.route("/eval/problem", methods=["POST"])
 def eval_problem():
     try:
-        return jsonify(evaluator(input)["problem"])
+        return jsonify(evaluator(request.get_json())["problem"])
     except Exception as e:
         return "Error:", e
 
 # evaluator answer data
-@app.route("/eval/answer", methods=["GET", "POST"])
+@app.route("/eval/answer", methods=["POST"])
 def eval_answer():
     try:
-        return jsonify(evaluator(input)["answer"])
+        return jsonify(evaluator(request.get_json())["answer"])
     except Exception as e:
         return "Error:", e
 
 # evaluator log data
-@app.route("/eval/logs", methods=["GET", "POST"])
+@app.route("/eval/logs", methods=["POST"])
 def eval_logs():
     try:
-        return jsonify(evaluator(input)["logs"])
+        return jsonify(evaluator(request.get_json())["logs"])
     except Exception as e:
         return "Error:", e
