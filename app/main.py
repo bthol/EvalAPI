@@ -1534,7 +1534,7 @@ def evaluator(input):
                 break
 
         if is_variables == True:
-            # return expression
+            # prevent arithmetic operations
             return arrVar
         else:
             # Phase IV
@@ -1929,7 +1929,8 @@ def evaluator(input):
 
 # # test data
 # input = {
-#     "problem": "1+1",
+#     # "problem": "i+b-(2*3)", solves arithmetic in algebraic expression if in parens
+#     "problem": "i+b-(2*3)",
 #     "use_logs": "1", # 1 = yes
 # }
 # evaluator(input)
