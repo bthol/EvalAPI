@@ -503,6 +503,7 @@ def evaluator(input):
     # OPERATIONS END
 
     # KEY FUNCTIONS START
+
     def getIdx(str, arr):
         # gets index of string in structure
         val = None
@@ -1500,8 +1501,6 @@ def evaluator(input):
     
     # KEY FUNCTIONS END
 
-    # Phase III and IV Process
-
     def calculate(arr):
         # scans for operations and calculates
         log_process("Calculating")
@@ -1670,8 +1669,6 @@ def evaluator(input):
             
             return arrVar[0]
 
-    # Phase II Process START
-
     def section(arr):
         # performs calculations in order of parenthesis nesting
         global is_paren
@@ -1718,63 +1715,10 @@ def evaluator(input):
         arrVar = calculate(arrVar)
         return arrVar
 
-    # Phase II Process END
-
-    # System Operations
-    def get_info():
-        # system function for displaying system information in logs
-        log_process()
-        log_process("System Operations")
-        log_process()
-
-        for i in range(0, len(info["system_operations"])):
-            log_process(info["system_operations"][i]["name"] + ": " + info["system_operations"][i]["about"])
-            log_process()
-        
-        log_process()
-        log_process("Program Entities")
-        log_process()
-
-        log_process("Operations")
-        for i in range(0, len(info["operations"])):
-            log_process(info["operations"][i]["name"] + ": " + info["operations"][i]["syntax"])
-            log_process()
-        
-        log_process("Constants")
-        for i in range(0, len(info["constants"])):
-            log_process(info["constants"][i]["name"] + ": " + info["constants"][i]["syntax"])
-            log_process()
-
-        log_process()
-        log_process("Key Functions")
-        log_process()
-
-        for module in range(0, len(info["key_functions"])):
-            for i in range(0, len(info["key_functions"][module])):
-                log_process("Name: " + info["key_functions"][module][i]["name"])
-                log_process("Syntax: " + info["key_functions"][module][i]["syntax"])
-                log_process("About: " + info["key_functions"][module][i]["about"])
-                log_process()
-        
-    def system_ops(arr):
-        # tests for and runs all system functions
-        global system_operation
-
-        ref = getIdx("info", arr)
-        if ref is not None:
-            system_operation = True
-            get_info()
-
-        return system_operation
-
     def evaluate(str):
         # top level function runs high level functions
-        global system_operation
-
-        # structure string data
-        log_process("Structuring")
-
         # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
+        log_process("Structuring")
         structure = []
         digits = ""
         for i in range(0, len(str)):
@@ -1817,7 +1761,7 @@ def evaluator(input):
                         structure.append(digits)
         log_process(structure)
 
-        log_process("Constants")
+        log_process("Structuring constants")
         # structure pi
         ref = get_word("pi", structure)
         itr = 0
@@ -1835,72 +1779,62 @@ def evaluator(input):
             ref = get_word("euler", structure)
 
         # structure keywords
-        log_process("Keywords")
-
-        # system operations
-        for i in range(0, len(info["system_operations"])):
-            structure = word_struct(info["system_operations"][i]["name"], structure)
+        log_process("Structuring Keywords")
         
         # key functions
         for module in range(0, len(info["key_functions"])):
             for i in range(0, len(info["key_functions"][module])):
                 structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
         log_process(key_modules)
-
-        # test for and run system operation
-        system_ops(structure)
-
-        # if no system operations, then continue evaluation
-        if system_operation == False:
             
-            # change first log
-            if use_logs == "1":
-                process_log["0"] = "Process Log Start"
-            
-            # Identify program entities in structured string
-            identify_entities(structure)
-            
-            # generates substructures, i.e. "sets", within structure
-            # sets exist so that an expression can be accessed at a single index for key functions
-            global is_brack
-            if is_brack == True:
-                log_process("Structure Sets")
-                log_process(structure)
-                # structure sets
-                sets_ref = []
-                for i in range(0, len(structure)):
-                    if structure[i] == "[":
-                        sets_ref.append({"char": "[", "index": i})
-                    elif structure[i] == "]":
-                        sets_ref.append({"char": "]", "index": i})
-                # identify next set to structure using sets_ref
-                while len(sets_ref) > 0:
-                    for i in range(0, len(sets_ref)):
-                        if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
-                            # build set
-                            start_index = sets_ref[i]["index"]
-                            end_index = sets_ref[i + 1]["index"]
-                            solution_length = abs(start_index - end_index) + 1
-                            the_set_itself = []
-                            for i in range(0, solution_length):
-                                the_set_itself.append(structure[start_index + i])
+        # change first log
+        if use_logs == "1":
+            process_log["0"] = "Process Log Start"
+        
+        # Identify program entities in structured string
+        identify_entities(structure)
+        
+        # generates substructures, i.e. "sets", within structure
+        # sets exist so that multiple arguments can be accessed at a single index for key functions
+        global is_brack
+        if is_brack == True:
+            log_process("Structure Sets")
+            log_process(structure)
+            # structure sets
+            sets_ref = []
+            for i in range(0, len(structure)):
+                if structure[i] == "[":
+                    sets_ref.append({"char": "[", "index": i})
+                elif structure[i] == "]":
+                    sets_ref.append({"char": "]", "index": i})
+            # identify next set to structure using sets_ref
+            while len(sets_ref) > 0:
+                for i in range(0, len(sets_ref)):
+                    if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
+                        # build set
+                        start_index = sets_ref[i]["index"]
+                        end_index = sets_ref[i + 1]["index"]
+                        solution_length = abs(start_index - end_index) + 1
+                        the_set_itself = []
+                        for i in range(0, solution_length):
+                            the_set_itself.append(structure[start_index + i])
 
-                            # restructure
-                            structure = restructure(the_set_itself, start_index, end_index, structure)
-                            
-                            # update reference
-                            sets_ref = []
-                            for i in range(0, len(structure)):
-                                if structure[i] == "[":
-                                    sets_ref.append({"char": "[", "index": i})
-                                elif structure[i] == "]":
-                                    sets_ref.append({"char": "]", "index": i})
-                            break
+                        # restructure
+                        structure = restructure(the_set_itself, start_index, end_index, structure)
+                        
+                        # update reference
+                        sets_ref = []
+                        for i in range(0, len(structure)):
+                            if structure[i] == "[":
+                                sets_ref.append({"char": "[", "index": i})
+                            elif structure[i] == "]":
+                                sets_ref.append({"char": "]", "index": i})
+                        break
 
-            # solve section by section
-            structure = section(structure)
+        # parenthetically section and solve
+        structure = section(structure)
 
-            return structure
+        return structure
 
     # Evaluation
     use_logs = input["use_logs"]
@@ -1983,5 +1917,13 @@ def eval_answer():
 def eval_logs():
     try:
         return jsonify(evaluator(request.get_json())["logs"])
+    except Exception as e:
+        return "Error:", e
+
+# evaluator info object data
+@app.route("/eval/info", methods=["GET"])
+def eval_info():
+    try:
+        return jsonify(info)
     except Exception as e:
         return "Error:", e
