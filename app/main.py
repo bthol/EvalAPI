@@ -9,100 +9,6 @@ import os
 # environment variables
 load_dotenv()
 
-# PROGRAMIC PROCESS
-
-# Phase I: Entity Structuring and Analysis
-# Description: Analyzes problem string to create structure from string data and analyzes structure to identify program entities from structure data, including and limited to multi-digit numbers, negative numbers, decimal numbers, mathematical operators, parenthesis, sets and keywords.
-
-# Phase II: Structural Manipulation
-# Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
-
-# Phase III: Key Functions
-# Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions.
-
-# Phase IV: Calculation
-# Description: Search for and run appropriate mathematical operation on contents of structure, restructure with solution, and repeat until no operations are remaining.
-
-# PROGRAM PARAMETERS
-
-# the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
-paren_limit = 10
-
-# the poly_degree_limit parameter controls the maximum degree of a polynomial expression resulting from factoring in any one evaluation
-poly_degree_limit = 10
-
-# the poly_fact_limit parameter controls the maximum number of times that polynomial expressions can be factored out in any one evaluation
-poly_fact_limit = 10
-
-# the pi_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
-c_limit = 10
-
-# the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
-key_limit = 10
-
-# PROGRAM MODES
-
-# defines valid variable characters
-variables = "abcdefghijklmnopqrstuvwxyz"
-
-# algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
-algebraic_mode = False
-
-# PROGRAM ENTITY REFERENCE
-
-# system_operation indicates whether there are system operations, True, or not, False
-# If True, terminates program after system operations are complete
-system_operation = False
-
-# is_paren indicates whether there are parenthesis, True, or not, False
-# If False, bypasses section function
-is_paren = False
-
-# is_brack indicates whether there are square brackets, True, or not, False
-# If False, bypasses key_functions function
-is_brack = False
-
-# is_exp indicates whether there are exponentiations, True, or not, False
-# If False, bypasses exponentiation
-is_exp = False
-
-# is_root indicates whether there are roots, True, or not, False
-# If False, bypasses roots
-is_root = False
-
-# is_mult indicates whether there are multiplications, True, or not, False
-# If False, bypasses multiplication
-is_mult = False
-
-# is_div indicates whether there are divisions, True, or not, False
-# If False, bypasses division
-is_div = False
-
-# is_add indicates whether there are additions, True, or not, False
-# If False, bypasses additions
-is_add = False
-
-# is_sub indicates whether there are subtractions, True, or not, False
-# If False, bypasses subtractions
-is_sub = False
-
-# is_key stores strings for each kind of keyword in problem string
-# If is_key is empty, bypasses key_functions function
-is_key = []
-
-# key_modules structure represent which key functions modules should be run or bypassed on call
-key_modules = [
-    {"module":"trigonomic", "use":False},
-    {"module":"geometric", "use":False},
-    {"module":"combinatoric", "use":False},
-    {"module":"statistical", "use":False},
-    {"module":"algebraic", "use":False},
-]
-
-# use_logs determines whether or not to use logging
-# if use_logs is "1", then logging is active, otherwise it remains defaultly inactive
-use_logs = ""
-
 # Program Information
 info = {
     "system_operations": [
@@ -221,13 +127,95 @@ info = {
 }
 
 def evaluator(input):
-    # process_log is an object literal that stores string values for all process checkpoints during evalution
-    # use_logs indicates whether to use logs, True, or not, False
-    # note: log_process is run on every restructure, run for calculation reference, and run for process labels
+
+    # PROGRAMIC PROCESS
+
+    # Phase I: Entity Structuring and Analysis
+    # Description: Analyzes problem string to create structure from string data and analyzes structure to identify program entities from structure data, including and limited to multi-digit numbers, negative numbers, decimal numbers, mathematical operators, parenthesis, sets and keywords.
+
+    # Phase II: Structural Manipulation
+    # Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
+
+    # Phase III: Key Functions
+    # Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions.
+
+    # Phase IV: Calculation
+    # Description: Search for and run appropriate mathematical operation on contents of structure, restructure with solution, and repeat until no operations are remaining.
+
+    # PROGRAM PARAMETERS
     global info
-    global key_modules
-    global use_logs
+    # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
+    paren_limit = 10
+
+    # the pi_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
+    c_limit = 10
+
+    # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
+    key_limit = 10
+
+    # PROGRAM MODES
+
+    # defines valid variable characters
+    variables = "abcdefghijklmnopqrstuvwxyz"
+
+    # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
+    algebraic_mode = False
+
+    # PROGRAM ENTITY REFERENCE
+
+    # is_paren indicates whether there are parenthesis, True, or not, False
+    # If False, bypasses section function
+    is_paren = False
+
+    # is_brack indicates whether there are square brackets, True, or not, False
+    # If False, bypasses key_functions function
+    is_brack = False
+
+    # is_exp indicates whether there are exponentiations, True, or not, False
+    # If False, bypasses exponentiation
+    is_exp = False
+
+    # is_root indicates whether there are roots, True, or not, False
+    # If False, bypasses roots
+    is_root = False
+
+    # is_mult indicates whether there are multiplications, True, or not, False
+    # If False, bypasses multiplication
+    is_mult = False
+
+    # is_div indicates whether there are divisions, True, or not, False
+    # If False, bypasses division
+    is_div = False
+
+    # is_add indicates whether there are additions, True, or not, False
+    # If False, bypasses additions
+    is_add = False
+
+    # is_sub indicates whether there are subtractions, True, or not, False
+    # If False, bypasses subtractions
+    is_sub = False
+
+    # is_key stores strings for each kind of keyword in problem string
+    # If is_key is empty, bypasses key_functions function
+    is_key = []
+
+    # key_modules structure represent which key functions modules should be run or bypassed on call
+    key_modules = [
+        {"module":"trigonomic", "use":False},
+        {"module":"geometric", "use":False},
+        {"module":"combinatoric", "use":False},
+        {"module":"statistical", "use":False},
+        {"module":"algebraic", "use":False},
+    ]
+
+    # use_logs indicates whether to use logs, True, or not, False
+    # if use_logs is "1", then logging is active, otherwise it remains defaultly inactive
+    use_logs = ""
+
+    # process_log is an object literal that stores string values for all process checkpoints during evalution
     process_log = {"0":"no logging"}
+
+    # note: log_process is run on every restructure, run for calculation reference, and run for process labels
     def log_process(log = ""):
         if use_logs == "1":
             new_key = int(list(process_log.keys())[-1]) + 1
@@ -296,7 +284,7 @@ def evaluator(input):
 
     def word_struct(word, arr, module = None):
         # structures a given keyword
-        global is_key
+        nonlocal is_key
         arrVar = arr
         ref = get_word(word, arrVar)
         s = True
@@ -332,7 +320,6 @@ def evaluator(input):
      
     def is_var(str):
         # test for variables
-        global variables
         for i in variables:
             if i == str:
                 return True
@@ -340,14 +327,14 @@ def evaluator(input):
 
     def identify_entities(arr):
         # Identify algebraic mode
-        global algebraic_mode
+        nonlocal algebraic_mode
         for i in range(0, len(arr)):
             if is_var(arr[i]):
                 algebraic_mode = True
                 break
         
         # Identify parenthesis
-        global is_paren
+        nonlocal is_paren
         if is_paren == False:
             for i in range(0, len(arr)):
                 if arr[i] == "(":
@@ -355,7 +342,7 @@ def evaluator(input):
                     break
         
         # Identify exponentiation
-        global is_exp
+        nonlocal is_exp
         if is_exp == False:
             for i in range(0, len(arr)):
                 if arr[i] == "^":
@@ -363,7 +350,7 @@ def evaluator(input):
                     break
         
         # Identify square brackets
-        global is_brack
+        nonlocal is_brack
         if is_brack == False:
             for i in range(0, len(arr)):
                 if arr[i] == "[":
@@ -371,7 +358,7 @@ def evaluator(input):
                     break
         
         # Identify roots
-        global is_root
+        nonlocal is_root
         if is_root == False:
             for i in range(0, len(arr)):
                 if arr[i] == "√":
@@ -379,7 +366,7 @@ def evaluator(input):
                     break
         
         # Identify multiplication
-        global is_mult
+        nonlocal is_mult
         if is_mult == False:
             for i in range(0, len(arr)):
                 if arr[i] == "*":
@@ -387,14 +374,14 @@ def evaluator(input):
                     break
         
         # Identify division
-        global is_div
+        nonlocal is_div
         for i in range(0, len(arr)):
             if arr[i] == "/":
                 is_div = True
                 break
         
         # Identify addition
-        global is_add
+        nonlocal is_add
         if is_add == False:
             for i in range(0, len(arr)):
                 if arr[i] == "+":
@@ -402,7 +389,7 @@ def evaluator(input):
                     break
         
         # Identify subtraction
-        global is_sub
+        nonlocal is_sub
         if is_sub == False:
             for i in range(0, len(arr)):
                 if arr[i] == "-":
@@ -1481,7 +1468,6 @@ def evaluator(input):
     def key_functions(arr):
         # runs key function modules
         # Log process label for key functions
-        global algebraic_mode
         log_process("Key Functions")
         arrVar = arr
         if algebraic_mode == True:
@@ -1671,7 +1657,7 @@ def evaluator(input):
 
     def section(arr):
         # performs calculations in order of parenthesis nesting
-        global is_paren
+        nonlocal is_paren
         arrVar = arr
         thresh = 0
         while is_paren == True and thresh < paren_limit:
@@ -1796,7 +1782,7 @@ def evaluator(input):
         
         # generates substructures, i.e. "sets", within structure
         # sets exist so that multiple arguments can be accessed at a single index for key functions
-        global is_brack
+        nonlocal is_brack
         if is_brack == True:
             log_process("Structure Sets")
             log_process(structure)
@@ -1864,7 +1850,7 @@ def evaluator(input):
 # # test data
 # input = {
 #     # "problem": "i+b-(2*3)", solves arithmetic in algebraic expression if in parens
-#     "problem": "i+b-(2*3)",
+#     "problem": "2*3 + sin(0)",
 #     "use_logs": "1", # 1 = yes
 # }
 # evaluator(input)
@@ -1920,7 +1906,7 @@ def eval_logs():
     except Exception as e:
         return "Error:", e
 
-# evaluator info object data
+# evaluator info object data (read-only)
 @app.route("/eval/info", methods=["GET"])
 def eval_info():
     try:
