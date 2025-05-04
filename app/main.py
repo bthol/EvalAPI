@@ -1,4 +1,4 @@
-# dependencies
+# Dependencies
 import math
 import numpy as np
 from flask import Flask, jsonify, request
@@ -6,7 +6,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
-# environment variables
+# Environment variables
 load_dotenv()
 
 # Program Information
@@ -144,6 +144,7 @@ def evaluator(input):
 
     # PROGRAM PARAMETERS
     global info
+
     # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
     paren_limit = 10
 
@@ -1747,7 +1748,7 @@ def evaluator(input):
                         structure.append(digits)
         log_process(structure)
 
-        log_process("Structuring constants")
+        log_process("Constants")
         # structure pi
         ref = get_word("pi", structure)
         itr = 0
@@ -1765,7 +1766,7 @@ def evaluator(input):
             ref = get_word("euler", structure)
 
         # structure keywords
-        log_process("Structuring Keywords")
+        log_process("Keywords")
         
         # key functions
         for module in range(0, len(info["key_functions"])):
@@ -1864,17 +1865,17 @@ CORS(app)
 
 # ROUTES
 
-# index route
+# Index route
 @app.route("/", methods=["GET"])
 def index():
     return "<div>Index route accessed.</div>"
 
-# hello world environment variable demonstration
+# Hello world environment variable demonstration
 @app.route("/hello-world", methods=["GET"])
 def hello_world():
     return "<p>%s</p>" % os.environ['greeting']
 
-# evaluator data root
+# Evaluator data root
 @app.route("/eval", methods=["POST"])
 def eval():
     try:
@@ -1882,7 +1883,7 @@ def eval():
     except Exception as e:
         return "Error:", e
     
-# evaluator problem data
+# Evaluator problem data
 @app.route("/eval/problem", methods=["POST"])
 def eval_problem():
     try:
@@ -1890,7 +1891,7 @@ def eval_problem():
     except Exception as e:
         return "Error:", e
 
-# evaluator answer data
+# Evaluator answer data
 @app.route("/eval/answer", methods=["POST"])
 def eval_answer():
     try:
@@ -1898,7 +1899,7 @@ def eval_answer():
     except Exception as e:
         return "Error:", e
 
-# evaluator log data
+# Evaluator log data
 @app.route("/eval/logs", methods=["POST"])
 def eval_logs():
     try:
@@ -1906,7 +1907,7 @@ def eval_logs():
     except Exception as e:
         return "Error:", e
 
-# evaluator info object data (read-only)
+# Evaluator info object data (read-only)
 @app.route("/eval/info", methods=["GET"])
 def eval_info():
     try:
