@@ -49,15 +49,15 @@ info = {
             # Reciprocal
             # {"name":"Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the cosecant, i.e. the reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
+            # {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
             # {"name":"Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the secant, i.e. the reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the arcus secant, i.e. the inverse reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
+            # {"name":"Arcus Secant", "key":"asec", "syntax": "asec(x)", "about": "Gets the arcus secant, i.e. the inverse reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
             # {"name":"Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the cotangent, i.e. the reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the arcus cotangent, i.e. the inverse reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
+            # {"name":"Arcus Cotangent", "key":"acot", "syntax": "acot(x)", "about": "Gets the arcus cotangent, i.e. the inverse reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
 
             # Hyperbolic
             {"name":"Hyperbolic Sine", "key":"sinh", "syntax": "sinh(x)", "about": "Gets the hyperbolic sine, i.e the sine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
@@ -154,15 +154,30 @@ def evaluator(input):
     # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
     key_limit = 10
 
-    # PROGRAM MODES
+    # PROGRAM ENTITY REFERENCE
 
-    # defines valid variable characters
+    # variable characters
     variables = "abcdefghijklmnopqrstuvwxyz"
 
+    # operator characters
+    operation = {
+        "addition": "+",
+        "subtraction": "-",
+        "multiplication": "*",
+        "division": "/",
+        "exponentiation": "^",
+        "radication": "√",
+        "open_parenthesis": "(",
+        "close_parenthesis": ")",
+        "open_bracket": "[",
+        "close_bracket": "]"
+    }
+
+    # represents a string containing all of the valid non-numeral characters
+    valid_chars = variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    
     # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
     algebraic_mode = False
-
-    # PROGRAM ENTITY REFERENCE
 
     # is_paren indicates whether there are parenthesis, True, or not, False
     # If False, bypasses section function
@@ -327,76 +342,88 @@ def evaluator(input):
         return False
 
     def identify_entities(arr):
-        # Identify algebraic mode
-        nonlocal algebraic_mode
-        for i in range(0, len(arr)):
-            if is_var(arr[i]):
-                algebraic_mode = True
-                break
-        
-        # Identify parenthesis
-        nonlocal is_paren
-        if is_paren == False:
+        # validate characters
+        nonlocal operation
+        nonlocal variables
+        valid_characters = True
+        # write process for testing if not valid character
+
+        if valid_characters == False:
+            return False
+        else:
+            nonlocal operation
+            # Identify algebraic mode
+            nonlocal algebraic_mode
             for i in range(0, len(arr)):
-                if arr[i] == "(":
-                    is_paren = True
+                if is_var(arr[i]):
+                    algebraic_mode = True
                     break
-        
-        # Identify exponentiation
-        nonlocal is_exp
-        if is_exp == False:
+            
+            # Identify parenthesis
+            nonlocal is_paren
+            if is_paren == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["open_parenthesis"] or arr[i] == operation["close_parenthesis"]:
+                        is_paren = True
+                        break
+            
+            # Identify square brackets
+            nonlocal is_brack
+            if is_brack == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["open_bracket"] or arr[i] == operation["close_bracket"]:
+                        is_brack = True
+                        break
+            
+            # Identify exponentiation
+            nonlocal is_exp
+            if is_exp == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["exponentiation"]:
+                        is_exp = True
+                        break
+
+            # Identify roots
+            nonlocal is_root
+            if is_root == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["radication"]:
+                        is_root = True
+                        break
+            
+            # Identify multiplication
+            nonlocal is_mult
+            if is_mult == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["multiplication"]:
+                        is_mult = True
+                        break
+            
+            # Identify division
+            nonlocal is_div
             for i in range(0, len(arr)):
-                if arr[i] == "^":
-                    is_exp = True
+                if arr[i] == operation["division"]:
+                    is_div = True
                     break
+            
+            # Identify addition
+            nonlocal is_add
+            if is_add == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["addition"]:
+                        is_add = True
+                        break
+            
+            # Identify subtraction
+            nonlocal is_sub
+            if is_sub == False:
+                for i in range(0, len(arr)):
+                    if arr[i] == operation["subtraction"]:
+                        is_sub = True
+                        break
+            
+            return True
         
-        # Identify square brackets
-        nonlocal is_brack
-        if is_brack == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "[":
-                    is_brack = True
-                    break
-        
-        # Identify roots
-        nonlocal is_root
-        if is_root == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "√":
-                    is_root = True
-                    break
-        
-        # Identify multiplication
-        nonlocal is_mult
-        if is_mult == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "*":
-                    is_mult = True
-                    break
-        
-        # Identify division
-        nonlocal is_div
-        for i in range(0, len(arr)):
-            if arr[i] == "/":
-                is_div = True
-                break
-        
-        # Identify addition
-        nonlocal is_add
-        if is_add == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "+":
-                    is_add = True
-                    break
-        
-        # Identify subtraction
-        nonlocal is_sub
-        if is_sub == False:
-            for i in range(0, len(arr)):
-                if arr[i] == "-":
-                    is_sub = True
-                    break
-    
     # STRUCTURE END
 
     # OPERATIONS START
@@ -505,6 +532,9 @@ def evaluator(input):
         # key function module for trigonomic functions
         arrVar = arr
         if key_modules[0]["use"] == True:
+
+            # fundamental functions
+
             # perform all sine functions
             ref = getIdx("sin", arrVar)
             itr = 0
@@ -512,7 +542,7 @@ def evaluator(input):
                 itr = itr + 1
 
                 x = num_cast(arrVar[ref + 1])
-                y = math.sin(x)
+                y = np.sin(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
@@ -526,7 +556,7 @@ def evaluator(input):
                 itr = itr + 1
                 
                 x = num_cast(arrVar[ref + 1])
-                y = math.asin(x)
+                y = np.arcsin(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
@@ -540,14 +570,13 @@ def evaluator(input):
                 itr = itr + 1
 
                 x = num_cast(arrVar[ref + 1])
-                y = math.cos(x)
+                y = np.cos(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("cos", arrVar)
-
-            
+        
             # perform all arcus cosine functions
             ref = getIdx("acos", arrVar)
             itr = 0
@@ -555,7 +584,7 @@ def evaluator(input):
                 itr = itr + 1
                 
                 x = num_cast(arrVar[ref + 1])
-                y = math.acos(x)
+                y = np.arccos(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
@@ -569,7 +598,7 @@ def evaluator(input):
                 itr = itr + 1
 
                 x = num_cast(arrVar[ref + 1])
-                y = math.tan(x)
+                y = np.tan(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
@@ -583,12 +612,101 @@ def evaluator(input):
                 itr = itr + 1
 
                 x = num_cast(arrVar[ref + 1])
-                y = math.atan(x)
+                y = np.arctan(x)
 
                 # Log keyword
                 log_process(arrVar[ref])
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("atan", arrVar)
+
+            # reciprocal functions
+            
+            # perform all cosecant functions
+            ref = getIdx("csc", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = 1 / np.sin(x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("csc", arrVar)
+            
+            # perform all arc cosecant functions
+            ref = getIdx("acsc", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = np.arcsin(1/x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("acsc", arrVar)
+
+            # perform all secant functions
+            ref = getIdx("sec", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = 1 / np.cos(x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("sec", arrVar)
+            
+            # perform all arc secant functions
+            ref = getIdx("sec", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = np.arccos(1/x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("sec", arrVar)
+
+            # perform all cotangent functions
+            ref = getIdx("cot", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = 1 / np.tan(x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("cot", arrVar)
+            
+            # perform all cotangent functions
+            ref = getIdx("acot", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+
+                x = num_cast(arrVar[ref + 1])
+                y = np.arctan(1/x)
+
+                # Log keyword
+                log_process(arrVar[ref])
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("acot", arrVar)
+            
+
+            # hyperbolic functions
 
             # perform all hyperbolic sine functions
             ref = getIdx("sinh", arrVar)
@@ -1654,6 +1772,7 @@ def evaluator(input):
                     arrVar = restructure(x, ref, ref + 1, arrVar)
                     ref = getIdx("√", arrVar)
             
+            log_process("Calculated")
             return arrVar[0]
 
     def section(arr):
@@ -1704,213 +1823,247 @@ def evaluator(input):
 
     def evaluate(str):
         # top level function runs high level functions
-        # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
-        log_process("Structuring")
-        structure = []
-        digits = ""
-        for i in range(0, len(str)):
-            if str[i] == " ":
-                continue
-            else:
-                try:
-                    str[i] == "." or int(str[i])
-                except:
-                    # handle negatives
-                    if str[i] == "-" and str[i - 1] == "(":
-                        structure.pop()
-                        digits = "%s" % str[i]
-                    elif str[i] == ")":
-                        try:
-                            if int(digits) < 0:
-                                structure.append(digits)
-                                digits = ""
-                            else:
-                                # 
-                                if len(digits) > 0:
+
+        # test for invalid characters
+        nonlocal valid_chars
+        valid = True
+        for char in str:
+            try:
+                int(char)
+            except:
+                # not a number
+                o = False
+                for c in valid_chars:
+                    if char == c:
+                        o = True
+                        break
+                if o == False:
+                    # not a non-numeral character
+                    valid = False
+                    break
+        
+        if valid == False:
+            # invalid character cancels evaluation
+            return "invalid characters"
+        else:
+            # valid characters proceed evaluation
+            log_process("Structuring")
+            # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
+            structure = []
+            digits = ""
+            for i in range(0, len(str)):
+                if str[i] == " ":
+                    continue
+                else:
+                    try:
+                        str[i] == "." or int(str[i])
+                    except:
+                        # handle negatives
+                        if str[i] == "-" and str[i - 1] == "(":
+                            structure.pop()
+                            digits = "%s" % str[i]
+                        elif str[i] == ")":
+                            try:
+                                if int(digits) < 0:
                                     structure.append(digits)
                                     digits = ""
-                                # 
+                                else:
+                                    # 
+                                    if len(digits) > 0:
+                                        structure.append(digits)
+                                        digits = ""
+                                    # 
+                                    structure.append(str[i])
+                            except:
+                                if len(digits) > 0:
+                                    structure.append(digits)
+                                digits = ""
                                 structure.append(str[i])
-                        except:
+                        else:
                             if len(digits) > 0:
                                 structure.append(digits)
                             digits = ""
                             structure.append(str[i])
                     else:
-                        if len(digits) > 0:
+                        digits = digits + "%s" % str[i]
+                    finally:
+                        if (i == len(str) - 1 and len(digits) > 0):
                             structure.append(digits)
-                        digits = ""
-                        structure.append(str[i])
-                else:
-                    digits = digits + "%s" % str[i]
-                finally:
-                    if (i == len(str) - 1 and len(digits) > 0):
-                        structure.append(digits)
-        log_process(structure)
-
-        log_process("Constants")
-        # structure pi
-        ref = get_word("pi", structure)
-        itr = 0
-        while itr < c_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("pi", structure)
-        
-        # structure euler's number
-        ref = get_word("euler", structure)
-        itr = 0
-        while itr < c_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("euler", structure)
-
-        # structure keywords
-        log_process("Keywords")
-        
-        # key functions
-        for module in range(0, len(info["key_functions"])):
-            for i in range(0, len(info["key_functions"][module])):
-                structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
-        log_process(key_modules)
-            
-        # change first log
-        if use_logs == "1":
-            process_log["0"] = "Process Log Start"
-        
-        # Identify program entities in structured string
-        identify_entities(structure)
-        
-        # generates substructures, i.e. "sets", within structure
-        # sets exist so that multiple arguments can be accessed at a single index for key functions
-        nonlocal is_brack
-        if is_brack == True:
-            log_process("Structure Sets")
             log_process(structure)
-            # structure sets
-            sets_ref = []
-            for i in range(0, len(structure)):
-                if structure[i] == "[":
-                    sets_ref.append({"char": "[", "index": i})
-                elif structure[i] == "]":
-                    sets_ref.append({"char": "]", "index": i})
-            # identify next set to structure using sets_ref
-            while len(sets_ref) > 0:
-                for i in range(0, len(sets_ref)):
-                    if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
-                        # build set
-                        start_index = sets_ref[i]["index"]
-                        end_index = sets_ref[i + 1]["index"]
-                        solution_length = abs(start_index - end_index) + 1
-                        the_set_itself = []
-                        for i in range(0, solution_length):
-                            the_set_itself.append(structure[start_index + i])
 
-                        # restructure
-                        structure = restructure(the_set_itself, start_index, end_index, structure)
-                        
-                        # update reference
-                        sets_ref = []
-                        for i in range(0, len(structure)):
-                            if structure[i] == "[":
-                                sets_ref.append({"char": "[", "index": i})
-                            elif structure[i] == "]":
-                                sets_ref.append({"char": "]", "index": i})
-                        break
+            log_process("Constants")
+            # structure pi
+            ref = get_word("pi", structure)
+            itr = 0
+            while itr < c_limit and ref is not None:
+                itr = itr + 1
+                structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
+                ref = get_word("pi", structure)
+            
+            # structure euler's number
+            ref = get_word("euler", structure)
+            itr = 0
+            while itr < c_limit and ref is not None:
+                itr = itr + 1
+                structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
+                ref = get_word("euler", structure)
 
-        # parenthetically section and solve
-        structure = section(structure)
+            # structure keywords
+            log_process("Keywords")
+            
+            # key functions
+            for module in range(0, len(info["key_functions"])):
+                for i in range(0, len(info["key_functions"][module])):
+                    structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
+            log_process(key_modules)
+                
+            # change first log
+            if use_logs == "1":
+                process_log["0"] = "Process Log Start"
+            
+            # Identify program entities in structured string
+            if not identify_entities(structure):
+                # invalid entity detected
+                return structure
+            else:
+                # all entities are valid
+                nonlocal is_brack
+                if is_brack == True:
+                    # generates substructures, i.e. "sets", within structure
+                    # sets exist so that multiple arguments can be accessed at a single index for key functions
+                    log_process("Structure Sets")
+                    log_process(structure)
+                    # structure sets
+                    sets_ref = []
+                    for i in range(0, len(structure)):
+                        if structure[i] == "[":
+                            sets_ref.append({"char": "[", "index": i})
+                        elif structure[i] == "]":
+                            sets_ref.append({"char": "]", "index": i})
+                    # identify next set to structure using sets_ref
+                    while len(sets_ref) > 0:
+                        for i in range(0, len(sets_ref)):
+                            if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
+                                # build set
+                                start_index = sets_ref[i]["index"]
+                                end_index = sets_ref[i + 1]["index"]
+                                solution_length = abs(start_index - end_index) + 1
+                                the_set_itself = []
+                                for i in range(0, solution_length):
+                                    the_set_itself.append(structure[start_index + i])
 
-        return structure
+                                # restructure
+                                structure = restructure(the_set_itself, start_index, end_index, structure)
+                                
+                                # update reference
+                                sets_ref = []
+                                for i in range(0, len(structure)):
+                                    if structure[i] == "[":
+                                        sets_ref.append({"char": "[", "index": i})
+                                    elif structure[i] == "]":
+                                        sets_ref.append({"char": "]", "index": i})
+                                break
+
+                # parenthetically section and solve
+                return section(structure)
 
     # Evaluation
     use_logs = input["use_logs"]
     answer = evaluate(input["problem"])
 
+    # convert algebraic expressions to answer string
+    if isinstance(answer, list):
+        string = ""
+        for i in answer:
+            string = string + str(i)
+        answer = string
+
+    # assign output object
     output = {
         "problem": input["problem"],
         "answer": answer,
         "logs": process_log,
     }
 
-    return output
+    # return output
 
-#     # Development
+    # Development
 
-#     # Prints feedback
-#     logs = """"""
-#     process_log_keys = list(process_log.keys())
-#     for key in process_log_keys:
-#         logs += """%s
-# """ % process_log[key]
+    # Prints feedback
+    logs = """"""
+    process_log_keys = list(process_log.keys())
+    for key in process_log_keys:
+        logs += """%s
+""" % process_log[key]
     
-#     print(output["problem"])
-#     print(output["answer"])
-#     print(logs)
+    print(output["problem"])
+    print(output["answer"])
+    print(logs)
 
-# # test data
-# input = {
-#     # "problem": "i+b-(2*3)", solves arithmetic in algebraic expression if in parens
-#     "problem": "2*3 + sin(0)",
-#     "use_logs": "1", # 1 = yes
-# }
-# evaluator(input)
+# test data
+input = {
+    # "problem": "i+b-(2*3)", # solves arithmetic in algebraic expression if in parens
+    # "problem": "i+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
+    "problem": "1+1/&%$#",
+    "use_logs": "1", # 1 = yes
+}
+evaluator(input)
 
 
-# Flask APP
-app = Flask(__name__)
+# # Flask APP
+# app = Flask(__name__)
 
-# CORS wrapper
-CORS(app)
+# # CORS wrapper
+# CORS(app)
 
-# ROUTES
+# # ROUTES
 
-# Index route
-@app.route("/", methods=["GET"])
-def index():
-    return "<div>Index route accessed.</div>"
+# # Index route
+# @app.route("/", methods=["GET"])
+# def index():
+#     return "<div>Index route accessed.</div>"
 
-# Hello world environment variable demonstration
-@app.route("/hello-world", methods=["GET"])
-def hello_world():
-    return "<p>%s</p>" % os.environ['greeting']
+# # Hello world environment variable demonstration
+# @app.route("/hello-world", methods=["GET"])
+# def hello_world():
+#     return "<p>%s</p>" % os.environ['greeting']
 
-# Evaluator data root
-@app.route("/eval", methods=["POST"])
-def eval():
-    try:
-        return jsonify(evaluator(request.get_json()))
-    except Exception as e:
-        return "Error:", e
+# # Evaluator data root
+# @app.route("/eval", methods=["POST"])
+# def eval():
+#     try:
+#         return jsonify(evaluator(request.get_json()))
+#     except Exception as e:
+#         return "Error:", e
     
-# Evaluator problem data
-@app.route("/eval/problem", methods=["POST"])
-def eval_problem():
-    try:
-        return jsonify(evaluator(request.get_json())["problem"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator problem data
+# @app.route("/eval/problem", methods=["POST"])
+# def eval_problem():
+#     try:
+#         return jsonify(evaluator(request.get_json())["problem"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator answer data
-@app.route("/eval/answer", methods=["POST"])
-def eval_answer():
-    try:
-        return jsonify(evaluator(request.get_json())["answer"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator answer data
+# @app.route("/eval/answer", methods=["POST"])
+# def eval_answer():
+#     try:
+#         return jsonify(evaluator(request.get_json())["answer"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator log data
-@app.route("/eval/logs", methods=["POST"])
-def eval_logs():
-    try:
-        return jsonify(evaluator(request.get_json())["logs"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator log data
+# @app.route("/eval/logs", methods=["POST"])
+# def eval_logs():
+#     try:
+#         return jsonify(evaluator(request.get_json())["logs"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator info object data (read-only)
-@app.route("/eval/info", methods=["GET"])
-def eval_info():
-    try:
-        return jsonify(info)
-    except Exception as e:
-        return "Error:", e
+# # Evaluator info object data (read-only)
+# @app.route("/eval/info", methods=["GET"])
+# def eval_info():
+#     try:
+#         return jsonify(info)
+#     except Exception as e:
+#         return "Error:", e
