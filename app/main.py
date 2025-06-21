@@ -47,17 +47,17 @@ info = {
             {"name":"Arcus Tangent", "key": "atan", "syntax": "atan(x)", "about": "Gets the arcus tangent, i.e. the inverse tangent, of x, where x is a value or an expression that evaluates to a value."},
                 
             # Reciprocal
-            # {"name":"Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the cosecant, i.e. the reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the cosecant, i.e. the reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the secant, i.e. the reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the secant, i.e. the reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Secant", "key":"asec", "syntax": "asec(x)", "about": "Gets the arcus secant, i.e. the inverse reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Arcus Secant", "key":"asec", "syntax": "asec(x)", "about": "Gets the arcus secant, i.e. the inverse reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the cotangent, i.e. the reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the cotangent, i.e. the reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
             
-            # {"name":"Arcus Cotangent", "key":"acot", "syntax": "acot(x)", "about": "Gets the arcus cotangent, i.e. the inverse reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Arcus Cotangent", "key":"acot", "syntax": "acot(x)", "about": "Gets the arcus cotangent, i.e. the inverse reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
 
             # Hyperbolic
             {"name":"Hyperbolic Sine", "key":"sinh", "syntax": "sinh(x)", "about": "Gets the hyperbolic sine, i.e the sine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
@@ -1985,85 +1985,85 @@ def evaluator(input):
         "logs": process_log,
     }
 
-    # return output
+    return output
 
-    # Development
+#     # Development
 
-    # Prints feedback
-    logs = """"""
-    process_log_keys = list(process_log.keys())
-    for key in process_log_keys:
-        logs += """%s
-""" % process_log[key]
+#     # Prints feedback
+#     logs = """"""
+#     process_log_keys = list(process_log.keys())
+#     for key in process_log_keys:
+#         logs += """%s
+# """ % process_log[key]
     
-    print(output["problem"])
-    print(output["answer"])
-    print(logs)
+#     print(output["problem"])
+#     print(output["answer"])
+#     print(logs)
 
-# test data
-input = {
-    # "problem": "i+b-(2*3)", # solves arithmetic in algebraic expression if in parens
-    # "problem": "i+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
-    "problem": "1+1/&%$#",
-    "use_logs": "1", # 1 = yes
-}
-evaluator(input)
+# # test data
+# input = {
+#     # "problem": "i+b-(2*3)", # solves arithmetic in algebraic expression if in parens
+#     # "problem": "i+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
+#     "problem": "1+1/&%$#",
+#     "use_logs": "1", # 1 = yes
+# }
+# evaluator(input)
 
 
-# # Flask APP
-# app = Flask(__name__)
+# Flask APP
+app = Flask(__name__)
 
-# # CORS wrapper
-# CORS(app)
+# CORS wrapper
+CORS(app)
 
-# # ROUTES
+# ROUTES
 
-# # Index route
-# @app.route("/", methods=["GET"])
-# def index():
-#     return "<div>Index route accessed.</div>"
+# Index route
+@app.route("/", methods=["GET"])
+def index():
+    return "<div>Index route accessed.</div>"
 
-# # Hello world environment variable demonstration
-# @app.route("/hello-world", methods=["GET"])
-# def hello_world():
-#     return "<p>%s</p>" % os.environ['greeting']
+# Hello world environment variable demonstration
+@app.route("/hello-world", methods=["GET"])
+def hello_world():
+    return "<p>%s</p>" % os.environ['greeting']
 
-# # Evaluator data root
-# @app.route("/eval", methods=["POST"])
-# def eval():
-#     try:
-#         return jsonify(evaluator(request.get_json()))
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator data root
+@app.route("/eval", methods=["POST"])
+def eval():
+    try:
+        return jsonify(evaluator(request.get_json()))
+    except Exception as e:
+        return "Error:", e
     
-# # Evaluator problem data
-# @app.route("/eval/problem", methods=["POST"])
-# def eval_problem():
-#     try:
-#         return jsonify(evaluator(request.get_json())["problem"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator problem data
+@app.route("/eval/problem", methods=["POST"])
+def eval_problem():
+    try:
+        return jsonify(evaluator(request.get_json())["problem"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator answer data
-# @app.route("/eval/answer", methods=["POST"])
-# def eval_answer():
-#     try:
-#         return jsonify(evaluator(request.get_json())["answer"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator answer data
+@app.route("/eval/answer", methods=["POST"])
+def eval_answer():
+    try:
+        return jsonify(evaluator(request.get_json())["answer"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator log data
-# @app.route("/eval/logs", methods=["POST"])
-# def eval_logs():
-#     try:
-#         return jsonify(evaluator(request.get_json())["logs"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator log data
+@app.route("/eval/logs", methods=["POST"])
+def eval_logs():
+    try:
+        return jsonify(evaluator(request.get_json())["logs"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator info object data (read-only)
-# @app.route("/eval/info", methods=["GET"])
-# def eval_info():
-#     try:
-#         return jsonify(info)
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator info object data (read-only)
+@app.route("/eval/info", methods=["GET"])
+def eval_info():
+    try:
+        return jsonify(info)
+    except Exception as e:
+        return "Error:", e
