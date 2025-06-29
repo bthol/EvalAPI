@@ -9,20 +9,38 @@ import os
 # Environment variables
 load_dotenv()
 
+# PROGRAMIC PROCESS
+
+# Phase I: Character Validation
+# Description: Tests each character in problem string to ensure only valid characters are used, otherwise, the program terminates and returns "invalid character"
+
+# Phase II: Entity Structuring and Analysis
+# Description: Analyzes problem string to create structure from string data storing relevant problem data as it goes. The problem string is structured into entities including and limited to multi-digit numbers, negative numbers, decimal numbers, operations, parenthesis, sets and keywords. After structuring, the program analyzes the structure to further identify remaining program entities from structure data.
+
+# Phase III: Structural Manipulation
+# Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
+
+# Phase IV: Key Functions
+# Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions (sets permit key functions to have multiple arguments).
+
+# Phase V: Calculation/Simplification
+# Description: Search for and run appropriate operations on contents of structure, restructure with solution, and repeat until no operations are remaining.
+
 # Program Information
 info = {
-    "system_operations": [
-        {"name": "info", "about": "Prints program information, i.e. system operations, program entities, key functions, and their related information."},
-    ],
     
     "operations": [
-        {"name":"Negative Numbers", "syntax":"(-x)"},
-        {"name":"Exponentiation", "syntax":"^"},
-        {"name":"root", "syntax":"√"}, # alt code 251
-        {"name":"Multiplication", "syntax":"*"},
-        {"name":"Division", "syntax":"/"},
         {"name":"Addition", "syntax":"+"},
         {"name":"Subtraction", "syntax":"-"},
+        {"name":"Multiplication", "syntax":"*"},
+        {"name":"Division", "syntax":"/"},
+        {"name":"Exponentiation", "syntax":"^"},
+        {"name":"radication", "syntax":"√"}, # alt code 251
+        {"name":"negation", "syntax":"(-x)"},
+        {"name":"open_parenthesis", "syntax":"("},
+        {"name":"close_parenthesis", "syntax":")"},
+        {"name":"open_bracket", "syntax":"["},
+        {"name":"close_bracket", "syntax":"]"},
     ],
 
     "constants": [
@@ -88,6 +106,9 @@ info = {
             {"name":"Permutation", "key":"perm", "syntax": "perm[n,r]", "about": "Gets a permutation given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. perm[n,[r+x]]."},
 
             {"name":"Combination", "key":"comb", "syntax": "comb[n,r]", "about": "Gets a combination given n number of objects with r number of objects per combination, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. comb[n,[r+x]]."},
+        # add
+        #  - composition
+        #  - partition
         ],
 
         # Statistical Module
@@ -119,28 +140,19 @@ info = {
 
         # Algebraic
         [
-            {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a value wrapped within square brackets, e.g. expand[[a],[x]]"},
+            {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[a],[x+y]]"},
             
-            {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
+            {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x+y][a+b]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
+        
+        # add:
+        #  - combine like terms
+        #  - Polynomial Factorization
+        #  - complex conjugate
         ],
     ],
 }
 
 def evaluator(input):
-
-    # PROGRAMIC PROCESS
-
-    # Phase I: Entity Structuring and Analysis
-    # Description: Analyzes problem string to create structure from string data and analyzes structure to identify program entities from structure data, including and limited to multi-digit numbers, negative numbers, decimal numbers, mathematical operators, parenthesis, sets and keywords.
-
-    # Phase II: Structural Manipulation
-    # Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
-
-    # Phase III: Key Functions
-    # Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions.
-
-    # Phase IV: Calculation
-    # Description: Search for and run appropriate mathematical operation on contents of structure, restructure with solution, and repeat until no operations are remaining.
 
     # PROGRAM PARAMETERS
     global info
@@ -156,25 +168,26 @@ def evaluator(input):
 
     # PROGRAM ENTITY REFERENCE
 
-    # variable characters
-    variables = "abcdefghijklmnopqrstuvwxyz"
+    # variable characters (all lowercase letters except i for imaginary numbers)
+    variables = "abcdefghjklmnopqrstuvwxyz"
 
     # operator characters
     operation = {
-        "addition": "+",
-        "subtraction": "-",
-        "multiplication": "*",
-        "division": "/",
-        "exponentiation": "^",
-        "radication": "√",
-        "open_parenthesis": "(",
-        "close_parenthesis": ")",
-        "open_bracket": "[",
-        "close_bracket": "]"
+        "addition": info["operations"][0]["syntax"],
+        "subtraction": info["operations"][1]["syntax"],
+        "multiplication": info["operations"][2]["syntax"],
+        "division": info["operations"][3]["syntax"],
+        "exponentiation": info["operations"][4]["syntax"],
+        "radication": info["operations"][5]["syntax"],
+        "negation": info["operations"][6]["syntax"],
+        "open_parenthesis": info["operations"][7]["syntax"],
+        "close_parenthesis": info["operations"][8]["syntax"],
+        "open_bracket": info["operations"][9]["syntax"],
+        "close_bracket": info["operations"][10]["syntax"]
     }
 
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = "." + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
     # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
     algebraic_mode = False
@@ -270,7 +283,7 @@ def evaluator(input):
                 else:
                     # concatenate lists
                     structure = structure + solution
-            else:
+            elif solution != "delete":
                 structure.append(solution)
         if end != len(arr) - 1:
             structure = structure + arr[end + 1:len(arr)]
@@ -333,7 +346,14 @@ def evaluator(input):
                 ref = get_word(word, arrVar)
 
         return arrVar
-     
+    
+    def is_op(str):
+        # tests if given str is an operation character
+        for i in range(0, len(info["operations"])):
+            if info["operations"][i]["syntax"] == str:
+                return True
+        return False
+
     def is_var(str):
         # test for variables
         for i in variables:
@@ -342,87 +362,81 @@ def evaluator(input):
         return False
 
     def identify_entities(arr):
-        # validate characters
+        # identify program entities and update program entity reference
         nonlocal operation
-        nonlocal variables
-        valid_characters = True
-        # write process for testing if not valid character
-
-        if valid_characters == False:
-            return False
-        else:
-            nonlocal operation
-            # Identify algebraic mode
-            nonlocal algebraic_mode
-            for i in range(0, len(arr)):
-                if is_var(arr[i]):
-                    algebraic_mode = True
+        
+        # Identify algebraic mode
+        nonlocal algebraic_mode
+        for i in arr:
+            if is_var(i):
+                algebraic_mode = True
+                break
+        
+        # Identify parenthesis
+        nonlocal is_paren
+        if is_paren == False:
+            for i in arr:
+                if i == operation["open_parenthesis"] or i == operation["close_parenthesis"]:
+                    is_paren = True
                     break
-            
-            # Identify parenthesis
-            nonlocal is_paren
-            if is_paren == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["open_parenthesis"] or arr[i] == operation["close_parenthesis"]:
-                        is_paren = True
-                        break
-            
-            # Identify square brackets
-            nonlocal is_brack
-            if is_brack == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["open_bracket"] or arr[i] == operation["close_bracket"]:
-                        is_brack = True
-                        break
-            
-            # Identify exponentiation
-            nonlocal is_exp
-            if is_exp == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["exponentiation"]:
-                        is_exp = True
-                        break
+        
+        # Identify square brackets
+        nonlocal is_brack
+        if is_brack == False:
+            for i in arr:
+                if i == operation["open_bracket"] or i == operation["close_bracket"]:
+                    is_brack = True
+                    break
+        
+        # Identify exponentiation
+        nonlocal is_exp
+        if is_exp == False:
+            for i in arr:
+                if i == operation["exponentiation"]:
+                    is_exp = True
+                    break
 
-            # Identify roots
-            nonlocal is_root
-            if is_root == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["radication"]:
-                        is_root = True
-                        break
-            
-            # Identify multiplication
-            nonlocal is_mult
-            if is_mult == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["multiplication"]:
-                        is_mult = True
-                        break
-            
-            # Identify division
-            nonlocal is_div
-            for i in range(0, len(arr)):
-                if arr[i] == operation["division"]:
+        # Identify roots
+        nonlocal is_root
+        if is_root == False:
+            for i in arr:
+                if i == operation["radication"]:
+                    is_root = True
+                    break
+        
+        # Identify multiplication
+        nonlocal is_mult
+        if is_mult == False:
+            for i in arr:
+                if i == operation["multiplication"]:
+                    is_mult = True
+                    break
+        
+        # Identify division
+        nonlocal is_div
+        if is_div == False:
+            for i in arr:
+                if i == operation["division"]:
                     is_div = True
                     break
-            
-            # Identify addition
-            nonlocal is_add
-            if is_add == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["addition"]:
-                        is_add = True
-                        break
-            
-            # Identify subtraction
-            nonlocal is_sub
-            if is_sub == False:
-                for i in range(0, len(arr)):
-                    if arr[i] == operation["subtraction"]:
-                        is_sub = True
-                        break
-            
-            return True
+        
+        # Identify addition
+        nonlocal is_add
+        if is_add == False:
+            for i in arr:
+                if i == operation["addition"]:
+                    is_add = True
+                    break
+        
+        # Identify subtraction
+        nonlocal is_sub
+        if is_sub == False:
+            for i in arr:
+                if i == operation["subtraction"]:
+                    is_sub = True
+                    break
+        
+        return True
         
     # STRUCTURE END
 
@@ -514,19 +528,305 @@ def evaluator(input):
 
     def get_mean(arr):
         return sum(arr) / len(arr)
+ 
+    def getTerms(arr):
+        # identifies terms in algebraic expression and returns structured as such
+        sect_struct = []
+        term = []
+        for i in range(0, len(arr)):
+            if arr[i] == operation["addition"]:
+                # end of term
+                sect_struct.append(term)
+                term = []
+            elif arr[i] == operation["subtraction"]:
+                # prevent end of term on negation
+                if arr[i - 1] != operation["open_parenthesis"]:
+                    # non-negative value
+                    # end of term
+                    sect_struct.append(term)
+                    term = []
+            else:
+                # compile term
+                term.append(arr[i])
+        
+        # append last term
+        sect_struct.append(term)
+
+        return sect_struct
     
+    def combineLikeTerms(arr):
+
+        # combines like terms in algebraic and returns simplified expression
+        nonlocal variables
+
+        # identify terms
+        sect_struct = getTerms(arr)
+
+        # compare to test for like terms
+        likeness = []
+
+        # get variables + exponents for each term
+        for term in sect_struct:
+            # each term gets a "t object"
+            t = {"variables": [], "exponent":""}
+
+            for c in range(0, len(term)):
+                # each character
+
+                # test for exponents
+                if term[c] == operation["exponentiation"]:
+                    if c + 1 < len(term):
+                        if term[c + 1] == operation["open_parenthesis"]:
+
+                            # c + 1 is an expression
+
+                            nest = 0
+                            expression = []
+                            # compile to expression until finding end parenthesis
+                            for char in range(c + 1, len(term)):
+                                # compile
+                                expression.append(char)
+                                # test for end parenthesis
+                                if char == operation["open_parenthesis"]:
+                                    nest += 1
+                                elif char == operation["close_parenthesis"]:
+                                    nest -= 1
+                                    if nest == 0:
+                                        # found end parenthesis
+                                        t["exponent"] = expression
+                                        break
+
+                        else:
+
+                            # c + 1 is a value
+
+                            t["exponent"] = term[c + 1]
+
+                    else:
+
+                        # c + 1 is last character of term; is a value
+
+                        t["exponent"] = term[c + 1]
+                else:
+                    # current character is not a exponentiation symbol
+
+                    # test for variables
+                    if is_var(term[c]):
+                        t["variables"].append(term[c])
+
+
+            # append t object to likeness
+            likeness.append(t)
+        
+        # print(sect_struct)
+        # print(likeness)
+        
+        return arr
+    
+    def simplify(arr):
+        # simplifies algebraic expressions
+        arrVar = arr
+
+        # define process of simplification
+        # 1.) identify first variable in arr testing from left to right
+        # 2.) test for simplifications until one is discovered and run that
+        # 3.) restart step 1 - 3 until no simplification are discovered during step 2
+        
+        simplifying = True
+        x = 0
+        while x < 10 and simplifying == True:
+            # each while loop interation is one simplification
+            x += 1
+            
+            # get length of arrVar
+            length = len(arrVar)
+
+            for c in range(0, length):
+                # each character
+                if is_var(arrVar[c]):
+                    # each variable
+                    var = arrVar[c]
+
+                    # run simplifications
+
+                    if c + 2 < length:
+
+                        # SIMP1: multiplied by itself
+
+                        if arrVar[c + 1] == operation["multiplication"] and arrVar[c + 2] == var:
+                            
+                            # any number multiplied by itself is that number to the power of the number of times it is multiplied by itself
+                            multiplying = True
+                            power = 2
+                            place = c + 2
+
+                            # get power and place data
+                            while multiplying == True and place + 2 < length:
+                                if arrVar[place + 1] == operation["multiplication"] and arrVar[place + 2] == var:
+                                    # consecutive multiplications of variable
+                                    power += 1
+                                    place = place + 2
+                                else:
+                                    # discontinuation of consecutive multiplication
+                                    multiplying = False
+                                    # stop while loop
+                                    break
+                            
+                            # apply simplification to problem structure
+                            arrVar = restructure([var, operation["exponentiation"],'%s' % power], c, place, arrVar)
+                            # end current simplification
+                            break
+
+                        # SIMP2: divided by itself
+
+                        if arrVar[c + 1] == operation["division"] and arrVar[c + 2] == var:
+
+                            # test if next operation after dividing by itself is another division by itself
+                            if c + 4 < length and arrVar[c + 3] == operation["division"] and arrVar[c + 4] == var:
+                                # any number divided by itself is that number divided by that number to the power of the number of times it is divided by itself
+                                dividing = True
+                                power = 1
+                                place = c + 2
+
+                                # get power and place data
+                                while dividing == True and place + 2 < length:
+                                    if arrVar[place + 1] == operation["division"] and arrVar[place + 2] == var:
+                                        # consecutive divisions of variable
+                                        power += 1
+                                        place = place + 2
+                                    else:
+                                        # discontinuation of consecutive division
+                                        dividing = False
+                                        # stop while loop
+                                        break
+                                
+                                # any number divided by itself is 1
+                                arrVar = restructure([var, operation["division"], operation["open_parenthesis"], var, operation["exponentiation"], '%s' % power, operation["close_parenthesis"]], c, place, arrVar)
+                                # end current simplification
+                                break
+
+                            elif c - 2 > -1:
+                                # test if operation before cancels out the value 1
+                                if arrVar[c - 1] == operation["multiplication"]:
+
+                                    # any number multiplied by 1 is itself
+                                    arrVar = restructure("delete", c - 1, c + 2, arrVar)
+                                    # end current simplification
+                                    break
+
+                                elif arrVar[c - 1] == operation["division"]:
+                                    
+                                    # any number divided by 1 is itself
+                                    arrVar = restructure("delete", c - 1, c + 2, arrVar)
+                                    # end current simplification
+                                    break
+                                    
+                            else:
+                                # apply simplification to problem structure
+                                arrVar = restructure("1", c, c + 2, arrVar)
+                                # end current simplification
+                                break
+
+                        # SIMP3: added to itself
+                        
+                        if arrVar[c + 1] == operation["addition"] and arrVar[c + 2] == var:
+                            
+                            # any number added to itself is that number multiplied by the number of times it is added to itself
+                            adding = True
+                            multiplier = 2
+                            place = c + 2
+
+                            # get multiplier and place data
+                            while adding == True and place + 2 < length:
+                                if arrVar[place + 1] == operation["addition"] and arrVar[place + 2] == var:
+                                    # consecutive additions of variable
+                                    multiplier += 1
+                                    place = place + 2
+                                else:
+                                    # discontinuation of consecutive addition
+                                    adding = False
+                                    # stop while loop
+                                    break
+                            
+                            # apply simplification to problem structure
+                            arrVar = restructure(['%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
+                            # end current simplification
+                            break
+                        
+                        # SIMP4: subtracted from itself
+
+                        if arrVar[c + 1] == operation["subtraction"] and arrVar[c + 2] == var:
+                            
+                            # any number subtracted from itself is that number subtracted by the number of times it is subtracted from itself multiplied by itself
+                            subtracting = True
+                            multiplier = 1
+                            place = c + 2
+
+                            # get multiplier and place data
+                            while subtracting == True and place + 2 < length:
+                                if arrVar[place + 1] == operation["subtraction"] and arrVar[place + 2] == var:
+                                    # consecutive subtractions of variable
+                                    multiplier += 1
+                                    place = place + 2
+                                else:
+                                    # discontinuation of consecutive subtraction
+                                    subtracting = False
+                                    # stop while loop
+                                    break
+                            
+                            # apply simplification to problem structure
+                            arrVar = restructure([var, operation["subtraction"], '%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
+                            # end current simplification
+                            break
+
+                        # SIMP5: multiply variables with exponents and coefficents
+
+                        # SIMP6: divide variables with exponents and coefficents
+
+                        # SIMP7: add variables with exponents and coefficents
+
+                        # SIMP8: subtract variables with exponents and coefficents
+
+                
+                # test terminating condition
+                if c + 1 == length:
+                    # no further simplifications; on end character and no simplifications run
+                    simplifying = False
+
+        return arrVar
+
     # OPERATIONS END
 
     # KEY FUNCTIONS START
 
     def getIdx(str, arr):
         # gets index of string in structure
-        val = None
-        for i in range(0, len(arr)):
-            if arr[i] == str:
-                val = i
-                break
-        return val
+
+        # get length of arr
+        length = len(arr)
+
+        # test if operation string
+        if is_op(str):
+
+            # operation string
+            val = None
+            for i in range(0, length):
+                if arr[i] == str:
+                    # test for operation on variables
+                    if i - 1 > -1 and i + 1 < length and not is_var(arr[i - 1]) and not is_var(arr[i + 1]):
+                        val = i
+                        # arithmetic operation approved; not operating on variable
+                        return val
+                        
+        else:
+
+            # not operation string
+            val = None
+            for i in range(0, length):
+                if arr[i] == str:
+                    val = i
+                    break
+            return val
 
     def trigonomic(arr):
         # key function module for trigonomic functions
@@ -1342,7 +1642,8 @@ def evaluator(input):
                 else:
                     # simplify power expression then append power value
                     x = section(args[1])
-                    args[1] = x
+                    # convert power expression product to integer
+                    args[1] = int(x)
 
                 # perform algebraic operation using numeral set
                 base = args[0] # base expression
@@ -1400,195 +1701,258 @@ def evaluator(input):
                 nomials = arrVar[ref + 1]
 
                 # print(nomials)
+                if len(nomials) == 1 or len(nomials) == 0:
+                    # cannot expand a single nomial or no nomial
 
-                # reference structure for section with distribution
-                sect_struct = []
+                    # Log keyword
+                    log_process(arrVar[ref])
+                    # restructure with product expression
+                    arrVar = restructure(nomials, ref, ref + 1, arrVar)
+                    # identify further cases of polynomial expansion
+                    ref = getIdx("expand", arrVar)
 
-                # Use nomials to create sect_struct
-                for i in range(0, len(nomials)):
-                    # identify terms for each nomial
-                    length = len(nomials[i])
-                    if length == 1:
-                        # monomial
-                        sect_struct.append([nomials[i]])
-                    else:
-                        # polynomial
-                        terms = []
-                        for j in range(0, len(nomials[i])):
-                            # test each character in nomial for terms
-                            char = nomials[i][j]
-                            try:
-                                # char is a number
-                                float(char)
-                                if nomials[i][j - 1] == "-":
-                                    # negative
-                                    terms.append(["- % s" % char])
-                                else:
-                                    # positive
-                                    terms.append([char])
-                            except:
-                                if is_var(char):
-                                    # char is a variable
-                                    if nomials[i][j - 1] == "-":
-                                        # negative
-                                        terms.append(["- % s" % char])
-                                    else:
-                                        # positive
-                                        terms.append([char])
-                                else:
-                                    # char is not a term
-                                    continue
+                else:
+                    # multiple nomials can be expanded
 
-                        # after terms are identified for that nomial
-                        sect_struct.append(terms)
+                    # reference structure for section with distribution
+                    sect_struct = []
+
+                    # Use nomials to create sect_struct
+                    for nomial in nomials:
+                        sect_struct.append(getTerms(nomial))
+
+                    print(sect_struct)
+
+                    # initialize sect_product with the first nomial in sect_struct
+                    sect_product = sect_struct[0]
+
+                    # multiply each nomial with the data in the sect_product variable
+                    for i in range(1,len(sect_struct)):
+                        product = []
+                        for term1 in sect_product:
+                            # each term in sect_product
+                            for term2 in sect_struct[i]:
+                                # each term in nomial multiplying with product
+
+                                # append 1st term
+                                for x in term1:
+                                    product.append(x)
+                                # append a multiplication symbol
+                                product.append(operation["multiplication"])
+                                # append 2nd term
+                                for x in term2:
+                                    product.append(x)
+                                # append an addtion symbol
+                                product.append(operation["addition"])
+                        
+                        # remove extra addition symbol from end
+                        product.pop()
+
+                        # simplify terms
+                        prod_simp = []
+                        for term in product:
+                            prod_simp.append(simplify(term))
+
+                        # combine like terms
+                        prod_simp = combineLikeTerms(prod_simp)
+
+                        # assign product to sect_simp
+                        sect_product = prod_simp
+
+                    # print(sect_product)
+
+                return arrVar
+
+
+
+                # # Use nomials to create sect_struct
+                # for i in range(0, len(nomials)):
+                #     # identify terms for each nomial
+                #     length = len(nomials[i])
+                #     if length == 1:
+                #         # monomial
+                #         sect_struct.append([nomials[i]])
+                #     else:
+                #         # polynomial
+                #         terms = []
+                #         for j in range(0, len(nomials[i])):
+                #             # test each character in nomial for terms
+                #             char = nomials[i][j]
+                #             try:
+                #                 # char is a number
+                #                 float(char)
+                #                 if nomials[i][j - 1] == operation["subtraction"]:
+                #                     # negative
+                #                     terms.append(["%s %s" % operation["subtraction"], char])
+                #                 else:
+                #                     # positive
+                #                     terms.append([char])
+                #             except:
+                #                 if is_var(char):
+                #                     # char is a variable
+                #                     if nomials[i][j - 1] == operation["subtraction"]:
+                #                         # negative
+                #                         terms.append(["%s %s" % operation["subtraction"], char])
+                #                     else:
+                #                         # positive
+                #                         terms.append([char])
+                #                 else:
+                #                     # char is not a term
+                #                     continue
+
+                #         # after terms are identified for that nomial
+                #         sect_struct.append(terms)
 
                 # print(sect_struct)
 
-                # total number of nomials
-                nomials_total = len(sect_struct)
+                # # total number of nomials
+                # nomials_total = len(sect_struct)
 
-                # total number of terms
-                terms_total = 0
-                for i in range(0, len(sect_struct)):
-                    terms_total += len(sect_struct[i])
+                # # total number of terms
+                # terms_total = 0
+                # for i in range(0, len(sect_struct)):
+                #     terms_total += len(sect_struct[i])
                 
-                # total number of terms in product of distribution
-                # calculates the number of terms in the product expression of a nomial multiplication
-                # using the nested summation method
-                # where it works for:
-                #  - any number of nomials
-                #  - any number of terms in nomial
-                #  - different number of terms in different nomials
+                # # total number of terms in product of distribution
+                # # calculates the number of terms in the product expression of a nomial multiplication
+                # # using the nested summation method
+                # # where it works for:
+                # #  - any number of nomials
+                # #  - any number of terms in nomial
+                # #  - variable number of terms in different nomials
 
-                product_terms_total = 0
-                for i in range(0, len(sect_struct)):
-                    # get terms of current nomial
-                    k = len(sect_struct[i])
-                    # sum previous terms
-                    s = 0
-                    for l in range(0, i):
-                        s += len(sect_struct[l])
-                    s += k
-                    product_terms_total += k * (terms_total - s)
+                # product_terms_total = 0
+                # for i in range(0, len(sect_struct)):
+                #     # get terms of current nomial
+                #     k = len(sect_struct[i])
+                #     # sum previous terms
+                #     s = 0
+                #     for l in range(0, i):
+                #         s += len(sect_struct[l])
+                #     s += k
+                #     product_terms_total += k * (terms_total - s)
                 
-                # print(nomials_total)
-                # print(terms_total)
-                # print(product_terms_total)
+                # # print(nomials_total)
+                # # print(terms_total)
+                # # print(product_terms_total)
 
-                # construct product expression
+                # # construct product expression
 
-                # now that the number of terms in the product expression is known, the number of multiplications is also known,
-                # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
+                # # now that the number of terms in the product expression is known, the number of multiplications is also known,
+                # # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
 
-                # the design of product expression construction is thus:
-                #  - to access two terms in the reference structure of unique combination, 
-                #  - build a list which includes those terms separated by a multication symbol,
-                #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
-                #  - and repeating this process for the number of multiplications,
-                #  - except for the last multiplication, which should have no addition symbol following it.
+                # # the design of product expression construction is thus:
+                # #  - to access two terms in the reference structure of unique combination, 
+                # #  - build a list which includes those terms separated by a multication symbol,
+                # #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
+                # #  - and repeating this process for the number of multiplications,
+                # #  - except for the last multiplication, which should have no addition symbol following it.
 
-                # multiplier indexes
-                term1 = 0
-                nomial1 = 0
+                # # multiplier indexes
+                # term1 = 0
+                # nomial1 = 0
 
-                # multiplicand indexes
-                term2 = 0
-                nomial2 = 0
+                # # multiplicand indexes
+                # term2 = 0
+                # nomial2 = 0
 
-                # structures
-                multiplier = []
-                multiplicand = []
-                product = []
+                # # structures
+                # multiplier = []
+                # multiplicand = []
+                # product = []
 
-                for i in range(0, product_terms_total - 1):
-                    # initialize
-                    if nomial2 == 0:
-                        # first term in product expression
-                        multiplier = sect_struct[nomial1][term1]
-                        nomial2 += 1
-                        multiplicand = sect_struct[nomial2][term2]
+                # for i in range(0, product_terms_total - 1):
+                #     # initialize
+                #     if nomial2 == 0:
+                #         # first term in product expression
+                #         multiplier = sect_struct[nomial1][term1]
+                #         nomial2 += 1
+                #         multiplicand = sect_struct[nomial2][term2]
                     
-                    # update indexes
-                    # multiplicand term
-                        # multiplicand nomial
-                            # multiplier term
-                                # multiplier nomial
+                #     # update indexes
+                #     # multiplicand term
+                #         # multiplicand nomial
+                #             # multiplier term
+                #                 # multiplier nomial
 
-                    # multiplicand term
-                    elif term2 + 1 != len(sect_struct[nomial2]):
-                        # mid term in nomial for the multiplicand
-                        term2 += 1
-                    else:
-                        # last term of nomial for the multiplicand
-                        term2 = 0 # first term of next nomial
+                #     # multiplicand term
+                #     elif term2 + 1 != len(sect_struct[nomial2]):
+                #         # mid term in nomial for the multiplicand
+                #         term2 += 1
+                #     else:
+                #         # last term of nomial for the multiplicand
+                #         term2 = 0 # first term of next nomial
 
                         
-                        # multiplicand nomial
-                        if nomial2 + 1 != nomials_total:
-                            # mid nomial for multiplicand
-                            nomial2 += 1
-                        else:
-                            # last nomial for multiplicand
-                            nomial2 = nomial1 + 1
+                #         # multiplicand nomial
+                #         if nomial2 + 1 != nomials_total:
+                #             # mid nomial for multiplicand
+                #             nomial2 += 1
+                #         else:
+                #             # last nomial for multiplicand
+                #             nomial2 = nomial1 + 1
 
 
-                            # multiplier term
-                            if term1 + 1 != len(sect_struct[nomial1]):
-                                # mid term of nomial for multiplier
-                                term1 += 1
-                            else:
-                                # last term of nomial for multiplier
-                                term1 = 0 # first term of next nomial
+                #             # multiplier term
+                #             if term1 + 1 != len(sect_struct[nomial1]):
+                #                 # mid term of nomial for multiplier
+                #                 term1 += 1
+                #             else:
+                #                 # last term of nomial for multiplier
+                #                 term1 = 0 # first term of next nomial
                                 
                                 
-                                # multiplier nomial
-                                if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
-                                    # mid nomial for multiplier
-                                    nomial1 += 1
-                                    nomial2 = nomial1 + 1
-                                    term2 = 0
-                                else:
-                                    # last nomial for multiplier
-                                    break
+                #                 # multiplier nomial
+                #                 if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
+                #                     # mid nomial for multiplier
+                #                     nomial1 += 1
+                #                     nomial2 = nomial1 + 1
+                #                     term2 = 0
+                #                 else:
+                #                     # last nomial for multiplier
+                #                     break
 
-                    # update multiplier
-                    multiplier = sect_struct[nomial1][term1]
-                    # update multiplicand
-                    multiplicand = sect_struct[nomial2][term2]
+                #     # update multiplier
+                #     multiplier = sect_struct[nomial1][term1]
+                #     # update multiplicand
+                #     multiplicand = sect_struct[nomial2][term2]
 
-                    # print("nomial: %s" % str(int(nomial2) + 1))
-                    # print("term: %s" % str(int(term2) + 1))
-                    # print(multiplier)
-                    # print(multiplicand)
+                #     # print("nomial: %s" % str(int(nomial2) + 1))
+                #     # print("term: %s" % str(int(term2) + 1))
+                #     # print(multiplier)
+                #     # print(multiplicand)
 
-                    # concatenate multiplier and multiplicand with product
-                    product = product + multiplier + ["*"] + multiplicand + ["+"]
+                #     # concatenate multiplier and multiplicand with product
+                #     product = product + multiplier + ["*"] + multiplicand + ["+"]
 
-                # last term
-                if len(sect_struct[len(sect_struct) - 1]) > 1:
-                    # for ending monomial
-                    term2 += 1
-                    multiplicand = sect_struct[nomial2][term2]
-                    product = product + multiplier + ["*"] + multiplicand
-                else:
-                    term1 += 1
-                    multiplier = sect_struct[nomial1][term1]
-                    product = product + multiplier + ["*"] + multiplicand
+                # # last term
+                # if len(sect_struct[len(sect_struct) - 1]) > 1:
+                #     # for ending monomial
+                #     term2 += 1
+                #     multiplicand = sect_struct[nomial2][term2]
+                #     product = product + multiplier + ["*"] + multiplicand
+                # else:
+                #     term1 += 1
+                #     multiplier = sect_struct[nomial1][term1]
+                #     product = product + multiplier + ["*"] + multiplicand
 
-                # Log keyword
-                log_process(arrVar[ref])
-                # restructure with product expression
-                arrVar = restructure(product, ref, ref + 1, arrVar)
-                # identify further cases of polynomial expansion
-                ref = getIdx("expand", arrVar)
+                # # Log keyword
+                # log_process(arrVar[ref])
+                # # restructure with product expression
+                # arrVar = restructure(product, ref, ref + 1, arrVar)
+                # # identify further cases of polynomial expansion
+                # ref = getIdx("expand", arrVar)
         
         return arrVar
 
     def key_functions(arr):
         # runs key function modules
+        nonlocal algebraic_mode
+        arrVar = arr
+
         # Log process label for key functions
         log_process("Key Functions")
-        arrVar = arr
+
         if algebraic_mode == True:
             # ALGEBRAIC MODULE
             arrVar = algebraic(arrVar)
@@ -1611,7 +1975,6 @@ def evaluator(input):
         log_process("Calculating")
         arrVar = arr
 
-        # Phase III
         # perform all key functions (in section)
 
         # if there are identified key functions
@@ -1636,141 +1999,142 @@ def evaluator(input):
             if is_var(arrVar[i]) == True:
                 is_variables = True
                 break
-
+        
+        # prevent arithmetic operations on algebraic expressions
         if is_variables == True:
-            # prevent arithmetic operations
+            # run algebraic simplifications
+            arrVar = simplify(arrVar)
             return arrVar
         else:
-            # Phase IV
             # perform all arithmetic operations in operator precedence
             
             # perform all Multiplications and Divisions as they appear from left to right
             if is_mult == True and is_div == True:
-                m_ref = getIdx("*", arrVar)
-                d_ref = getIdx("/", arrVar)
+                m_ref = getIdx(operation["multiplication"], arrVar)
+                d_ref = getIdx(operation["division"], arrVar)
                 while m_ref is not None or d_ref is not None:
                     if d_ref is None and m_ref is not None:
                         # Only Multiply
                         x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
                         arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                        m_ref = getIdx("*", arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
 
                     elif m_ref is None and d_ref is not None:
                         # Only Divide
                         x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
                         arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        d_ref = getIdx("/", arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
 
                     elif m_ref is not None and d_ref is not None and m_ref < d_ref:
                         # Multiply first
                         x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
                         arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
 
-                        d_ref = getIdx("/", arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
                         y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
                         arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
 
-                        m_ref = getIdx("*", arrVar)
-                        d_ref = getIdx("/", arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
 
                     elif d_ref is not None and m_ref is not None and d_ref < m_ref:
                         # Divide First
                         x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
                         arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        m_ref = getIdx("*", arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
 
                         y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
                         arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
 
-                        m_ref = getIdx("*", arrVar)
-                        d_ref = getIdx("/", arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
 
             elif is_mult == True:
-                m_ref = getIdx("*", arrVar)
+                m_ref = getIdx(operation["multiplication"], arrVar)
                 while m_ref is not None:
                     x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
                     arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                    m_ref = getIdx("*", arrVar)
+                    m_ref = getIdx(operation["multiplication"], arrVar)
 
             elif is_div == True:
-                d_ref = getIdx("/", arrVar)
+                d_ref = getIdx(operation["division"], arrVar)
                 while d_ref is not None:
                     x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
                     arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                    d_ref = getIdx("/", arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
 
             # perform all Additions and Subtractions as they appear from left to right
             if is_add == True and is_sub == True:
-                a_ref = getIdx("+", arrVar)
-                s_ref = getIdx("-", arrVar)
+                a_ref = getIdx(operation["addition"], arrVar)
+                s_ref = getIdx(operation["subtraction"], arrVar)
                 while a_ref is not None or s_ref is not None:
                     if s_ref is None and a_ref is not None:
                         # only add
                         x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
                         arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx("+", arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
 
                     elif a_ref is None and s_ref is not None:
                         # only subtract
                         x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
                         arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx("-", arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
 
                     elif a_ref is not None and s_ref is not None and a_ref < s_ref:
                         # add first
                         x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
                         arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx("+", arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
 
-                        s_ref = getIdx("-", arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
                         y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
                         arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
 
-                        a_ref = getIdx("+", arrVar)
-                        s_ref = getIdx("-", arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
 
                     elif s_ref is not None and a_ref is not None and s_ref < a_ref:
                         # subtract first
                         x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
                         arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx("-", arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
 
-                        a_ref = getIdx("+", arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
                         y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
                         arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
 
-                        a_ref = getIdx("+", arrVar)
-                        s_ref = getIdx("-", arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
             
             elif is_add == True:
-                a_ref = getIdx("+", arrVar)
+                a_ref = getIdx(operation["addition"], arrVar)
                 while a_ref is not None:
                     x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
                     arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                    a_ref = getIdx("+", arrVar)
+                    a_ref = getIdx(operation["addition"], arrVar)
             
             elif is_sub == True:
-                s_ref = getIdx("-", arrVar)
+                s_ref = getIdx(operation["subtraction"], arrVar)
                 while s_ref is not None:
                     x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
                     arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                    s_ref = getIdx("-", arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
             
             # perform all exponentiations
             if is_exp == True:
-                ref = getIdx("^", arrVar)
+                ref = getIdx(operation["exponentiation"], arrVar)
                 while ref is not None:
                     x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
                     arrVar = restructure(x, ref - 1, ref + 1, arrVar)
-                    ref = getIdx("^", arrVar)
+                    ref = getIdx(operation["exponentiation"], arrVar)
 
             # Perform all square roots
             if is_root == True:
-                ref = getIdx("√", arrVar)
+                ref = getIdx(operation["radication"], arrVar)
                 while ref is not None:
                     x = root(arrVar[ref + 1], 2)
                     arrVar = restructure(x, ref, ref + 1, arrVar)
-                    ref = getIdx("√", arrVar)
+                    ref = getIdx(operation["radication"], arrVar)
             
             log_process("Calculated")
             return arrVar[0]
@@ -1843,10 +2207,10 @@ def evaluator(input):
                     break
         
         if valid == False:
-            # invalid character cancels evaluation
+            # invalid character => cancel evaluation
             return "invalid characters"
         else:
-            # valid characters proceed evaluation
+            # valid characters => proceed evaluation
             log_process("Structuring")
             # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
             structure = []
@@ -1892,6 +2256,7 @@ def evaluator(input):
             log_process(structure)
 
             log_process("Constants")
+
             # structure pi
             ref = get_word("pi", structure)
             itr = 0
@@ -1985,85 +2350,100 @@ def evaluator(input):
         "logs": process_log,
     }
 
-    return output
+    # return output
 
-#     # Development
+    # Development
 
-#     # Prints feedback
-#     logs = """"""
-#     process_log_keys = list(process_log.keys())
-#     for key in process_log_keys:
-#         logs += """%s
-# """ % process_log[key]
+    # Prints feedback
+    logs = """"""
+    process_log_keys = list(process_log.keys())
+    for key in process_log_keys:
+        logs += """%s
+""" % process_log[key]
     
-#     print(output["problem"])
-#     print(output["answer"])
-#     print(logs)
+    print(output["problem"])
+    print(output["answer"])
+    print(logs)
 
-# # test data
-# input = {
-#     # "problem": "i+b-(2*3)", # solves arithmetic in algebraic expression if in parens
-#     # "problem": "i+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
-#     "problem": "1+1/&%$#",
-#     "use_logs": "1", # 1 = yes
-# }
-# evaluator(input)
+# test data
+input = {
 
+    "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
 
-# Flask APP
-app = Flask(__name__)
-
-# CORS wrapper
-CORS(app)
-
-# ROUTES
-
-# Index route
-@app.route("/", methods=["GET"])
-def index():
-    return "<div>Index route accessed.</div>"
-
-# Hello world environment variable demonstration
-@app.route("/hello-world", methods=["GET"])
-def hello_world():
-    return "<p>%s</p>" % os.environ['greeting']
-
-# Evaluator data root
-@app.route("/eval", methods=["POST"])
-def eval():
-    try:
-        return jsonify(evaluator(request.get_json()))
-    except Exception as e:
-        return "Error:", e
+    # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+    # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
+    # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
+    # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
     
-# Evaluator problem data
-@app.route("/eval/problem", methods=["POST"])
-def eval_problem():
-    try:
-        return jsonify(evaluator(request.get_json())["problem"])
-    except Exception as e:
-        return "Error:", e
+    # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+    
+    # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
 
-# Evaluator answer data
-@app.route("/eval/answer", methods=["POST"])
-def eval_answer():
-    try:
-        return jsonify(evaluator(request.get_json())["answer"])
-    except Exception as e:
-        return "Error:", e
+    # "problem": "a+b-(2*3)", # solves arithmetic in algebraic expression if in parens
+    # "problem": "a+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
 
-# Evaluator log data
-@app.route("/eval/logs", methods=["POST"])
-def eval_logs():
-    try:
-        return jsonify(evaluator(request.get_json())["logs"])
-    except Exception as e:
-        return "Error:", e
+    # "problem": "1+1/&%$#", # returns "invalid characters"
+    # "problem": "expand[[2*x^2+y][x+y][a+b]]",
 
-# Evaluator info object data (read-only)
-@app.route("/eval/info", methods=["GET"])
-def eval_info():
-    try:
-        return jsonify(info)
-    except Exception as e:
-        return "Error:", e
+    "use_logs": "1", # 1 = yes
+}
+evaluator(input)
+
+
+# # Flask APP
+# app = Flask(__name__)
+
+# # CORS wrapper
+# CORS(app)
+
+# # ROUTES
+
+# # Index route
+# @app.route("/", methods=["GET"])
+# def index():
+#     return "<div>Index route accessed.</div>"
+
+# # Hello world environment variable demonstration
+# @app.route("/hello-world", methods=["GET"])
+# def hello_world():
+#     return "<p>%s</p>" % os.environ['greeting']
+
+# # Evaluator data root
+# @app.route("/eval", methods=["POST"])
+# def eval():
+#     try:
+#         return jsonify(evaluator(request.get_json()))
+#     except Exception as e:
+#         return "Error:", e
+    
+# # Evaluator problem data
+# @app.route("/eval/problem", methods=["POST"])
+# def eval_problem():
+#     try:
+#         return jsonify(evaluator(request.get_json())["problem"])
+#     except Exception as e:
+#         return "Error:", e
+
+# # Evaluator answer data
+# @app.route("/eval/answer", methods=["POST"])
+# def eval_answer():
+#     try:
+#         return jsonify(evaluator(request.get_json())["answer"])
+#     except Exception as e:
+#         return "Error:", e
+
+# # Evaluator log data
+# @app.route("/eval/logs", methods=["POST"])
+# def eval_logs():
+#     try:
+#         return jsonify(evaluator(request.get_json())["logs"])
+#     except Exception as e:
+#         return "Error:", e
+
+# # Evaluator info object data (read-only)
+# @app.route("/eval/info", methods=["GET"])
+# def eval_info():
+#     try:
+#         return jsonify(info)
+#     except Exception as e:
+#         return "Error:", e
