@@ -805,7 +805,7 @@ def evaluator(input):
         # get length of arr
         length = len(arr)
 
-        # test if operation string
+        # test if string contains an operation
         if is_op(str):
 
             # operation string
@@ -817,6 +817,9 @@ def evaluator(input):
                         val = i
                         # arithmetic operation approved; not operating on variable
                         return val
+            
+            # no operation from string not on variable
+            return val
                         
         else:
 
@@ -2000,143 +2003,144 @@ def evaluator(input):
                 is_variables = True
                 break
         
-        # prevent arithmetic operations on algebraic expressions
-        if is_variables == True:
-            # run algebraic simplifications
-            arrVar = simplify(arrVar)
-            return arrVar
-        else:
-            # perform all arithmetic operations in operator precedence
-            
-            # perform all Multiplications and Divisions as they appear from left to right
-            if is_mult == True and is_div == True:
-                m_ref = getIdx(operation["multiplication"], arrVar)
-                d_ref = getIdx(operation["division"], arrVar)
-                while m_ref is not None or d_ref is not None:
-                    if d_ref is None and m_ref is not None:
-                        # Only Multiply
-                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-
-                    elif m_ref is None and d_ref is not None:
-                        # Only Divide
-                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-                    elif m_ref is not None and d_ref is not None and m_ref < d_ref:
-                        # Multiply first
-                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-
-                        d_ref = getIdx(operation["division"], arrVar)
-                        y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
-
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-                    elif d_ref is not None and m_ref is not None and d_ref < m_ref:
-                        # Divide First
-                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-
-                        y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
-
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-            elif is_mult == True:
-                m_ref = getIdx(operation["multiplication"], arrVar)
-                while m_ref is not None:
+        # perform all arithmetic operations accounting for operator precedence
+        
+        # perform all Multiplications and Divisions as they appear from left to right
+        if is_mult == True and is_div == True:
+            m_ref = getIdx(operation["multiplication"], arrVar)
+            d_ref = getIdx(operation["division"], arrVar)
+            while m_ref is not None or d_ref is not None:
+                if d_ref is None and m_ref is not None:
+                    # Only Multiply
                     x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
                     arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
                     m_ref = getIdx(operation["multiplication"], arrVar)
 
-            elif is_div == True:
-                d_ref = getIdx(operation["division"], arrVar)
-                while d_ref is not None:
+                elif m_ref is None and d_ref is not None:
+                    # Only Divide
                     x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
                     arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
                     d_ref = getIdx(operation["division"], arrVar)
 
-            # perform all Additions and Subtractions as they appear from left to right
-            if is_add == True and is_sub == True:
-                a_ref = getIdx(operation["addition"], arrVar)
-                s_ref = getIdx(operation["subtraction"], arrVar)
-                while a_ref is not None or s_ref is not None:
-                    if s_ref is None and a_ref is not None:
-                        # only add
-                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx(operation["addition"], arrVar)
+                elif m_ref is not None and d_ref is not None and m_ref < d_ref:
+                    # Multiply first
+                    x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                    arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
 
-                    elif a_ref is None and s_ref is not None:
-                        # only subtract
-                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
+                    y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                    arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
 
-                    elif a_ref is not None and s_ref is not None and a_ref < s_ref:
-                        # add first
-                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx(operation["addition"], arrVar)
+                    m_ref = getIdx(operation["multiplication"], arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
 
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-                        y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
+                elif d_ref is not None and m_ref is not None and d_ref < m_ref:
+                    # Divide First
+                    x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                    arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                    m_ref = getIdx(operation["multiplication"], arrVar)
 
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
+                    y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                    arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
 
-                    elif s_ref is not None and a_ref is not None and s_ref < a_ref:
-                        # subtract first
-                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
+                    m_ref = getIdx(operation["multiplication"], arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
 
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
+        elif is_mult == True:
+            m_ref = getIdx(operation["multiplication"], arrVar)
+            while m_ref is not None:
+                x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+                m_ref = getIdx(operation["multiplication"], arrVar)
 
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-            
-            elif is_add == True:
-                a_ref = getIdx(operation["addition"], arrVar)
-                while a_ref is not None:
+        elif is_div == True:
+            d_ref = getIdx(operation["division"], arrVar)
+            while d_ref is not None:
+                x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                d_ref = getIdx(operation["division"], arrVar)
+
+        # perform all Additions and Subtractions as they appear from left to right
+        if is_add == True and is_sub == True:
+            a_ref = getIdx(operation["addition"], arrVar)
+            s_ref = getIdx(operation["subtraction"], arrVar)
+            while a_ref is not None or s_ref is not None:
+                if s_ref is None and a_ref is not None:
+                    # only add
                     x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
                     arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
                     a_ref = getIdx(operation["addition"], arrVar)
-            
-            elif is_sub == True:
-                s_ref = getIdx(operation["subtraction"], arrVar)
-                while s_ref is not None:
+
+                elif a_ref is None and s_ref is not None:
+                    # only subtract
                     x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
                     arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
                     s_ref = getIdx(operation["subtraction"], arrVar)
-            
-            # perform all exponentiations
-            if is_exp == True:
-                ref = getIdx(operation["exponentiation"], arrVar)
-                while ref is not None:
-                    x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
-                    arrVar = restructure(x, ref - 1, ref + 1, arrVar)
-                    ref = getIdx(operation["exponentiation"], arrVar)
 
-            # Perform all square roots
-            if is_root == True:
+                elif a_ref is not None and s_ref is not None and a_ref < s_ref:
+                    # add first
+                    x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                    arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                    a_ref = getIdx(operation["addition"], arrVar)
+
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+                    y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                    arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
+
+                    a_ref = getIdx(operation["addition"], arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+
+                elif s_ref is not None and a_ref is not None and s_ref < a_ref:
+                    # subtract first
+                    x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                    arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+
+                    a_ref = getIdx(operation["addition"], arrVar)
+                    y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                    arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
+
+                    a_ref = getIdx(operation["addition"], arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+        
+        elif is_add == True:
+            a_ref = getIdx(operation["addition"], arrVar)
+            while a_ref is not None:
+                x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                a_ref = getIdx(operation["addition"], arrVar)
+        
+        elif is_sub == True:
+            s_ref = getIdx(operation["subtraction"], arrVar)
+            while s_ref is not None:
+                x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                s_ref = getIdx(operation["subtraction"], arrVar)
+        
+        # perform all exponentiations
+        if is_exp == True:
+            ref = getIdx(operation["exponentiation"], arrVar)
+            while ref is not None:
+                x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
+                arrVar = restructure(x, ref - 1, ref + 1, arrVar)
+                ref = getIdx(operation["exponentiation"], arrVar)
+
+        # Perform all square roots
+        if is_root == True:
+            ref = getIdx(operation["radication"], arrVar)
+            while ref is not None:
+                x = root(arrVar[ref + 1], 2)
+                arrVar = restructure(x, ref, ref + 1, arrVar)
                 ref = getIdx(operation["radication"], arrVar)
-                while ref is not None:
-                    x = root(arrVar[ref + 1], 2)
-                    arrVar = restructure(x, ref, ref + 1, arrVar)
-                    ref = getIdx(operation["radication"], arrVar)
-            
-            log_process("Calculated")
+        
+        log_process("Calculated")
+        if is_variables == True:
+            # run algebraic simplifications
+            arrVar = simplify(arrVar)
+            # return expression
+            return arrVar
+        else:
+            # return single value
             return arrVar[0]
 
     def section(arr):
@@ -2367,8 +2371,10 @@ def evaluator(input):
 
 # test data
 input = {
+    
+    "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
-    "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
+    # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
 
     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
@@ -2379,8 +2385,6 @@ input = {
     
     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
 
-    # "problem": "a+b-(2*3)", # solves arithmetic in algebraic expression if in parens
-    # "problem": "a+b-2*3", # does not solve arithmetic in algebraic expression if not in parens
 
     # "problem": "1+1/&%$#", # returns "invalid characters"
     # "problem": "expand[[2*x^2+y][x+y][a+b]]",
