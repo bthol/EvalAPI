@@ -440,7 +440,7 @@ def evaluator(input):
         
     # STRUCTURE END
 
-    # OPERATIONS START
+    # ARITHMETIC OPERATIONS START
 
     def exponentiate(base, exponent):
         base = float(base)
@@ -528,7 +528,38 @@ def evaluator(input):
 
     def get_mean(arr):
         return sum(arr) / len(arr)
- 
+
+    # ARITHMETIC OPERATIONS END
+
+    # ALGEBRAIC OPERATIONS START
+
+    def testTermEnds(c1, c2, arr):
+        # tests ends of term to ensure that the entire term is identified by condition
+        arr_len = len(arr)
+
+        # test both ends
+        if c1 - 1 > -1 and c2 + 1 < arr_len:
+            if arr[c1 - 1] == operation["addition"] or arr[c1 - 1] == operation["subtraction"]:
+                if arr[c2 + 1] == operation["addition"] or arr[c2 + 1] == operation["subtraction"]:
+                    return True
+        
+        # test front end
+        elif c1 - 1 > -1:
+            if arr[c1 - 1] == operation["addition"] or operation["subtraction"]:
+                return True
+        
+        # test back end
+        elif c2 + 1 < arr_len:
+            if arr[c2 + 1] == operation["addition"] or arr[c2 + 1] == operation["subtraction"]:
+                return True
+        
+        # no ends to test
+        else:
+            return True
+        
+        # no true condition reached
+        return False
+
     def getTerms(arr):
         # identifies terms in algebraic expression and returns structured as such
         sect_struct = []
@@ -624,6 +655,9 @@ def evaluator(input):
         return arr
     
     def simplify(arr):
+        # log process label
+        log_process("Simplifying")
+
         # simplifies algebraic expressions
         arrVar = arr
 
@@ -650,142 +684,244 @@ def evaluator(input):
                     # run simplifications
 
                     if c + 2 < length:
+                        # is operation on current variable
 
-                        # SIMP1: multiplied by itself
+                        if arrVar[c + 1] == operation["multiplication"]:
 
-                        if arrVar[c + 1] == operation["multiplication"] and arrVar[c + 2] == var:
+                            # SIMP1: multiplied a variable by itself
+
+                            if arrVar[c + 2] == var:
                             
-                            # any number multiplied by itself is that number to the power of the number of times it is multiplied by itself
-                            multiplying = True
-                            power = 2
-                            place = c + 2
-
-                            # get power and place data
-                            while multiplying == True and place + 2 < length:
-                                if arrVar[place + 1] == operation["multiplication"] and arrVar[place + 2] == var:
-                                    # consecutive multiplications of variable
-                                    power += 1
-                                    place = place + 2
-                                else:
-                                    # discontinuation of consecutive multiplication
-                                    multiplying = False
-                                    # stop while loop
-                                    break
-                            
-                            # apply simplification to problem structure
-                            arrVar = restructure([var, operation["exponentiation"],'%s' % power], c, place, arrVar)
-                            # end current simplification
-                            break
-
-                        # SIMP2: divided by itself
-
-                        if arrVar[c + 1] == operation["division"] and arrVar[c + 2] == var:
-
-                            # test if next operation after dividing by itself is another division by itself
-                            if c + 4 < length and arrVar[c + 3] == operation["division"] and arrVar[c + 4] == var:
-                                # any number divided by itself is that number divided by that number to the power of the number of times it is divided by itself
-                                dividing = True
-                                power = 1
+                                # any number multiplied by itself is that number to the power of the number of times it is multiplied by itself
+                                multiplying = True
+                                power = 2
                                 place = c + 2
 
                                 # get power and place data
-                                while dividing == True and place + 2 < length:
-                                    if arrVar[place + 1] == operation["division"] and arrVar[place + 2] == var:
-                                        # consecutive divisions of variable
+                                while multiplying == True and place + 2 < length:
+                                    if arrVar[place + 1] == operation["multiplication"] and arrVar[place + 2] == var:
+                                        # consecutive multiplications of variable
                                         power += 1
                                         place = place + 2
                                     else:
-                                        # discontinuation of consecutive division
-                                        dividing = False
+                                        # discontinuation of consecutive multiplication
+                                        multiplying = False
                                         # stop while loop
                                         break
                                 
-                                # any number divided by itself is 1
-                                arrVar = restructure([var, operation["division"], operation["open_parenthesis"], var, operation["exponentiation"], '%s' % power, operation["close_parenthesis"]], c, place, arrVar)
-                                # end current simplification
-                                break
-
-                            elif c - 2 > -1:
-                                # test if operation before cancels out the value 1
-                                if arrVar[c - 1] == operation["multiplication"]:
-
-                                    # any number multiplied by 1 is itself
-                                    arrVar = restructure("delete", c - 1, c + 2, arrVar)
-                                    # end current simplification
-                                    break
-
-                                elif arrVar[c - 1] == operation["division"]:
-                                    
-                                    # any number divided by 1 is itself
-                                    arrVar = restructure("delete", c - 1, c + 2, arrVar)
-                                    # end current simplification
-                                    break
-                                    
-                            else:
                                 # apply simplification to problem structure
-                                arrVar = restructure("1", c, c + 2, arrVar)
+                                arrVar = restructure([var, operation["exponentiation"],'%s' % power], c, place, arrVar)
+                                
+                                # end current simplification
+                                break
+                            
+                            # SIMP2: multiply a variable with a coefficient by a value
+
+                            if testTermEnds(c - 2, c + 2, arrVar):
+                                # correct term length for c index
+                                if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # case: a * x * b => (a*b) * x, where a and b are particular values
+                                    
+                                    # get term data
+                                    coefficient = arrVar[c - 2]
+                                    mult = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % multiply(coefficient, mult), operation["multiplication"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+
+                            # SIMP3: combine terms for variable with coefficients multiplied
+
+                            if testTermEnds(c - 2, c + 4, arrVar):
+                                # correct term length for c index
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # case: a * x * b * x => (a*b) * x ^ 2, where a and b are particular values
+
+                                    # get term data
+                                    coefficient1 = arrVar[c - 2]
+                                    coefficient2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % multiply(coefficient1, coefficient2), operation["multiplication"], var, operation["exponentiation"], "2"], c - 2, c + 4, arrVar)
+                                    
+                                    # end current simplification
+                                    break
+                                    
+                        elif arrVar[c + 1] == operation["division"]:
+
+                            # SIMP4: divided by itself
+
+                            if arrVar[c + 2] == var:
+
+                                # test if next operation after dividing by itself is another division by itself
+                                if c + 4 < length and arrVar[c + 3] == operation["division"] and arrVar[c + 4] == var:
+                                    # any number divided by itself is that number divided by that number to the power of the number of times it is divided by itself
+                                    dividing = True
+                                    power = 1
+                                    place = c + 2
+
+                                    # get power and place data
+                                    while dividing == True and place + 2 < length:
+                                        if arrVar[place + 1] == operation["division"] and arrVar[place + 2] == var:
+                                            # consecutive divisions of variable
+                                            power += 1
+                                            place = place + 2
+                                        else:
+                                            # discontinuation of consecutive division
+                                            dividing = False
+                                            # stop while loop
+                                            break
+                                    
+                                    # any number divided by itself is 1
+                                    arrVar = restructure([var, operation["division"], operation["open_parenthesis"], var, operation["exponentiation"], '%s' % power, operation["close_parenthesis"]], c, place, arrVar)
+                                    # end current simplification
+                                    break
+
+                                elif c - 2 > -1:
+                                    # test if operation before cancels out the value 1
+                                    if arrVar[c - 1] == operation["multiplication"]:
+
+                                        # any number multiplied by 1 is itself
+                                        arrVar = restructure("delete", c - 1, c + 2, arrVar)
+                                        # end current simplification
+                                        break
+
+                                    elif arrVar[c - 1] == operation["division"]:
+                                        
+                                        # any number divided by 1 is itself
+                                        arrVar = restructure("delete", c - 1, c + 2, arrVar)
+                                        # end current simplification
+                                        break
+                                        
+                                else:
+                                    # apply simplification to problem structure
+                                    arrVar = restructure("1", c, c + 2, arrVar)
+                                    # end current simplification
+                                    break
+
+                            # SIMP5: divide a variable with a coefficient by a value
+
+                            if testTermEnds(c - 2, c + 2, arrVar):
+                                # correct term length for c index
+                                if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # case: a * x / b => (a/b) * x, where a and b are particular values
+                                    
+                                    # get term data
+                                    coefficient = arrVar[c - 2]
+                                    divisor = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % divide(coefficient, divisor), operation["multiplication"], var], c - 2, c + 2, arrVar)
+                                    # end current simplification
+                                    break
+
+                            # SIMP6: combine terms for variable with coefficients divided
+                            if testTermEnds(c - 2, c + 4, arrVar):
+                                # correct term length for c index
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # case: a * x * b * x => (a*b), where a and b are particular values
+
+                                    # get term data
+                                    coefficient1 = arrVar[c - 2]
+                                    coefficient2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % divide(coefficient1, coefficient2)], c - 2, c + 4, arrVar)
+                                    
+                                    # end current simplification
+                                    break
+                        
+                        elif arrVar[c + 1] == operation["addition"]:
+
+                            # SIMP7: add a variable to itself
+                            
+                            if arrVar[c + 2] == var:
+                                
+                                # any number added to itself is that number multiplied by the number of times it is added to itself
+                                adding = True
+                                multiplier = 2
+                                place = c + 2
+
+                                # get multiplier and place data
+                                while adding == True and place + 2 < length:
+                                    if arrVar[place + 1] == operation["addition"] and arrVar[place + 2] == var:
+                                        # consecutive additions of variable
+                                        multiplier += 1
+                                        place = place + 2
+                                    else:
+                                        # discontinuation of consecutive addition
+                                        adding = False
+                                        # stop while loop
+                                        break
+                                
+                                # apply simplification to problem structure
+                                arrVar = restructure(['%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
+                                # end current simplification
+                                break
+                            
+                            # SIMP8: add coefficients between terms with no exponents
+                            
+                            if testTermEnds(c - 2, c + 4, arrVar):
+                                # correct term length for c index
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # case: a * x + b * x => (a+b) * x
+                                    
+                                    # get term data
+                                    coefficient1 = arrVar[c - 2]
+                                    coefficient2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % add(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
+                                    
+                                    # end current simplification
+                                    break              
+
+                        elif arrVar[c + 1] == operation["subtraction"]:
+                            
+                            # SIMP89: subtracted from itself
+
+                            if arrVar[c + 2] == var:
+                            
+                                # any number subtracted from itself is that number subtracted by the number of times it is subtracted from itself multiplied by itself
+                                subtracting = True
+                                multiplier = 1
+                                place = c + 2
+
+                                # get multiplier and place data
+                                while subtracting == True and place + 2 < length:
+                                    if arrVar[place + 1] == operation["subtraction"] and arrVar[place + 2] == var:
+                                        # consecutive subtractions of variable
+                                        multiplier += 1
+                                        place = place + 2
+                                    else:
+                                        # discontinuation of consecutive subtraction
+                                        subtracting = False
+                                        # stop while loop
+                                        break
+                                
+                                # apply simplification to problem structure
+                                arrVar = restructure([var, operation["subtraction"], '%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
                                 # end current simplification
                                 break
 
-                        # SIMP3: added to itself
-                        
-                        if arrVar[c + 1] == operation["addition"] and arrVar[c + 2] == var:
-                            
-                            # any number added to itself is that number multiplied by the number of times it is added to itself
-                            adding = True
-                            multiplier = 2
-                            place = c + 2
+                            # SIMP10: subtract coefficients between terms with no exponents
 
-                            # get multiplier and place data
-                            while adding == True and place + 2 < length:
-                                if arrVar[place + 1] == operation["addition"] and arrVar[place + 2] == var:
-                                    # consecutive additions of variable
-                                    multiplier += 1
-                                    place = place + 2
-                                else:
-                                    # discontinuation of consecutive addition
-                                    adding = False
-                                    # stop while loop
+                            if testTermEnds(c - 2, c + 4, arrVar):
+                                # correct term length for c index
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    # a * x - b * x => (a-b) * x
+
+                                    # get term data
+                                    coefficient1 = arrVar[c - 2]
+                                    coefficient2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % subtract(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
+                                    
+                                    # end current simplification
                                     break
-                            
-                            # apply simplification to problem structure
-                            arrVar = restructure(['%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
-                            # end current simplification
-                            break
-                        
-                        # SIMP4: subtracted from itself
-
-                        if arrVar[c + 1] == operation["subtraction"] and arrVar[c + 2] == var:
-                            
-                            # any number subtracted from itself is that number subtracted by the number of times it is subtracted from itself multiplied by itself
-                            subtracting = True
-                            multiplier = 1
-                            place = c + 2
-
-                            # get multiplier and place data
-                            while subtracting == True and place + 2 < length:
-                                if arrVar[place + 1] == operation["subtraction"] and arrVar[place + 2] == var:
-                                    # consecutive subtractions of variable
-                                    multiplier += 1
-                                    place = place + 2
-                                else:
-                                    # discontinuation of consecutive subtraction
-                                    subtracting = False
-                                    # stop while loop
-                                    break
-                            
-                            # apply simplification to problem structure
-                            arrVar = restructure([var, operation["subtraction"], '%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
-                            # end current simplification
-                            break
-
-                        # SIMP5: multiply variables with exponents and coefficents
-
-                        # SIMP6: divide variables with exponents and coefficents
-
-                        # SIMP7: add variables with exponents and coefficents
-
-                        # SIMP8: subtract variables with exponents and coefficents
 
                 
                 # test terminating condition
@@ -793,9 +929,12 @@ def evaluator(input):
                     # no further simplifications; on end character and no simplifications run
                     simplifying = False
 
+        # log
+        log_process("Simplified")
+        # return simplified expression
         return arrVar
 
-    # OPERATIONS END
+    # ALGEBRAIC OPERATIONS END
 
     # KEY FUNCTIONS START
 
@@ -1995,13 +2134,6 @@ def evaluator(input):
             if keys_in_section == True:
                 # run key functions on section
                 arrVar = key_functions(arrVar)
-
-        # test for variables in section
-        is_variables = False
-        for i in range(0, len(arrVar)):
-            if is_var(arrVar[i]) == True:
-                is_variables = True
-                break
         
         # perform all arithmetic operations accounting for operator precedence
         
@@ -2134,10 +2266,18 @@ def evaluator(input):
                 ref = getIdx(operation["radication"], arrVar)
         
         log_process("Calculated")
+        
+        # test for variables in section
+        is_variables = False
+        for i in range(0, len(arrVar)):
+            if is_var(arrVar[i]) == True:
+                is_variables = True
+                break
+        
         if is_variables == True:
             # run algebraic simplifications
             arrVar = simplify(arrVar)
-            # return expression
+            # return algebraic expression
             return arrVar
         else:
             # return single value
@@ -2195,6 +2335,7 @@ def evaluator(input):
         # test for invalid characters
         nonlocal valid_chars
         valid = True
+        character = ""
         for char in str:
             try:
                 int(char)
@@ -2208,11 +2349,12 @@ def evaluator(input):
                 if o == False:
                     # not a non-numeral character
                     valid = False
+                    character = char
                     break
         
         if valid == False:
             # invalid character => cancel evaluation
-            return "invalid characters"
+            return 'Invalid character: %s' % character
         else:
             # valid characters => proceed evaluation
             log_process("Structuring")
@@ -2371,20 +2513,27 @@ def evaluator(input):
 
 # test data
 input = {
-    
     "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
+    # "problem": "2*x*x", #  multiply a variable with a coefficient by a variable; equivilent to consecutive multiplications
+    # "problem": "2*x*9", #  multiply a variable with a coefficient by a value
+    # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
 
     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
+    # "problem": "10*x/2", # divide a variable with a coefficient by a value
+    # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
     
     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+    # "problem": "2*x+4*x", # add coefficients of like terms
+    # "problem": "2*x+4*y", # don't add coefficients of not like terms
     
     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
-
+    # "problem": "8*x-3*x", # subtract coefficients of like terms
+    # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
     # "problem": "1+1/&%$#", # returns "invalid characters"
     # "problem": "expand[[2*x^2+y][x+y][a+b]]",
@@ -2393,6 +2542,16 @@ input = {
 }
 evaluator(input)
 
+# development tasks
+#  - design remaining simplifications in simplify function
+#  - complete and test expand key function with simplifications
+#  - order each term at the end of the get terms function ( exempli gratia x*2*y => 2*x*y; x^2*3 => 3*x^2)
+
+# vulnerabilities
+#  - key without parens or brackets
+#  - brackets without key
+#  - variables with no operations between them
+#  - 
 
 # # Flask APP
 # app = Flask(__name__)
