@@ -686,9 +686,10 @@ def evaluator(input):
                     if c + 2 < length:
                         # is operation on current variable
 
+                        # MULTIPLICATION
                         if arrVar[c + 1] == operation["multiplication"]:
 
-                            # SIMP1: multiplied a variable by itself
+                            # SIMP1: multiply a variable by itself
 
                             if arrVar[c + 2] == var:
                             
@@ -715,24 +716,37 @@ def evaluator(input):
                                 # end current simplification
                                 break
                             
-                            # SIMP2: multiply a variable with a coefficient by a value
-
                             if testTermEnds(c - 2, c + 2, arrVar):
-                                # correct term length for c index
+
+                            # SIMP2: a * x * b => (a*b) * x
+
                                 if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
-                                    # case: a * x * b => (a*b) * x, where a and b are particular values
                                     
                                     # get term data
-                                    coefficient = arrVar[c - 2]
-                                    mult = arrVar[c + 2]
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % multiply(coefficient, mult), operation["multiplication"], var], c - 2, c + 2, arrVar)
+                                    arrVar = restructure(['%s' % multiply(val1, val2), operation["multiplication"], var], c - 2, c + 2, arrVar)
 
                                     # end current simplification
                                     break
 
-                            # SIMP3: combine terms for variable with coefficients multiplied
+                            # SIMP3: a / x * b => (a*b) / x
+
+                                if arrVar[c - 1] == operation["division"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    
+                                    # get term data
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % multiply(val1, val2), operation["division"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+
+                            # SIMP4: combine terms for variable with coefficients multiplied
 
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
@@ -748,10 +762,11 @@ def evaluator(input):
                                     
                                     # end current simplification
                                     break
-                                    
+                        
+                        # DIVISION            
                         elif arrVar[c + 1] == operation["division"]:
 
-                            # SIMP4: divided by itself
+                            # SIMP5: divide a variable by itself
 
                             if arrVar[c + 2] == var:
 
@@ -801,23 +816,37 @@ def evaluator(input):
                                     # end current simplification
                                     break
 
-                            # SIMP5: divide a variable with a coefficient by a value
-
                             if testTermEnds(c - 2, c + 2, arrVar):
-                                # correct term length for c index
+
+                            # SIMP6: a * x / b => (a/b) * x
+
                                 if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
-                                    # case: a * x / b => (a/b) * x, where a and b are particular values
                                     
                                     # get term data
-                                    coefficient = arrVar[c - 2]
-                                    divisor = arrVar[c + 2]
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % divide(coefficient, divisor), operation["multiplication"], var], c - 2, c + 2, arrVar)
+                                    arrVar = restructure(['%s' % divide(val1, val2), operation["multiplication"], var], c - 2, c + 2, arrVar)
+
                                     # end current simplification
                                     break
 
-                            # SIMP6: combine terms for variable with coefficients divided
+                            # SIMP7: a / x / b => (a/b) / x
+
+                                if arrVar[c - 1] == operation["division"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    
+                                    # get term data
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % divide(val1, val2), operation["division"], var], c - 2, c + 2, arrVar)
+                                    
+                                    # end current simplification
+                                    break
+
+                            # SIMP8: combine terms for variable with coefficients divided
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
@@ -833,9 +862,10 @@ def evaluator(input):
                                     # end current simplification
                                     break
                         
+                        # ADDITION
                         elif arrVar[c + 1] == operation["addition"]:
 
-                            # SIMP7: add a variable to itself
+                            # SIMP9: add a variable to itself
                             
                             if arrVar[c + 2] == var:
                                 
@@ -861,10 +891,40 @@ def evaluator(input):
                                 # end current simplification
                                 break
                             
-                            # SIMP8: add coefficients between terms with no exponents
+                            if testTermEnds(c - 2, c + 2, arrVar):
+                            
+                            # SIMP10: a + x + b => (a+b) + x
+
+                                if arrVar[c - 1] == operation["addition"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    
+                                    # get term data
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % add(val1, val2), operation["addition"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+                            
+                            # SIMP11: a - x + b => (a+b) - x
+
+                                if arrVar[c - 1] == operation["subtraction"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    
+                                    # get term data
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % add(val1, val2), operation["subtraction"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+                            
+                            # SIMP12: add coefficients between terms with no exponents
                             
                             if testTermEnds(c - 2, c + 4, arrVar):
-                                # correct term length for c index
+
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
                                     # case: a * x + b * x => (a+b) * x
                                     
@@ -878,9 +938,10 @@ def evaluator(input):
                                     # end current simplification
                                     break              
 
+                        # SUBTRACTION
                         elif arrVar[c + 1] == operation["subtraction"]:
                             
-                            # SIMP89: subtracted from itself
+                            # SIMP13: subtracted from itself
 
                             if arrVar[c + 2] == var:
                             
@@ -906,7 +967,37 @@ def evaluator(input):
                                 # end current simplification
                                 break
 
-                            # SIMP10: subtract coefficients between terms with no exponents
+                            if testTermEnds(c - 2, c + 2, arrVar):
+
+                            # SIMP14: a + x - b => (a-b) + x
+
+                                if arrVar[c - 1] == operation["addition"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                    
+                                    # get term data
+                                    val1 = arrVar[c - 2]
+                                    val2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % subtract(val1, val2), operation["addition"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+                            
+                            # SIMP15: a - x - b => (a-b) - x
+
+                                if arrVar[c - 1] == operation["subtraction"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                        
+                                        # get term data
+                                        val1 = arrVar[c - 2]
+                                        val2 = arrVar[c + 2]
+
+                                        # apply simplification to problem structure
+                                        arrVar = restructure(['%s' % subtract(val1, val2), operation["subtraction"], var], c - 2, c + 2, arrVar)
+
+                                        # end current simplification
+                                        break
+                            
+                            # SIMP16: subtract coefficients between terms with no exponents
 
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
@@ -2516,22 +2607,27 @@ input = {
     "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
-    # "problem": "2*x*x", #  multiply a variable with a coefficient by a variable; equivilent to consecutive multiplications
-    # "problem": "2*x*9", #  multiply a variable with a coefficient by a value
+    # "problem": "2*x*9", #  a * x * b => (a*b) * x
+    # "problem": "2/x*9", #  a / x * b => (a*b) / x
     # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
 
     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
-    # "problem": "10*x/2", # divide a variable with a coefficient by a value
+    # "problem": "10*x/2", # a * x / b => (a/b) * x
+    # "problem": "10/x/2", # a / x / b => (a/b) / x
     # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
     
     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+    # "problem": "10+x+2", # a + x + b => (a+b) + x
+    # "problem": "10-x+2", # a - x + b => (a+b) - x
     # "problem": "2*x+4*x", # add coefficients of like terms
     # "problem": "2*x+4*y", # don't add coefficients of not like terms
     
     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
+    # "problem": "10+x-2", # a + x - b => (a-b) + x
+    # "problem": "10-x-2", # a - x - b => (a-b) - x
     # "problem": "8*x-3*x", # subtract coefficients of like terms
     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
