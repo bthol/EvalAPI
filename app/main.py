@@ -48,6 +48,9 @@ info = {
         {"name":"Euler's Number", "syntax":"euler"},
     ],
 
+    # the lowercase alphabet except i (saved for imaginary number future program features)
+    "variables": ["a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
+
     "key_functions": [
         # Trigonomic Module
         [
@@ -168,9 +171,6 @@ def evaluator(input):
 
     # PROGRAM ENTITY REFERENCE
 
-    # variable characters (all lowercase letters except i for imaginary numbers)
-    variables = "abcdefghjklmnopqrstuvwxyz"
-
     # operator characters
     operation = {
         "addition": info["operations"][0]["syntax"],
@@ -186,8 +186,13 @@ def evaluator(input):
         "close_bracket": info["operations"][10]["syntax"]
     }
 
+    # variable characters
+    variables = ""
+    for v in info["variables"]:
+        variables = variables + v
+
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = "." + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
     # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
     algebraic_mode = False
@@ -228,7 +233,7 @@ def evaluator(input):
     # If is_key is empty, bypasses key_functions function
     is_key = []
 
-    # key_modules structure represent which key functions modules should be run or bypassed on call
+    # key_modules structure represent which key functions modules should be run or be bypassed on call
     key_modules = [
         {"module":"trigonomic", "use":False},
         {"module":"geometric", "use":False},
@@ -2604,7 +2609,7 @@ def evaluator(input):
 
 # test data
 input = {
-    "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
+    # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
     # "problem": "2*x*9", #  a * x * b => (a*b) * x
@@ -2632,6 +2637,7 @@ input = {
     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
     # "problem": "1+1/&%$#", # returns "invalid characters"
+    "problem": "sd[0,1]", # 
     # "problem": "expand[[2*x^2+y][x+y][a+b]]",
 
     "use_logs": "1", # 1 = yes
