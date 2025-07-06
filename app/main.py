@@ -49,49 +49,50 @@ info = {
     ],
 
     # the lowercase alphabet except i (saved for imaginary number future program features)
-    "variables": ["a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"],
+    "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
 
     "key_functions": [
         # Trigonomic Module
         [
-            # Fundamental
-            {"name":"Sine", "key": "sin", "syntax": "sin(x)", "about": "Gets the sine of x, where x is a value or an expression that evaluates to a value."},
-            
-            {"name":"Arcus Sine", "key":"asin", "syntax": "asin(x)", "about": "Gets the arcus sine, i.e. the inverse sine, of x, where x is a value or an expression that evaluates to a value."},
-
-            {"name":"Cosine", "key": "cos", "syntax": "cos(x)", "about": "Gets the cosine of x, where x is a value or an expression that evaluates to a value."},
-
-            {"name":"Arcus Cosine", "key": "acos", "syntax": "acos(x)", "about": "Gets the arc cosine, i.e. the inverse of cosine, of x, where x is a value or an expression that evaluates to a value."},
-            
-            {"name":"Tangent", "key":"tan", "syntax": "tan(x)", "about": "Gets the tangent of x, where x is a value or an expression that evaluates to a value."},
-            
-            {"name":"Arcus Tangent", "key": "atan", "syntax": "atan(x)", "about": "Gets the arcus tangent, i.e. the inverse tangent, of x, where x is a value or an expression that evaluates to a value."},
                 
             # Reciprocal
-            {"name":"Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the cosecant, i.e. the reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
-            
             {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
-            {"name":"Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the secant, i.e. the reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Cosecant", "key":"csc", "syntax": "csc(x)", "about": "Gets the cosecant, i.e. the reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Arcus Secant", "key":"asec", "syntax": "asec(x)", "about": "Gets the arcus secant, i.e. the inverse reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
-            {"name":"Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the cotangent, i.e. the reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Secant", "key":"sec", "syntax": "sec(x)", "about": "Gets the secant, i.e. the reciprocal cosine, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Arcus Cotangent", "key":"acot", "syntax": "acot(x)", "about": "Gets the arcus cotangent, i.e. the inverse reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
+            
+            {"name":"Cotangent", "key":"cot", "syntax": "cot(x)", "about": "Gets the cotangent, i.e. the reciprocal tangent, of x, where x is a value or an expression that evaluates to a value."},
 
             # Hyperbolic
-            {"name":"Hyperbolic Sine", "key":"sinh", "syntax": "sinh(x)", "about": "Gets the hyperbolic sine, i.e the sine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
-            
             {"name":"Arcus Hyperbolic Sine", "key":"asinh", "syntax": "asinh(x)", "about": "Gets the arcus hyperbolic sine, i.e the inverse sine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
             
-            {"name":"Hyperbolic Cosine", "key":"cosh", "syntax": "cosh(x)", "about": "Gets the hyperbolic cosine, i.e the cosine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Hyperbolic Sine", "key":"sinh", "syntax": "sinh(x)", "about": "Gets the hyperbolic sine, i.e the sine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Arcus Hyperbolic Cosine", "key":"acosh", "syntax": "acosh(x)", "about": "Gets the arcus hyperbolic cosine, i.e the inverse cosine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
             
-            {"name":"Hyperbolic Tangent", "key":"tanh", "syntax": "tanh(x)", "about": "Gets the hyperbolic tangent, i.e the tangent of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
+            {"name":"Hyperbolic Cosine", "key":"cosh", "syntax": "cosh(x)", "about": "Gets the hyperbolic cosine, i.e the cosine of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Arcus Hyperbolic Tangent", "key":"atanh", "syntax": "atanh(x)", "about": "Gets the arcus hyperbolic tangent, i.e the inverse tangent of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
+            
+            {"name":"Hyperbolic Tangent", "key":"tanh", "syntax": "tanh(x)", "about": "Gets the hyperbolic tangent, i.e the tangent of hyperbola instead of circle, of x, where x is a value or an expression that evaluates to a value."},
+            
+            # Fundamental
+            {"name":"Arcus Sine", "key":"asin", "syntax": "asin(x)", "about": "Gets the arcus sine, i.e. the inverse sine, of x, where x is a value or an expression that evaluates to a value."},
+            
+            {"name":"Sine", "key": "sin", "syntax": "sin(x)", "about": "Gets the sine of x, where x is a value or an expression that evaluates to a value."},
+
+            {"name":"Arcus Cosine", "key": "acos", "syntax": "acos(x)", "about": "Gets the arc cosine, i.e. the inverse of cosine, of x, where x is a value or an expression that evaluates to a value."},
+
+            {"name":"Cosine", "key": "cos", "syntax": "cos(x)", "about": "Gets the cosine of x, where x is a value or an expression that evaluates to a value."},
+            
+            {"name":"Arcus Tangent", "key": "atan", "syntax": "atan(x)", "about": "Gets the arcus tangent, i.e. the inverse tangent, of x, where x is a value or an expression that evaluates to a value."},
+            
+            {"name":"Tangent", "key":"tan", "syntax": "tan(x)", "about": "Gets the tangent of x, where x is a value or an expression that evaluates to a value."},
         ],
 
         # Geometeric Module
@@ -145,10 +146,10 @@ info = {
         [
             {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[a],[x+y]]"},
             
-            {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x+y][a+b]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
+            # {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x+y][a+b]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
         # add:
-        #  - combine like terms
+        #  - complete Polynomial Expansion by finishing required cases of simplification
         #  - Polynomial Factorization
         #  - complex conjugate
         ],
@@ -192,7 +193,7 @@ def evaluator(input):
         variables = variables + v
 
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = "." + "," + "i" + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
     # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
     algebraic_mode = False
@@ -532,6 +533,7 @@ def evaluator(input):
         return y
 
     def get_mean(arr):
+        # returns the mean of a list of values
         return sum(arr) / len(arr)
 
     # ARITHMETIC OPERATIONS END
@@ -565,99 +567,99 @@ def evaluator(input):
         # no true condition reached
         return False
 
-    def getTerms(arr):
-        # identifies terms in algebraic expression and returns structured as such
-        sect_struct = []
-        term = []
-        for i in range(0, len(arr)):
-            if arr[i] == operation["addition"]:
-                # end of term
-                sect_struct.append(term)
-                term = []
-            elif arr[i] == operation["subtraction"]:
-                # prevent end of term on negation
-                if arr[i - 1] != operation["open_parenthesis"]:
-                    # non-negative value
-                    # end of term
-                    sect_struct.append(term)
-                    term = []
-            else:
-                # compile term
-                term.append(arr[i])
+    # def getTerms(arr):
+    #     # identifies terms in algebraic expression and returns structured as such
+    #     sect_struct = []
+    #     term = []
+    #     for i in range(0, len(arr)):
+    #         if arr[i] == operation["addition"]:
+    #             # end of term
+    #             sect_struct.append(term)
+    #             term = []
+    #         elif arr[i] == operation["subtraction"]:
+    #             # prevent end of term on negation
+    #             if arr[i - 1] != operation["open_parenthesis"]:
+    #                 # non-negative value
+    #                 # end of term
+    #                 sect_struct.append(term)
+    #                 term = []
+    #         else:
+    #             # compile term
+    #             term.append(arr[i])
         
-        # append last term
-        sect_struct.append(term)
+    #     # append last term
+    #     sect_struct.append(term)
 
-        return sect_struct
+    #     return sect_struct
     
-    def combineLikeTerms(arr):
+    # def combineLikeTerms(arr):
 
-        # combines like terms in algebraic and returns simplified expression
-        nonlocal variables
+    #     # combines like terms in algebraic and returns simplified expression
+    #     nonlocal variables
 
-        # identify terms
-        sect_struct = getTerms(arr)
+    #     # identify terms
+    #     sect_struct = getTerms(arr)
 
-        # compare to test for like terms
-        likeness = []
+    #     # compare to test for like terms
+    #     likeness = []
 
-        # get variables + exponents for each term
-        for term in sect_struct:
-            # each term gets a "t object"
-            t = {"variables": [], "exponent":""}
+    #     # get variables + exponents for each term
+    #     for term in sect_struct:
+    #         # each term gets a "t object"
+    #         t = {"variables": [], "exponent":""}
 
-            for c in range(0, len(term)):
-                # each character
+    #         for c in range(0, len(term)):
+    #             # each character
 
-                # test for exponents
-                if term[c] == operation["exponentiation"]:
-                    if c + 1 < len(term):
-                        if term[c + 1] == operation["open_parenthesis"]:
+    #             # test for exponents
+    #             if term[c] == operation["exponentiation"]:
+    #                 if c + 1 < len(term):
+    #                     if term[c + 1] == operation["open_parenthesis"]:
 
-                            # c + 1 is an expression
+    #                         # c + 1 is an expression
 
-                            nest = 0
-                            expression = []
-                            # compile to expression until finding end parenthesis
-                            for char in range(c + 1, len(term)):
-                                # compile
-                                expression.append(char)
-                                # test for end parenthesis
-                                if char == operation["open_parenthesis"]:
-                                    nest += 1
-                                elif char == operation["close_parenthesis"]:
-                                    nest -= 1
-                                    if nest == 0:
-                                        # found end parenthesis
-                                        t["exponent"] = expression
-                                        break
+    #                         nest = 0
+    #                         expression = []
+    #                         # compile to expression until finding end parenthesis
+    #                         for char in range(c + 1, len(term)):
+    #                             # compile
+    #                             expression.append(char)
+    #                             # test for end parenthesis
+    #                             if char == operation["open_parenthesis"]:
+    #                                 nest += 1
+    #                             elif char == operation["close_parenthesis"]:
+    #                                 nest -= 1
+    #                                 if nest == 0:
+    #                                     # found end parenthesis
+    #                                     t["exponent"] = expression
+    #                                     break
 
-                        else:
+    #                     else:
 
-                            # c + 1 is a value
+    #                         # c + 1 is a value
 
-                            t["exponent"] = term[c + 1]
+    #                         t["exponent"] = term[c + 1]
 
-                    else:
+    #                 else:
 
-                        # c + 1 is last character of term; is a value
+    #                     # c + 1 is last character of term; is a value
 
-                        t["exponent"] = term[c + 1]
-                else:
-                    # current character is not a exponentiation symbol
+    #                     t["exponent"] = term[c + 1]
+    #             else:
+    #                 # current character is not a exponentiation symbol
 
-                    # test for variables
-                    if is_var(term[c]):
-                        t["variables"].append(term[c])
+    #                 # test for variables
+    #                 if is_var(term[c]):
+    #                     t["variables"].append(term[c])
 
 
-            # append t object to likeness
-            likeness.append(t)
+    #         # append t object to likeness
+    #         likeness.append(t)
         
-        # print(sect_struct)
-        # print(likeness)
+    #     # print(sect_struct)
+    #     # print(likeness)
         
-        return arr
+    #     return arr
     
     def simplify(arr):
         # log process label
@@ -1352,7 +1354,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1382,7 +1384,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
                 
                 # perform calculation using numeral set
@@ -1439,7 +1441,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1468,7 +1470,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        xx = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1504,8 +1506,10 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
+                
+                print(set_2)
 
                 # perform calculation using numeral set
                 mean = get_mean(set_2)
@@ -1535,7 +1539,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1565,7 +1569,7 @@ def evaluator(input):
                         x = float(i)
                         set_2.append(1/x)
                     else:
-                        x = calculate(section(i))
+                        x = num_cast(section(i))
                         set_2.append(1/x)
 
                 # perform calculation using numeral set
@@ -1591,7 +1595,7 @@ def evaluator(input):
                         x = float(i)
                         set_2 = set_2 * x
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2 = set_2 * x
 
                 # perform calculation using numeral set
@@ -1652,7 +1656,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1679,7 +1683,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1710,7 +1714,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1779,7 +1783,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -1824,7 +1828,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = section(i)
+                        x = num_cast(section(i))
                         set_2.append(x)
                 
                 x = set_2[0]
@@ -1929,257 +1933,257 @@ def evaluator(input):
                     # get next instance
                     ref = getIdx("algexp", arrVar)
 
-            # performs all polynomial expansions
-            ref = getIdx("expand", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
+            # # performs all polynomial expansions
+            # ref = getIdx("expand", arrVar)
+            # itr = 0
+            # while itr < key_limit and ref is not None:
+            #     itr = itr + 1
 
-                # get arguments
-                nomials = arrVar[ref + 1]
+            #     # get arguments
+            #     nomials = arrVar[ref + 1]
 
-                # print(nomials)
-                if len(nomials) == 1 or len(nomials) == 0:
-                    # cannot expand a single nomial or no nomial
+            #     # print(nomials)
+            #     if len(nomials) == 1 or len(nomials) == 0:
+            #         # cannot expand a single nomial or no nomial
 
-                    # Log keyword
-                    log_process(arrVar[ref])
-                    # restructure with product expression
-                    arrVar = restructure(nomials, ref, ref + 1, arrVar)
-                    # identify further cases of polynomial expansion
-                    ref = getIdx("expand", arrVar)
+            #         # Log keyword
+            #         log_process(arrVar[ref])
+            #         # restructure with product expression
+            #         arrVar = restructure(nomials, ref, ref + 1, arrVar)
+            #         # identify further cases of polynomial expansion
+            #         ref = getIdx("expand", arrVar)
 
-                else:
-                    # multiple nomials can be expanded
+            #     else:
+            #         # multiple nomials can be expanded
 
-                    # reference structure for section with distribution
-                    sect_struct = []
+            #         # reference structure for section with distribution
+            #         sect_struct = []
 
-                    # Use nomials to create sect_struct
-                    for nomial in nomials:
-                        sect_struct.append(getTerms(nomial))
+            #         # Use nomials to create sect_struct
+            #         for nomial in nomials:
+            #             sect_struct.append(getTerms(nomial))
 
-                    print(sect_struct)
+            #         print(sect_struct)
 
-                    # initialize sect_product with the first nomial in sect_struct
-                    sect_product = sect_struct[0]
+            #         # initialize sect_product with the first nomial in sect_struct
+            #         sect_product = sect_struct[0]
 
-                    # multiply each nomial with the data in the sect_product variable
-                    for i in range(1,len(sect_struct)):
-                        product = []
-                        for term1 in sect_product:
-                            # each term in sect_product
-                            for term2 in sect_struct[i]:
-                                # each term in nomial multiplying with product
+            #         # multiply each nomial with the data in the sect_product variable
+            #         for i in range(1,len(sect_struct)):
+            #             product = []
+            #             for term1 in sect_product:
+            #                 # each term in sect_product
+            #                 for term2 in sect_struct[i]:
+            #                     # each term in nomial multiplying with product
 
-                                # append 1st term
-                                for x in term1:
-                                    product.append(x)
-                                # append a multiplication symbol
-                                product.append(operation["multiplication"])
-                                # append 2nd term
-                                for x in term2:
-                                    product.append(x)
-                                # append an addtion symbol
-                                product.append(operation["addition"])
+            #                     # append 1st term
+            #                     for x in term1:
+            #                         product.append(x)
+            #                     # append a multiplication symbol
+            #                     product.append(operation["multiplication"])
+            #                     # append 2nd term
+            #                     for x in term2:
+            #                         product.append(x)
+            #                     # append an addtion symbol
+            #                     product.append(operation["addition"])
                         
-                        # remove extra addition symbol from end
-                        product.pop()
+            #             # remove extra addition symbol from end
+            #             product.pop()
 
-                        # simplify terms
-                        prod_simp = []
-                        for term in product:
-                            prod_simp.append(simplify(term))
+            #             # simplify terms
+            #             prod_simp = []
+            #             for term in product:
+            #                 prod_simp.append(simplify(term))
 
-                        # combine like terms
-                        prod_simp = combineLikeTerms(prod_simp)
+            #             # combine like terms
+            #             prod_simp = combineLikeTerms(prod_simp)
 
-                        # assign product to sect_simp
-                        sect_product = prod_simp
+            #             # assign product to sect_simp
+            #             sect_product = prod_simp
 
-                    # print(sect_product)
+            #         # print(sect_product)
 
-                return arrVar
+            #     return arrVar
 
 
 
-                # # Use nomials to create sect_struct
-                # for i in range(0, len(nomials)):
-                #     # identify terms for each nomial
-                #     length = len(nomials[i])
-                #     if length == 1:
-                #         # monomial
-                #         sect_struct.append([nomials[i]])
-                #     else:
-                #         # polynomial
-                #         terms = []
-                #         for j in range(0, len(nomials[i])):
-                #             # test each character in nomial for terms
-                #             char = nomials[i][j]
-                #             try:
-                #                 # char is a number
-                #                 float(char)
-                #                 if nomials[i][j - 1] == operation["subtraction"]:
-                #                     # negative
-                #                     terms.append(["%s %s" % operation["subtraction"], char])
-                #                 else:
-                #                     # positive
-                #                     terms.append([char])
-                #             except:
-                #                 if is_var(char):
-                #                     # char is a variable
-                #                     if nomials[i][j - 1] == operation["subtraction"]:
-                #                         # negative
-                #                         terms.append(["%s %s" % operation["subtraction"], char])
-                #                     else:
-                #                         # positive
-                #                         terms.append([char])
-                #                 else:
-                #                     # char is not a term
-                #                     continue
+            #     # # Use nomials to create sect_struct
+            #     # for i in range(0, len(nomials)):
+            #     #     # identify terms for each nomial
+            #     #     length = len(nomials[i])
+            #     #     if length == 1:
+            #     #         # monomial
+            #     #         sect_struct.append([nomials[i]])
+            #     #     else:
+            #     #         # polynomial
+            #     #         terms = []
+            #     #         for j in range(0, len(nomials[i])):
+            #     #             # test each character in nomial for terms
+            #     #             char = nomials[i][j]
+            #     #             try:
+            #     #                 # char is a number
+            #     #                 float(char)
+            #     #                 if nomials[i][j - 1] == operation["subtraction"]:
+            #     #                     # negative
+            #     #                     terms.append(["%s %s" % operation["subtraction"], char])
+            #     #                 else:
+            #     #                     # positive
+            #     #                     terms.append([char])
+            #     #             except:
+            #     #                 if is_var(char):
+            #     #                     # char is a variable
+            #     #                     if nomials[i][j - 1] == operation["subtraction"]:
+            #     #                         # negative
+            #     #                         terms.append(["%s %s" % operation["subtraction"], char])
+            #     #                     else:
+            #     #                         # positive
+            #     #                         terms.append([char])
+            #     #                 else:
+            #     #                     # char is not a term
+            #     #                     continue
 
-                #         # after terms are identified for that nomial
-                #         sect_struct.append(terms)
+            #     #         # after terms are identified for that nomial
+            #     #         sect_struct.append(terms)
 
-                # print(sect_struct)
+            #     # print(sect_struct)
 
-                # # total number of nomials
-                # nomials_total = len(sect_struct)
+            #     # # total number of nomials
+            #     # nomials_total = len(sect_struct)
 
-                # # total number of terms
-                # terms_total = 0
-                # for i in range(0, len(sect_struct)):
-                #     terms_total += len(sect_struct[i])
+            #     # # total number of terms
+            #     # terms_total = 0
+            #     # for i in range(0, len(sect_struct)):
+            #     #     terms_total += len(sect_struct[i])
                 
-                # # total number of terms in product of distribution
-                # # calculates the number of terms in the product expression of a nomial multiplication
-                # # using the nested summation method
-                # # where it works for:
-                # #  - any number of nomials
-                # #  - any number of terms in nomial
-                # #  - variable number of terms in different nomials
+            #     # # total number of terms in product of distribution
+            #     # # calculates the number of terms in the product expression of a nomial multiplication
+            #     # # using the nested summation method
+            #     # # where it works for:
+            #     # #  - any number of nomials
+            #     # #  - any number of terms in nomial
+            #     # #  - variable number of terms in different nomials
 
-                # product_terms_total = 0
-                # for i in range(0, len(sect_struct)):
-                #     # get terms of current nomial
-                #     k = len(sect_struct[i])
-                #     # sum previous terms
-                #     s = 0
-                #     for l in range(0, i):
-                #         s += len(sect_struct[l])
-                #     s += k
-                #     product_terms_total += k * (terms_total - s)
+            #     # product_terms_total = 0
+            #     # for i in range(0, len(sect_struct)):
+            #     #     # get terms of current nomial
+            #     #     k = len(sect_struct[i])
+            #     #     # sum previous terms
+            #     #     s = 0
+            #     #     for l in range(0, i):
+            #     #         s += len(sect_struct[l])
+            #     #     s += k
+            #     #     product_terms_total += k * (terms_total - s)
                 
-                # # print(nomials_total)
-                # # print(terms_total)
-                # # print(product_terms_total)
+            #     # # print(nomials_total)
+            #     # # print(terms_total)
+            #     # # print(product_terms_total)
 
-                # # construct product expression
+            #     # # construct product expression
 
-                # # now that the number of terms in the product expression is known, the number of multiplications is also known,
-                # # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
+            #     # # now that the number of terms in the product expression is known, the number of multiplications is also known,
+            #     # # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
 
-                # # the design of product expression construction is thus:
-                # #  - to access two terms in the reference structure of unique combination, 
-                # #  - build a list which includes those terms separated by a multication symbol,
-                # #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
-                # #  - and repeating this process for the number of multiplications,
-                # #  - except for the last multiplication, which should have no addition symbol following it.
+            #     # # the design of product expression construction is thus:
+            #     # #  - to access two terms in the reference structure of unique combination, 
+            #     # #  - build a list which includes those terms separated by a multication symbol,
+            #     # #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
+            #     # #  - and repeating this process for the number of multiplications,
+            #     # #  - except for the last multiplication, which should have no addition symbol following it.
 
-                # # multiplier indexes
-                # term1 = 0
-                # nomial1 = 0
+            #     # # multiplier indexes
+            #     # term1 = 0
+            #     # nomial1 = 0
 
-                # # multiplicand indexes
-                # term2 = 0
-                # nomial2 = 0
+            #     # # multiplicand indexes
+            #     # term2 = 0
+            #     # nomial2 = 0
 
-                # # structures
-                # multiplier = []
-                # multiplicand = []
-                # product = []
+            #     # # structures
+            #     # multiplier = []
+            #     # multiplicand = []
+            #     # product = []
 
-                # for i in range(0, product_terms_total - 1):
-                #     # initialize
-                #     if nomial2 == 0:
-                #         # first term in product expression
-                #         multiplier = sect_struct[nomial1][term1]
-                #         nomial2 += 1
-                #         multiplicand = sect_struct[nomial2][term2]
+            #     # for i in range(0, product_terms_total - 1):
+            #     #     # initialize
+            #     #     if nomial2 == 0:
+            #     #         # first term in product expression
+            #     #         multiplier = sect_struct[nomial1][term1]
+            #     #         nomial2 += 1
+            #     #         multiplicand = sect_struct[nomial2][term2]
                     
-                #     # update indexes
-                #     # multiplicand term
-                #         # multiplicand nomial
-                #             # multiplier term
-                #                 # multiplier nomial
+            #     #     # update indexes
+            #     #     # multiplicand term
+            #     #         # multiplicand nomial
+            #     #             # multiplier term
+            #     #                 # multiplier nomial
 
-                #     # multiplicand term
-                #     elif term2 + 1 != len(sect_struct[nomial2]):
-                #         # mid term in nomial for the multiplicand
-                #         term2 += 1
-                #     else:
-                #         # last term of nomial for the multiplicand
-                #         term2 = 0 # first term of next nomial
+            #     #     # multiplicand term
+            #     #     elif term2 + 1 != len(sect_struct[nomial2]):
+            #     #         # mid term in nomial for the multiplicand
+            #     #         term2 += 1
+            #     #     else:
+            #     #         # last term of nomial for the multiplicand
+            #     #         term2 = 0 # first term of next nomial
 
                         
-                #         # multiplicand nomial
-                #         if nomial2 + 1 != nomials_total:
-                #             # mid nomial for multiplicand
-                #             nomial2 += 1
-                #         else:
-                #             # last nomial for multiplicand
-                #             nomial2 = nomial1 + 1
+            #     #         # multiplicand nomial
+            #     #         if nomial2 + 1 != nomials_total:
+            #     #             # mid nomial for multiplicand
+            #     #             nomial2 += 1
+            #     #         else:
+            #     #             # last nomial for multiplicand
+            #     #             nomial2 = nomial1 + 1
 
 
-                #             # multiplier term
-                #             if term1 + 1 != len(sect_struct[nomial1]):
-                #                 # mid term of nomial for multiplier
-                #                 term1 += 1
-                #             else:
-                #                 # last term of nomial for multiplier
-                #                 term1 = 0 # first term of next nomial
+            #     #             # multiplier term
+            #     #             if term1 + 1 != len(sect_struct[nomial1]):
+            #     #                 # mid term of nomial for multiplier
+            #     #                 term1 += 1
+            #     #             else:
+            #     #                 # last term of nomial for multiplier
+            #     #                 term1 = 0 # first term of next nomial
                                 
                                 
-                #                 # multiplier nomial
-                #                 if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
-                #                     # mid nomial for multiplier
-                #                     nomial1 += 1
-                #                     nomial2 = nomial1 + 1
-                #                     term2 = 0
-                #                 else:
-                #                     # last nomial for multiplier
-                #                     break
+            #     #                 # multiplier nomial
+            #     #                 if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
+            #     #                     # mid nomial for multiplier
+            #     #                     nomial1 += 1
+            #     #                     nomial2 = nomial1 + 1
+            #     #                     term2 = 0
+            #     #                 else:
+            #     #                     # last nomial for multiplier
+            #     #                     break
 
-                #     # update multiplier
-                #     multiplier = sect_struct[nomial1][term1]
-                #     # update multiplicand
-                #     multiplicand = sect_struct[nomial2][term2]
+            #     #     # update multiplier
+            #     #     multiplier = sect_struct[nomial1][term1]
+            #     #     # update multiplicand
+            #     #     multiplicand = sect_struct[nomial2][term2]
 
-                #     # print("nomial: %s" % str(int(nomial2) + 1))
-                #     # print("term: %s" % str(int(term2) + 1))
-                #     # print(multiplier)
-                #     # print(multiplicand)
+            #     #     # print("nomial: %s" % str(int(nomial2) + 1))
+            #     #     # print("term: %s" % str(int(term2) + 1))
+            #     #     # print(multiplier)
+            #     #     # print(multiplicand)
 
-                #     # concatenate multiplier and multiplicand with product
-                #     product = product + multiplier + ["*"] + multiplicand + ["+"]
+            #     #     # concatenate multiplier and multiplicand with product
+            #     #     product = product + multiplier + ["*"] + multiplicand + ["+"]
 
-                # # last term
-                # if len(sect_struct[len(sect_struct) - 1]) > 1:
-                #     # for ending monomial
-                #     term2 += 1
-                #     multiplicand = sect_struct[nomial2][term2]
-                #     product = product + multiplier + ["*"] + multiplicand
-                # else:
-                #     term1 += 1
-                #     multiplier = sect_struct[nomial1][term1]
-                #     product = product + multiplier + ["*"] + multiplicand
+            #     # # last term
+            #     # if len(sect_struct[len(sect_struct) - 1]) > 1:
+            #     #     # for ending monomial
+            #     #     term2 += 1
+            #     #     multiplicand = sect_struct[nomial2][term2]
+            #     #     product = product + multiplier + ["*"] + multiplicand
+            #     # else:
+            #     #     term1 += 1
+            #     #     multiplier = sect_struct[nomial1][term1]
+            #     #     product = product + multiplier + ["*"] + multiplicand
 
-                # # Log keyword
-                # log_process(arrVar[ref])
-                # # restructure with product expression
-                # arrVar = restructure(product, ref, ref + 1, arrVar)
-                # # identify further cases of polynomial expansion
-                # ref = getIdx("expand", arrVar)
+            #     # # Log keyword
+            #     # log_process(arrVar[ref])
+            #     # # restructure with product expression
+            #     # arrVar = restructure(product, ref, ref + 1, arrVar)
+            #     # # identify further cases of polynomial expansion
+            #     # ref = getIdx("expand", arrVar)
         
         return arrVar
 
@@ -2592,57 +2596,59 @@ def evaluator(input):
         "logs": process_log,
     }
 
-    # return output
+    return output
 
-    # Development
+#     # Development
 
-    # Prints feedback
-    logs = """"""
-    process_log_keys = list(process_log.keys())
-    for key in process_log_keys:
-        logs += """%s
-""" % process_log[key]
+#     # Prints feedback
+#     logs = """"""
+#     process_log_keys = list(process_log.keys())
+#     for key in process_log_keys:
+#         logs += """%s
+# """ % process_log[key]
     
-    print(output["problem"])
-    print(output["answer"])
-    print(logs)
+#     print(output["problem"])
+#     print(output["answer"])
+#     print(logs)
 
-# test data
-input = {
-    # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
+# # test data
+# input = {
+#     "problem": "sd[[sin(0)],[cos(0)]]", # should be 0.5 (may overload server??)
+#     # "problem": "sd[sin(0),cos(0)]", # 505 error vulnurability; create test to prevent (perhaps, test length is 3 ["x", ",", "y"] or that second index is a "," or both)
 
-    # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
-    # "problem": "2*x*9", #  a * x * b => (a*b) * x
-    # "problem": "2/x*9", #  a / x * b => (a*b) / x
-    # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+#     # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
-    # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-    # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
-    # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
-    # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
-    # "problem": "10*x/2", # a * x / b => (a/b) * x
-    # "problem": "10/x/2", # a / x / b => (a/b) / x
-    # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
+#     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
+#     # "problem": "2*x*9", #  a * x * b => (a*b) * x
+#     # "problem": "2/x*9", #  a / x * b => (a*b) / x
+#     # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+
+#     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+#     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
+#     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
+#     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
+#     # "problem": "10*x/2", # a * x / b => (a/b) * x
+#     # "problem": "10/x/2", # a / x / b => (a/b) / x
+#     # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
     
-    # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
-    # "problem": "10+x+2", # a + x + b => (a+b) + x
-    # "problem": "10-x+2", # a - x + b => (a+b) - x
-    # "problem": "2*x+4*x", # add coefficients of like terms
-    # "problem": "2*x+4*y", # don't add coefficients of not like terms
+#     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+#     # "problem": "10+x+2", # a + x + b => (a+b) + x
+#     # "problem": "10-x+2", # a - x + b => (a+b) - x
+#     # "problem": "2*x+4*x", # add coefficients of like terms
+#     # "problem": "2*x+4*y", # don't add coefficients of not like terms
     
-    # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
-    # "problem": "10+x-2", # a + x - b => (a-b) + x
-    # "problem": "10-x-2", # a - x - b => (a-b) - x
-    # "problem": "8*x-3*x", # subtract coefficients of like terms
-    # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
+#     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
+#     # "problem": "10+x-2", # a + x - b => (a-b) + x
+#     # "problem": "10-x-2", # a - x - b => (a-b) - x
+#     # "problem": "8*x-3*x", # subtract coefficients of like terms
+#     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
-    # "problem": "1+1/&%$#", # returns "invalid characters"
-    "problem": "sd[0,1]", # 
-    # "problem": "expand[[2*x^2+y][x+y][a+b]]",
+#     # "problem": "1+1/&%$#", # returns "invalid characters"
+#     # "problem": "expand[[a+b][x+y][p+q]]",
 
-    "use_logs": "1", # 1 = yes
-}
-evaluator(input)
+#     "use_logs": "1", # 1 = yes
+# }
+# evaluator(input)
 
 # development tasks
 #  - design remaining simplifications in simplify function
@@ -2652,63 +2658,64 @@ evaluator(input)
 # vulnerabilities
 #  - key without parens or brackets
 #  - brackets without key
+#  - 
 #  - variables with no operations between them
 #  - 
 
-# # Flask APP
-# app = Flask(__name__)
+# Flask APP
+app = Flask(__name__)
 
-# # CORS wrapper
-# CORS(app)
+# CORS wrapper
+CORS(app)
 
-# # ROUTES
+# ROUTES
 
-# # Index route
-# @app.route("/", methods=["GET"])
-# def index():
-#     return "<div>Index route accessed.</div>"
+# Index route
+@app.route("/", methods=["GET"])
+def index():
+    return "<div>Index route accessed.</div>"
 
-# # Hello world environment variable demonstration
-# @app.route("/hello-world", methods=["GET"])
-# def hello_world():
-#     return "<p>%s</p>" % os.environ['greeting']
+# Hello world environment variable demonstration
+@app.route("/hello-world", methods=["GET"])
+def hello_world():
+    return "<p>%s</p>" % os.environ['greeting']
 
-# # Evaluator data root
-# @app.route("/eval", methods=["POST"])
-# def eval():
-#     try:
-#         return jsonify(evaluator(request.get_json()))
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator data root
+@app.route("/eval", methods=["POST"])
+def eval():
+    try:
+        return jsonify(evaluator(request.get_json()))
+    except Exception as e:
+        return "Error:", e
     
-# # Evaluator problem data
-# @app.route("/eval/problem", methods=["POST"])
-# def eval_problem():
-#     try:
-#         return jsonify(evaluator(request.get_json())["problem"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator problem data
+@app.route("/eval/problem", methods=["POST"])
+def eval_problem():
+    try:
+        return jsonify(evaluator(request.get_json())["problem"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator answer data
-# @app.route("/eval/answer", methods=["POST"])
-# def eval_answer():
-#     try:
-#         return jsonify(evaluator(request.get_json())["answer"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator answer data
+@app.route("/eval/answer", methods=["POST"])
+def eval_answer():
+    try:
+        return jsonify(evaluator(request.get_json())["answer"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator log data
-# @app.route("/eval/logs", methods=["POST"])
-# def eval_logs():
-#     try:
-#         return jsonify(evaluator(request.get_json())["logs"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator log data
+@app.route("/eval/logs", methods=["POST"])
+def eval_logs():
+    try:
+        return jsonify(evaluator(request.get_json())["logs"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator info object data (read-only)
-# @app.route("/eval/info", methods=["GET"])
-# def eval_info():
-#     try:
-#         return jsonify(info)
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator info object data (read-only)
+@app.route("/eval/info", methods=["GET"])
+def eval_info():
+    try:
+        return jsonify(info)
+    except Exception as e:
+        return "Error:", e
