@@ -2501,82 +2501,94 @@ def evaluator(input):
                             structure.append(digits)
             log_process(structure)
 
-            log_process("Constants")
-
-            # structure pi
-            ref = get_word("pi", structure)
-            itr = 0
-            while itr < c_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("pi", structure)
+            # test for consecutive variables
+            consecutives = False
+            structure_length = len(structure)
+            for i in range(0, structure_length):
+                if i + 1 < structure_length and is_var(structure[i]) and is_var(structure[i + 1]):
+                    consecutives = True
+                    break
             
-            # structure euler's number
-            ref = get_word("euler", structure)
-            itr = 0
-            while itr < c_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("euler", structure)
-
-            # structure keywords
-            log_process("Keywords")
-            
-            # key functions
-            for module in range(0, len(info["key_functions"])):
-                for i in range(0, len(info["key_functions"][module])):
-                    structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
-            log_process(key_modules)
-                
-            # change first log
-            if use_logs == "1":
-                process_log["0"] = "Process Log Start"
-            
-            # Identify program entities in structured string
-            if not identify_entities(structure):
-                # invalid entity detected
-                return structure
+            if consecutives == True:
+                # consecutive variables => terminate program
+                return "consecutive variables"
             else:
-                # all entities are valid
-                nonlocal is_brack
-                if is_brack == True:
-                    # generates substructures, i.e. "sets", within structure
-                    # sets exist so that multiple arguments can be accessed at a single index for key functions
-                    log_process("Structure Sets")
-                    log_process(structure)
-                    # structure sets
-                    sets_ref = []
-                    for i in range(0, len(structure)):
-                        if structure[i] == "[":
-                            sets_ref.append({"char": "[", "index": i})
-                        elif structure[i] == "]":
-                            sets_ref.append({"char": "]", "index": i})
-                    # identify next set to structure using sets_ref
-                    while len(sets_ref) > 0:
-                        for i in range(0, len(sets_ref)):
-                            if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
-                                # build set
-                                start_index = sets_ref[i]["index"]
-                                end_index = sets_ref[i + 1]["index"]
-                                solution_length = abs(start_index - end_index) + 1
-                                the_set_itself = []
-                                for i in range(0, solution_length):
-                                    the_set_itself.append(structure[start_index + i])
+                log_process("Constants")
 
-                                # restructure
-                                structure = restructure(the_set_itself, start_index, end_index, structure)
-                                
-                                # update reference
-                                sets_ref = []
-                                for i in range(0, len(structure)):
-                                    if structure[i] == "[":
-                                        sets_ref.append({"char": "[", "index": i})
-                                    elif structure[i] == "]":
-                                        sets_ref.append({"char": "]", "index": i})
-                                break
+                # structure pi
+                ref = get_word("pi", structure)
+                itr = 0
+                while itr < c_limit and ref is not None:
+                    itr = itr + 1
+                    structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
+                    ref = get_word("pi", structure)
+                
+                # structure euler's number
+                ref = get_word("euler", structure)
+                itr = 0
+                while itr < c_limit and ref is not None:
+                    itr = itr + 1
+                    structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
+                    ref = get_word("euler", structure)
 
-                # parenthetically section and solve
-                return section(structure)
+                # structure keywords
+                log_process("Keywords")
+                
+                # key functions
+                for module in range(0, len(info["key_functions"])):
+                    for i in range(0, len(info["key_functions"][module])):
+                        structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
+                log_process(key_modules)
+                    
+                # change first log
+                if use_logs == "1":
+                    process_log["0"] = "Process Log Start"
+                
+                # Identify program entities in structured string
+                if not identify_entities(structure):
+                    # invalid entity detected
+                    return structure
+                else:
+                    # all entities are valid
+                    nonlocal is_brack
+                    if is_brack == True:
+                        # generates substructures, i.e. "sets", within structure
+                        # sets exist so that multiple arguments can be accessed at a single index for key functions
+                        log_process("Structure Sets")
+                        log_process(structure)
+                        # structure sets
+                        sets_ref = []
+                        for i in range(0, len(structure)):
+                            if structure[i] == "[":
+                                sets_ref.append({"char": "[", "index": i})
+                            elif structure[i] == "]":
+                                sets_ref.append({"char": "]", "index": i})
+                        # identify next set to structure using sets_ref
+                        while len(sets_ref) > 0:
+                            for i in range(0, len(sets_ref)):
+                                if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
+                                    # build set
+                                    start_index = sets_ref[i]["index"]
+                                    end_index = sets_ref[i + 1]["index"]
+                                    solution_length = abs(start_index - end_index) + 1
+                                    the_set_itself = []
+                                    for i in range(0, solution_length):
+                                        the_set_itself.append(structure[start_index + i])
+
+                                    # restructure
+                                    structure = restructure(the_set_itself, start_index, end_index, structure)
+                                    
+                                    # update reference
+                                    sets_ref = []
+                                    for i in range(0, len(structure)):
+                                        if structure[i] == "[":
+                                            sets_ref.append({"char": "[", "index": i})
+                                        elif structure[i] == "]":
+                                            sets_ref.append({"char": "]", "index": i})
+                                    break
+
+                    # parenthetically section and solve
+                    return section(structure)
 
     # Evaluation
     use_logs = input["use_logs"]
@@ -2596,59 +2608,61 @@ def evaluator(input):
         "logs": process_log,
     }
 
-    return output
+    # return output
 
-#     # Development
+    # Development
 
-#     # Prints feedback
-#     logs = """"""
-#     process_log_keys = list(process_log.keys())
-#     for key in process_log_keys:
-#         logs += """%s
-# """ % process_log[key]
+    # Prints feedback
+    logs = """"""
+    process_log_keys = list(process_log.keys())
+    for key in process_log_keys:
+        logs += """%s
+""" % process_log[key]
     
-#     print(output["problem"])
-#     print(output["answer"])
-#     print(logs)
+    print(output["problem"])
+    print(output["answer"])
+    print(logs)
 
-# # test data
-# input = {
-#     "problem": "sd[[sin(0)],[cos(0)]]", # should be 0.5 (may overload server??)
-#     # "problem": "sd[sin(0),cos(0)]", # 505 error vulnurability; create test to prevent (perhaps, test length is 3 ["x", ",", "y"] or that second index is a "," or both)
+# test data
+input = {
+    "problem": "2+3-xy", # prevents program from evaluating problem structure if the problem structure has consecutive variables
 
-#     # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
+    # "problem": "sd[[sin(0)],[cos(0)]]", # should be 0.5
+    # "problem": "sd[sin(0),cos(0)]", # 505 error vulnurability; create test to prevent (perhaps, test length is 3 ["x", ",", "y"] or that second index is a "," or both)
 
-#     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
-#     # "problem": "2*x*9", #  a * x * b => (a*b) * x
-#     # "problem": "2/x*9", #  a / x * b => (a*b) / x
-#     # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+    # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
-#     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-#     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
-#     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
-#     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
-#     # "problem": "10*x/2", # a * x / b => (a/b) * x
-#     # "problem": "10/x/2", # a / x / b => (a/b) / x
-#     # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
+    # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
+    # "problem": "2*x*9", #  a * x * b => (a*b) * x
+    # "problem": "2/x*9", #  a / x * b => (a*b) / x
+    # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+
+    # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+    # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
+    # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
+    # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
+    # "problem": "10*x/2", # a * x / b => (a/b) * x
+    # "problem": "10/x/2", # a / x / b => (a/b) / x
+    # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
     
-#     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
-#     # "problem": "10+x+2", # a + x + b => (a+b) + x
-#     # "problem": "10-x+2", # a - x + b => (a+b) - x
-#     # "problem": "2*x+4*x", # add coefficients of like terms
-#     # "problem": "2*x+4*y", # don't add coefficients of not like terms
+    # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+    # "problem": "10+x+2", # a + x + b => (a+b) + x
+    # "problem": "10-x+2", # a - x + b => (a+b) - x
+    # "problem": "2*x+4*x", # add coefficients of like terms
+    # "problem": "2*x+4*y", # don't add coefficients of not like terms
     
-#     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
-#     # "problem": "10+x-2", # a + x - b => (a-b) + x
-#     # "problem": "10-x-2", # a - x - b => (a-b) - x
-#     # "problem": "8*x-3*x", # subtract coefficients of like terms
-#     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
+    # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
+    # "problem": "10+x-2", # a + x - b => (a-b) + x
+    # "problem": "10-x-2", # a - x - b => (a-b) - x
+    # "problem": "8*x-3*x", # subtract coefficients of like terms
+    # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
-#     # "problem": "1+1/&%$#", # returns "invalid characters"
-#     # "problem": "expand[[a+b][x+y][p+q]]",
+    # "problem": "1+1/&%$#", # returns "invalid characters"
+    # "problem": "expand[[a+b][x+y][p+q]]",
 
-#     "use_logs": "1", # 1 = yes
-# }
-# evaluator(input)
+    "use_logs": "1", # 1 = yes
+}
+evaluator(input)
 
 # development tasks
 #  - design remaining simplifications in simplify function
@@ -2658,64 +2672,62 @@ def evaluator(input):
 # vulnerabilities
 #  - key without parens or brackets
 #  - brackets without key
-#  - 
 #  - variables with no operations between them
-#  - 
 
-# Flask APP
-app = Flask(__name__)
+# # Flask APP
+# app = Flask(__name__)
 
-# CORS wrapper
-CORS(app)
+# # CORS wrapper
+# CORS(app)
 
-# ROUTES
+# # ROUTES
 
-# Index route
-@app.route("/", methods=["GET"])
-def index():
-    return "<div>Index route accessed.</div>"
+# # Index route
+# @app.route("/", methods=["GET"])
+# def index():
+#     return "<div>Index route accessed.</div>"
 
-# Hello world environment variable demonstration
-@app.route("/hello-world", methods=["GET"])
-def hello_world():
-    return "<p>%s</p>" % os.environ['greeting']
+# # Hello world environment variable demonstration
+# @app.route("/hello-world", methods=["GET"])
+# def hello_world():
+#     return "<p>%s</p>" % os.environ['greeting']
 
-# Evaluator data root
-@app.route("/eval", methods=["POST"])
-def eval():
-    try:
-        return jsonify(evaluator(request.get_json()))
-    except Exception as e:
-        return "Error:", e
+# # Evaluator data root
+# @app.route("/eval", methods=["POST"])
+# def eval():
+#     try:
+#         return jsonify(evaluator(request.get_json()))
+#     except Exception as e:
+#         return "Error:", e
     
-# Evaluator problem data
-@app.route("/eval/problem", methods=["POST"])
-def eval_problem():
-    try:
-        return jsonify(evaluator(request.get_json())["problem"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator problem data
+# @app.route("/eval/problem", methods=["POST"])
+# def eval_problem():
+#     try:
+#         return jsonify(evaluator(request.get_json())["problem"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator answer data
-@app.route("/eval/answer", methods=["POST"])
-def eval_answer():
-    try:
-        return jsonify(evaluator(request.get_json())["answer"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator answer data
+# @app.route("/eval/answer", methods=["POST"])
+# def eval_answer():
+#     try:
+#         return jsonify(evaluator(request.get_json())["answer"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator log data
-@app.route("/eval/logs", methods=["POST"])
-def eval_logs():
-    try:
-        return jsonify(evaluator(request.get_json())["logs"])
-    except Exception as e:
-        return "Error:", e
+# # Evaluator log data
+# @app.route("/eval/logs", methods=["POST"])
+# def eval_logs():
+#     try:
+#         return jsonify(evaluator(request.get_json())["logs"])
+#     except Exception as e:
+#         return "Error:", e
 
-# Evaluator info object data (read-only)
-@app.route("/eval/info", methods=["GET"])
-def eval_info():
-    try:
-        return jsonify(info)
-    except Exception as e:
-        return "Error:", e
+# # Evaluator info object data (read-only)
+# @app.route("/eval/info", methods=["GET"])
+# def eval_info():
+#     try:
+#         return jsonify(info)
+#     except Exception as e:
+#         return "Error:", e
