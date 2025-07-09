@@ -48,8 +48,8 @@ info = {
         {"name":"Euler's Number", "syntax":"euler"},
     ],
 
-    # the lowercase alphabet except i (saved for imaginary number future program features)
-    "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
+    # the whole lowercase alphabet may be used as variables (keys are also composed of lowercase letters)
+    "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
 
     "key_functions": [
         # Trigonomic Module
@@ -162,13 +162,13 @@ def evaluator(input):
     global info
 
     # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
-    paren_limit = 10
+    paren_limit = 100
 
-    # the pi_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
-    c_limit = 10
+    # the c_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
+    c_limit = 100
 
     # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
-    key_limit = 10
+    key_limit = 100
 
     # PROGRAM ENTITY REFERENCE
 
@@ -193,10 +193,11 @@ def evaluator(input):
         variables = variables + v
 
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = "." + "," + "i" + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
-    # algebraic_mode controls whether the program solves for an algebraic expression, True, or a single value, False
-    algebraic_mode = False
+    # is_var indicates if variables in problem structure
+    # and controls whether the program solves for an algebraic expression, True, or a single value, False
+    is_var = False
 
     # is_paren indicates whether there are parenthesis, True, or not, False
     # If False, bypasses section function
@@ -353,18 +354,26 @@ def evaluator(input):
 
         return arrVar
     
-    def is_op(str):
+    def op_test(str):
         # tests if given str is an operation character
         for i in range(0, len(info["operations"])):
             if info["operations"][i]["syntax"] == str:
                 return True
         return False
 
-    def is_var(str):
+    def var_test(str):
         # test for variables
         for i in variables:
             if i == str:
                 return True
+        return False
+
+    def key_test(str):
+        # tests if str is key
+        for i in range(0, len(info["key_functions"])):
+            for j in range(0, len(info["key_functions"][i])):
+                if info["key_functions"][i][j]["key"] == str:
+                    return True
         return False
 
     def identify_entities(arr):
@@ -372,10 +381,10 @@ def evaluator(input):
         nonlocal operation
         
         # Identify algebraic mode
-        nonlocal algebraic_mode
+        nonlocal is_var
         for i in arr:
-            if is_var(i):
-                algebraic_mode = True
+            if var_test(i):
+                is_var = True
                 break
         
         # Identify parenthesis
@@ -649,7 +658,7 @@ def evaluator(input):
     #                 # current character is not a exponentiation symbol
 
     #                 # test for variables
-    #                 if is_var(term[c]):
+    #                 if var_test(term[c]):
     #                     t["variables"].append(term[c])
 
 
@@ -684,7 +693,7 @@ def evaluator(input):
 
             for c in range(0, length):
                 # each character
-                if is_var(arrVar[c]):
+                if var_test(arrVar[c]):
                     # each variable
                     var = arrVar[c]
 
@@ -727,7 +736,7 @@ def evaluator(input):
 
                             # SIMP2: a * x * b => (a*b) * x
 
-                                if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -741,7 +750,7 @@ def evaluator(input):
 
                             # SIMP3: a / x * b => (a*b) / x
 
-                                if arrVar[c - 1] == operation["division"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["division"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -757,7 +766,7 @@ def evaluator(input):
 
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
-                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     # case: a * x * b * x => (a*b) * x ^ 2, where a and b are particular values
 
                                     # get term data
@@ -827,7 +836,7 @@ def evaluator(input):
 
                             # SIMP6: a * x / b => (a/b) * x
 
-                                if arrVar[c - 1] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -841,7 +850,7 @@ def evaluator(input):
 
                             # SIMP7: a / x / b => (a/b) / x
 
-                                if arrVar[c - 1] == operation["division"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["division"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -856,7 +865,7 @@ def evaluator(input):
                             # SIMP8: combine terms for variable with coefficients divided
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
-                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     # case: a * x * b * x => (a*b), where a and b are particular values
 
                                     # get term data
@@ -902,7 +911,7 @@ def evaluator(input):
                             
                             # SIMP10: a + x + b => (a+b) + x
 
-                                if arrVar[c - 1] == operation["addition"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["addition"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -916,7 +925,7 @@ def evaluator(input):
                             
                             # SIMP11: a - x + b => (a+b) - x
 
-                                if arrVar[c - 1] == operation["subtraction"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -932,7 +941,7 @@ def evaluator(input):
                             
                             if testTermEnds(c - 2, c + 4, arrVar):
 
-                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     # case: a * x + b * x => (a+b) * x
                                     
                                     # get term data
@@ -978,7 +987,7 @@ def evaluator(input):
 
                             # SIMP14: a + x - b => (a-b) + x
 
-                                if arrVar[c - 1] == operation["addition"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["addition"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
                                     # get term data
                                     val1 = arrVar[c - 2]
@@ -992,7 +1001,7 @@ def evaluator(input):
                             
                             # SIMP15: a - x - b => (a-b) - x
 
-                                if arrVar[c - 1] == operation["subtraction"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                         
                                         # get term data
                                         val1 = arrVar[c - 2]
@@ -1008,7 +1017,7 @@ def evaluator(input):
 
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
-                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not is_var(arrVar[c - 2]) and not is_var(arrVar[c + 2]):
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     # a * x - b * x => (a-b) * x
 
                                     # get term data
@@ -1043,14 +1052,14 @@ def evaluator(input):
         length = len(arr)
 
         # test if string contains an operation
-        if is_op(str):
+        if op_test(str):
 
             # operation string
             val = None
             for i in range(0, length):
                 if arr[i] == str:
                     # test for operation on variables
-                    if i - 1 > -1 and i + 1 < length and not is_var(arr[i - 1]) and not is_var(arr[i + 1]):
+                    if i - 1 > -1 and i + 1 < length and not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
                         val = i
                         # arithmetic operation approved; not operating on variable
                         return val
@@ -2030,7 +2039,7 @@ def evaluator(input):
             #     #                     # positive
             #     #                     terms.append([char])
             #     #             except:
-            #     #                 if is_var(char):
+            #     #                 if var_test(char):
             #     #                     # char is a variable
             #     #                     if nomials[i][j - 1] == operation["subtraction"]:
             #     #                         # negative
@@ -2189,13 +2198,13 @@ def evaluator(input):
 
     def key_functions(arr):
         # runs key function modules
-        nonlocal algebraic_mode
+        nonlocal is_var
         arrVar = arr
 
         # Log process label for key functions
         log_process("Key Functions")
 
-        if algebraic_mode == True:
+        if is_var == True:
             # ALGEBRAIC MODULE
             arrVar = algebraic(arrVar)
         else:
@@ -2370,7 +2379,7 @@ def evaluator(input):
         # test for variables in section
         is_variables = False
         for i in range(0, len(arrVar)):
-            if is_var(arrVar[i]) == True:
+            if var_test(arrVar[i]) == True:
                 is_variables = True
                 break
         
@@ -2425,15 +2434,20 @@ def evaluator(input):
                 if len(section) > 1:
                     section = calculate(section)
                 arrVar = restructure(section, start, end - 1, arrVar)
-
-        arrVar = calculate(arrVar)
+        
+        # if paren_limit was not reached
+        if thresh < paren_limit:
+            # perform remaining calculations
+            arrVar = calculate(arrVar)
+        
+        # return result
         return arrVar
 
     def evaluate(str):
         # top level function runs high level functions
-
-        # test for invalid characters
         nonlocal valid_chars
+
+        # TEST0: character validation
         valid = True
         character = ""
         for char in str:
@@ -2453,10 +2467,10 @@ def evaluator(input):
                     break
         
         if valid == False:
-            # invalid character => cancel evaluation
+            # invalid character => terminate program
             return 'Invalid character: %s' % character
         else:
-            # valid characters => proceed evaluation
+            # valid characters => proceed to structuring
             log_process("Structuring")
             # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
             structure = []
@@ -2501,100 +2515,387 @@ def evaluator(input):
                             structure.append(digits)
             log_process(structure)
 
-            # test for consecutive variables
-            consecutives = False
+            log_process("Constants")
+
+            # structure pi
+            ref = get_word("pi", structure)
+            itr = 0
+            while itr < c_limit and ref is not None:
+                itr = itr + 1
+                structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
+                ref = get_word("pi", structure)
+            
+            # structure euler's number
+            ref = get_word("euler", structure)
+            itr = 0
+            while itr < c_limit and ref is not None:
+                itr = itr + 1
+                structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
+                ref = get_word("euler", structure)
+
+            # structure keywords
+            log_process("Keywords")
+            
+            # key functions
+            for module in range(0, len(info["key_functions"])):
+                for i in range(0, len(info["key_functions"][module])):
+                    structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
+            log_process(key_modules)
+
+            # change first log
+            if use_logs == "1":
+                process_log["0"] = "Process Log Start"
+
+            # Identify program entities in structured string
+            identify_entities(structure)
+
+            # validate problem structure
+
+            nonlocal is_key
+            nonlocal is_brack
+            nonlocal is_paren
+
+            # validation variables
+            test1 = True
+            test2 = True
+            test3 = True
+            test4 = True
+            test5 = True
+            key_error = ""
             structure_length = len(structure)
+
+            # TEST5: consecutive operations
             for i in range(0, structure_length):
-                if i + 1 < structure_length and is_var(structure[i]) and is_var(structure[i + 1]):
-                    consecutives = True
+                # each index in problem structure
+                if i + 1 < structure_length:
+
+                    first = False
+                    second = False
+
+                    for j in range(0, len(info["operations"]) - 5):
+                        if structure[i] == info["operations"][j]["syntax"]:
+                            first = True
+                            break
+
+                    for j in range(0, len(info["operations"]) - 5):
+                        if structure[i + 1] == info["operations"][j]["syntax"]:
+                            second = True
+                            break
+
+                    if first == True and second == True:
+                        test5 = False
+                        break
+
+
+            # TEST1: valid parenthesis
+            
+            if is_paren == True:
+
+                nest_lvl = 0
+                parens = []
+
+                for i in range(0, structure_length):
+                    if structure[i] == operation["open_parenthesis"]:
+                        nest_lvl += 1
+                        parens.append(structure[i])
+                    elif structure[i] == operation["close_parenthesis"]:
+                        nest_lvl -= 1
+                        parens.append(structure[i])
+
+                if nest_lvl != 0:
+                    # unequal number of open and closing characters
+                    test1 = False
+                elif parens[len(parens) - 1] == operation["open_parenthesis"]:
+                    # no opening character on end
+                    test1 = False
+                elif parens[0] == operation["close_parenthesis"]:
+                    # no closing character on start
+                    test1 = False
+                else:
+                    # test for pairs (account for nesting)
+                    for i in range(0, structure_length):
+                        if structure[i] == operation["open_parenthesis"]:
+                            x = 0
+                            for j in range(i, structure_length):
+                                if structure[j] == operation["close_parenthesis"]:
+                                    x -= 1
+                                elif structure[j] == operation["open_parenthesis"]:
+                                    x += 1
+                                if x == 0:
+                                    break
+                            if x != 0:
+                                test1 = False
+            
+            # TEST2: valid brackets
+
+            if is_brack == True:
+                    
+                nest_lvl = 0
+                bracks = []
+
+                for i in range(0, structure_length):
+                    if structure[i] == operation["open_bracket"]:
+                        nest_lvl += 1
+                        bracks.append(structure[i])
+                    elif structure[i] == operation["close_bracket"]:
+                        nest_lvl -= 1
+                        bracks.append(structure[i])
+
+                if nest_lvl != 0:
+                    # unequal number of open and closing characters
+                    test2 = False
+                elif bracks[len(bracks) - 1] == operation["open_bracket"]:
+                    # no opening character on end
+                    test2 = False
+                elif bracks[0] == operation["close_bracket"]:
+                    # no closing character on start
+                    test2 = False
+                else:
+                    # test for pairs (account for nesting)
+                    for i in range(0, structure_length):
+                        if structure[i] == operation["open_bracket"]:
+                            x = 0
+                            for j in range(i, structure_length):
+                                if structure[j] == operation["close_bracket"]:
+                                    x -= 1
+                                elif structure[j] == operation["open_bracket"]:
+                                    x += 1
+                                if x == 0:
+                                    break
+                            if x != 0:
+                                test2 = False
+            
+            # TEST3: consecutive variables
+
+            for i in range(0, structure_length):
+                if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
+                    test3 = False
                     break
             
-            if consecutives == True:
-                # consecutive variables => terminate program
-                return "consecutive variables"
-            else:
-                log_process("Constants")
+            # TEST4: valid key function syntax
 
-                # structure pi
-                ref = get_word("pi", structure)
-                itr = 0
-                while itr < c_limit and ref is not None:
-                    itr = itr + 1
-                    structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
-                    ref = get_word("pi", structure)
-                
-                # structure euler's number
-                ref = get_word("euler", structure)
-                itr = 0
-                while itr < c_limit and ref is not None:
-                    itr = itr + 1
-                    structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
-                    ref = get_word("euler", structure)
-
-                # structure keywords
-                log_process("Keywords")
-                
-                # key functions
-                for module in range(0, len(info["key_functions"])):
-                    for i in range(0, len(info["key_functions"][module])):
-                        structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
-                log_process(key_modules)
-                    
-                # change first log
-                if use_logs == "1":
-                    process_log["0"] = "Process Log Start"
-                
-                # Identify program entities in structured string
-                if not identify_entities(structure):
-                    # invalid entity detected
-                    return structure
+            if len(is_key) > 0:
+                if is_paren == False and is_brack == False:
+                    # is key but no parenthesis and no brackets
+                    test4 = False
+                    key_error = 'key requires arguments wrapped in parenthesis or brackets'
                 else:
-                    # all entities are valid
-                    nonlocal is_brack
-                    if is_brack == True:
-                        # generates substructures, i.e. "sets", within structure
-                        # sets exist so that multiple arguments can be accessed at a single index for key functions
-                        log_process("Structure Sets")
-                        log_process(structure)
-                        # structure sets
-                        sets_ref = []
-                        for i in range(0, len(structure)):
-                            if structure[i] == "[":
-                                sets_ref.append({"char": "[", "index": i})
-                            elif structure[i] == "]":
-                                sets_ref.append({"char": "]", "index": i})
-                        # identify next set to structure using sets_ref
-                        while len(sets_ref) > 0:
-                            for i in range(0, len(sets_ref)):
-                                if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
-                                    # build set
-                                    start_index = sets_ref[i]["index"]
-                                    end_index = sets_ref[i + 1]["index"]
-                                    solution_length = abs(start_index - end_index) + 1
-                                    the_set_itself = []
-                                    for i in range(0, solution_length):
-                                        the_set_itself.append(structure[start_index + i])
+                    # is key and parens or is key and brackets => test index
+                    for i in range(0, structure_length):
+                        if key_test(structure[i]):
+                            # key at i
+                            key = structure[i]
+                            if i + 3 >= structure_length:
+                                # key on last index
+                                test4 = False
+                                key_error = '%s key requires an argument' % key
+                                break
+                            else:
+                                after_key = structure[i + 1]
 
-                                    # restructure
-                                    structure = restructure(the_set_itself, start_index, end_index, structure)
-                                    
-                                    # update reference
-                                    sets_ref = []
-                                    for i in range(0, len(structure)):
-                                        if structure[i] == "[":
-                                            sets_ref.append({"char": "[", "index": i})
-                                        elif structure[i] == "]":
-                                            sets_ref.append({"char": "]", "index": i})
+                                if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
+                                    # no parens or bracks
+                                    test4 = False
+                                    key_error = '%s key requires an argument' % key
                                     break
 
-                    # parenthetically section and solve
-                    return section(structure)
+                                else:
+                                    # scan for key in info structure
+                                    for module in range(0, len(info["key_functions"])):
+                                        # use key modules to determine which module(s) to scan
+                                        if key_modules[module]["use"] == True:
+                                            # scan module
+                                            for j in range(0, len(info["key_functions"][module])):
+                                                if key == info["key_functions"][module][j]["key"]:
+                                                    # key discovered
+                                                    syntax = info["key_functions"][module][j]["syntax"]
+                                                    open_char = syntax[len(key):][0]
+
+                                                    if after_key != open_char:
+                                                        test4 = False
+                                                        key_error = '%s key requires %s not %s' % (key, open_char, after_key)
+                                                        break
+
+                                                    elif open_char == operation["open_parenthesis"]:
+
+                                                        # get argument section of problem structure
+                                                        nest_lvl = 0
+                                                        end_idx = structure_length
+
+                                                        for c in range(i + 1, structure_length):
+                                                            if structure[c] == operation["open_parenthesis"]:
+                                                                nest_lvl += 1
+                                                            elif structure[c] == operation["close_parenthesis"]:
+                                                                nest_lvl -= 1
+                                                                if nest_lvl == 0:
+                                                                    end_index = c
+
+                                                        arguments = structure[i + 1:end_idx]
+
+                                                        # remove parenthesis
+                                                        arguments.pop(0)
+                                                        arguments.pop(len(arguments) - 1)
+
+                                                        # test for no argument
+                                                        if len(arguments) == 0:
+                                                            test4 = False
+                                                            key_error = '%s key requires an argument' % key
+
+                                                        # test argument for variables
+                                                        for c in arguments:
+                                                            if var_test(c):
+                                                                test4 = False
+                                                                key_error = 'variables detected in argument for %s key' % key
+
+                                                    elif open_char == operation["open_bracket"]:
+
+                                                        # get argument section of problem structure
+                                                        nest_lvl = 0
+                                                        end_idx = structure_length
+
+                                                        for c in range(i + 1, structure_length):
+                                                            if structure[c] == operation["open_bracket"]:
+                                                                nest_lvl += 1
+                                                            elif structure[c] == operation["close_bracket"]:
+                                                                nest_lvl -= 1
+                                                                if nest_lvl == 0:
+                                                                    end_idx = c
+                                                                    break
+                                                        arguments = structure[i + 1:end_idx]
+
+                                                        print(key)
+                                                        print(arguments)
+                                                        
+                                                        # remove open bracket
+                                                        arguments.pop(0)
+                                                        
+                                                        print(arguments)
+
+                                                        # test for no argument
+                                                        if len(arguments) == 0:
+                                                            test4 = False
+                                                            key_error = '%s requires an argument' % key
+
+                                                        # test argument for variables
+                                                        for c in arguments:
+                                                            if var_test(c):
+                                                                test4 = False
+                                                                key_error = 'variables detected in argument for %s key' % key
+                                                                break
+                                                        
+                                                        # confirm that expression arguments are wrapped in square brackets
+                                                        if test4 != False:
+                                                            # break down arguments list into each argument
+                                                            buffer = []
+                                                            args = []
+                                                            nest = 0
+                                                            for c in arguments:
+                                                                if c == operation["open_bracket"]:
+                                                                    nest += 1
+                                                                elif c == operation["close_bracket"]:
+                                                                    nest -= 1
+
+                                                                if c == "," and nest == 0:
+                                                                    args.append(buffer)
+                                                                    buffer = []
+                                                                else:
+                                                                    buffer.append(c)
+                                                            args.append(buffer)
+
+                                                            # test number of arguments
+                                                            syntax_arguments = syntax[len(key):]
+                                                            num_args = 0
+                                                            nest = -1
+                                                            for c in syntax_arguments:
+                                                                if c == operation["open_bracket"]:
+                                                                    nest += 1
+                                                                elif c == operation["close_bracket"]:
+                                                                    nest -= 1
+                                                                
+                                                                if nest == 0 and c == ",":
+                                                                    num_args += 1
+
+                                                            # correct fencepost error: no "," after last argument in syntax
+                                                            num_args += 1
+
+                                                            if len(args) < num_args:
+                                                                # incorrect number of arguments
+                                                                test4 = False
+                                                                key_error = '%s key has insufficient arguments' % key
+                                                                break
+
+                                                            # test each argument
+                                                            for c in range(0, len(args)):
+                                                                if len(args[c]) > 1:
+                                                                    if args[c][0] != operation["open_bracket"] or args[c][len(args[c]) - 1] != operation["close_bracket"]:
+                                                                        test4 = False
+                                                                        key_error = 'wrap expression arguments in brackets for %s key' % key
+                                                                        break
+
+                                        if test4 == False:
+                                            break
+                            
+            if test1 == False:
+                # invalid parenthesis => terminate program
+                return "invalid parenthesis"
+            elif test2 == False:
+                # invalid brackets => terminate program
+                return "invalid brackets"
+            elif test3 == False:
+                # consecutive variables => terminate program
+                return "no consecutive variables"
+            elif test4 == False:
+                # invalid key function syntax => terminate program
+                return key_error
+            elif test5 == False:
+                # consecutive operations => terminate program
+                return "no consecutive operations"
+            else:
+
+                # generates substructures, i.e. "sets", within structure
+                # sets exist so that multiple arguments can be accessed at a single index for key functions
+                if is_brack == True:
+                    log_process("Structure Sets")
+                    log_process(structure)
+                    # structure sets
+                    sets_ref = []
+                    for i in range(0, len(structure)):
+                        if structure[i] == "[":
+                            sets_ref.append({"char": "[", "index": i})
+                        elif structure[i] == "]":
+                            sets_ref.append({"char": "]", "index": i})
+                    # identify next set to structure using sets_ref
+                    while len(sets_ref) > 0:
+                        for i in range(0, len(sets_ref)):
+                            if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
+                                # build set
+                                start_index = sets_ref[i]["index"]
+                                end_index = sets_ref[i + 1]["index"]
+                                solution_length = abs(start_index - end_index) + 1
+                                the_set_itself = []
+                                for i in range(0, solution_length):
+                                    the_set_itself.append(structure[start_index + i])
+
+                                # restructure
+                                structure = restructure(the_set_itself, start_index, end_index, structure)
+                                
+                                # update reference
+                                sets_ref = []
+                                for i in range(0, len(structure)):
+                                    if structure[i] == "[":
+                                        sets_ref.append({"char": "[", "index": i})
+                                    elif structure[i] == "]":
+                                        sets_ref.append({"char": "]", "index": i})
+                                break
+
+                # parenthetically section and solve
+                return section(structure)
 
     # Evaluation
     use_logs = input["use_logs"]
     answer = evaluate(input["problem"])
 
-    # convert algebraic expressions to answer string
+    # convert expressions to answer string
     if isinstance(answer, list):
         string = ""
         for i in answer:
@@ -2608,126 +2909,166 @@ def evaluator(input):
         "logs": process_log,
     }
 
-    # return output
+    return output
 
-    # Development
+#     # Development
 
-    # Prints feedback
-    logs = """"""
-    process_log_keys = list(process_log.keys())
-    for key in process_log_keys:
-        logs += """%s
-""" % process_log[key]
+#     # Prints feedback
+#     logs = """"""
+#     process_log_keys = list(process_log.keys())
+#     for key in process_log_keys:
+#         logs += """%s
+# """ % process_log[key]
     
-    print(output["problem"])
-    print(output["answer"])
-    print(logs)
+#     print(output["problem"])
+#     print(output["answer"])
+#     print(logs)
 
-# test data
-input = {
-    "problem": "2+3-xy", # prevents program from evaluating problem structure if the problem structure has consecutive variables
+# # test data
+# input = {
+#     # tests for problem validation
+#     # "problem": "1+1/&%$#", # returns "invalid character: &"
 
-    # "problem": "sd[[sin(0)],[cos(0)]]", # should be 0.5
-    # "problem": "sd[sin(0),cos(0)]", # 505 error vulnurability; create test to prevent (perhaps, test length is 3 ["x", ",", "y"] or that second index is a "," or both)
+#     # TEST5
+#     "problem": "1++1", # 
 
-    # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
-    # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
-    # "problem": "2*x*9", #  a * x * b => (a*b) * x
-    # "problem": "2/x*9", #  a / x * b => (a*b) / x
-    # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
-
-    # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-    # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
-    # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
-    # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
-    # "problem": "10*x/2", # a * x / b => (a/b) * x
-    # "problem": "10/x/2", # a / x / b => (a/b) / x
-    # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
+#     # TEST1
+#     # "problem": "1)+(1*2)", #      )()     : unequal number of open and close characters
+#     # "problem": "1+)1(+(1*2)", #   )(()    : no close on first parens
+#     # "problem": "(1*2)+)1(+1", #   ())(    : no open on last parens
+#     # "problem": "(1*2)+)3(+(1)", # ())(()  : all open characters have a closing pair
     
-    # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
-    # "problem": "10+x+2", # a + x + b => (a+b) + x
-    # "problem": "10-x+2", # a - x + b => (a+b) - x
-    # "problem": "2*x+4*x", # add coefficients of like terms
-    # "problem": "2*x+4*y", # don't add coefficients of not like terms
+#     # TEST2    
+#     # "problem": "1]+[1*2]", #      ][]     : unequal number of open and close characters
+#     # "problem": "1+]1[+[1*2]", #   ][[]    : no close on first parens
+#     # "problem": "[1*2]+]1[+1", #   ]][     : no open on last parens
+#     # "problem": "[1*2]+]3[+[1]", # []][[]  : all open characters have a closing pair
+
+#     # TEST3
+#     # "problem": "2+3-xi", # prevents program from evaluating problem structure if the problem structure has consecutive variables
+
+#     # TEST4
+#     # "problem": "sin", # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
+#     # "problem": "(1+2)*3-sin", # prevents program from evaulating problem structure if there is a key at the end with no argument
+#     # "problem": "sin+1*(2-3)", # prevents program from evaulating problem structure if there is a key before the end with no argument
+
+#     # "problem": "sin[0]", # prevents program from evaulating problem structure if wrong open and close characters are used
+#     # "problem": "mean(4,8)", # prevents program from evaulating problem structure if wrong open and close characters are used
+
+#     # "problem": "sin(x)", # prevents program from evaulating problem structure if variable argument in parenthesis
+#     # "problem": "sin(1+2/x)", # prevents program from evaulating problem structure if variable in expression argument in parenthesis
+#     # "problem": "sin()", # prevents running of key function with no argument in parenthesis
+
+#     # "problem": "mean[4,x]", # prevents program from evaulating problem structure if variable argument in brackets
+#     # "problem": "mean[4,[2*x]]", # prevents program from evaulating problem structure if variable in expression argument in brackets
+#     # "problem": "mean[]", # prevents running of key function with no argument in brackets
+#     # "problem": "mean[4,4+4]", # prevents running of key function without expression arguments wrapped in square brackets
+#     # "problem": "mean[4,[4+4]]", # as it should be; gets 6.0
+
+#     # "problem": "sd[[mean[0,0]],1]", # validation works for key function composition
+
+#     # "problem": "mean[10]", # prevents program from evaluating problem structure if insufficient arguments for key function
+#     # "problem": "meanw[[10,0.5]]", # prevents program from evaluating problem structure if insufficient arguments for key function
+
+#     # algebraic simplification
+#     # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
+
+#     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
+#     # "problem": "2*x*9", #  a * x * b => (a*b) * x
+#     # "problem": "2/x*9", #  a / x * b => (a*b) / x
+#     # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+
+#     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+#     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
+#     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
+#     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
+#     # "problem": "10*x/2", # a * x / b => (a/b) * x
+#     # "problem": "10/x/2", # a / x / b => (a/b) / x
+#     # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
     
-    # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
-    # "problem": "10+x-2", # a + x - b => (a-b) + x
-    # "problem": "10-x-2", # a - x - b => (a-b) - x
-    # "problem": "8*x-3*x", # subtract coefficients of like terms
-    # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
+#     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
+#     # "problem": "10+x+2", # a + x + b => (a+b) + x
+#     # "problem": "10-x+2", # a - x + b => (a+b) - x
+#     # "problem": "2*x+4*x", # add coefficients of like terms
+#     # "problem": "2*x+4*y", # don't add coefficients of not like terms
+    
+#     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
+#     # "problem": "10+x-2", # a + x - b => (a-b) + x
+#     # "problem": "10-x-2", # a - x - b => (a-b) - x
+#     # "problem": "8*x-3*x", # subtract coefficients of like terms
+#     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
-    # "problem": "1+1/&%$#", # returns "invalid characters"
-    # "problem": "expand[[a+b][x+y][p+q]]",
+#     # "problem": "1++1", # no consecutive operations for addition
+#     # "problem": "1+-1", # no consecutive operations for different operations
 
-    "use_logs": "1", # 1 = yes
-}
-evaluator(input)
+#     # tests for key functions
+#     # "problem": "sd[[sin(0)],[cos(0)]]", # should get 0.5; key functions can run as arguments to other key functions for key function composition
+
+#     "use_logs": "1", # 1 = yes
+# }
+# evaluator(input)
 
 # development tasks
 #  - design remaining simplifications in simplify function
 #  - complete and test expand key function with simplifications
 #  - order each term at the end of the get terms function ( exempli gratia x*2*y => 2*x*y; x^2*3 => 3*x^2)
 
-# vulnerabilities
-#  - key without parens or brackets
-#  - brackets without key
-#  - variables with no operations between them
 
-# # Flask APP
-# app = Flask(__name__)
+# Flask APP
+app = Flask(__name__)
 
-# # CORS wrapper
-# CORS(app)
+# CORS wrapper
+CORS(app)
 
-# # ROUTES
+# ROUTES
 
-# # Index route
-# @app.route("/", methods=["GET"])
-# def index():
-#     return "<div>Index route accessed.</div>"
+# Index route
+@app.route("/", methods=["GET"])
+def index():
+    return "<div>Index route accessed.</div>"
 
-# # Hello world environment variable demonstration
-# @app.route("/hello-world", methods=["GET"])
-# def hello_world():
-#     return "<p>%s</p>" % os.environ['greeting']
+# Hello world environment variable demonstration
+@app.route("/hello-world", methods=["GET"])
+def hello_world():
+    return "<p>%s</p>" % os.environ['greeting']
 
-# # Evaluator data root
-# @app.route("/eval", methods=["POST"])
-# def eval():
-#     try:
-#         return jsonify(evaluator(request.get_json()))
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator data root
+@app.route("/eval", methods=["POST"])
+def eval():
+    try:
+        return jsonify(evaluator(request.get_json()))
+    except Exception as e:
+        return "Error:", e
     
-# # Evaluator problem data
-# @app.route("/eval/problem", methods=["POST"])
-# def eval_problem():
-#     try:
-#         return jsonify(evaluator(request.get_json())["problem"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator problem data
+@app.route("/eval/problem", methods=["POST"])
+def eval_problem():
+    try:
+        return jsonify(evaluator(request.get_json())["problem"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator answer data
-# @app.route("/eval/answer", methods=["POST"])
-# def eval_answer():
-#     try:
-#         return jsonify(evaluator(request.get_json())["answer"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator answer data
+@app.route("/eval/answer", methods=["POST"])
+def eval_answer():
+    try:
+        return jsonify(evaluator(request.get_json())["answer"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator log data
-# @app.route("/eval/logs", methods=["POST"])
-# def eval_logs():
-#     try:
-#         return jsonify(evaluator(request.get_json())["logs"])
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator log data
+@app.route("/eval/logs", methods=["POST"])
+def eval_logs():
+    try:
+        return jsonify(evaluator(request.get_json())["logs"])
+    except Exception as e:
+        return "Error:", e
 
-# # Evaluator info object data (read-only)
-# @app.route("/eval/info", methods=["GET"])
-# def eval_info():
-#     try:
-#         return jsonify(info)
-#     except Exception as e:
-#         return "Error:", e
+# Evaluator info object data (read-only)
+@app.route("/eval/info", methods=["GET"])
+def eval_info():
+    try:
+        return jsonify(info)
+    except Exception as e:
+        return "Error:", e
