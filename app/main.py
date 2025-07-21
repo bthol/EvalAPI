@@ -110,9 +110,11 @@ info = {
             {"name":"Permutation", "key":"perm", "syntax": "perm[n,r]", "about": "Gets a permutation given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. perm[n,[r+x]]."},
 
             {"name":"Combination", "key":"comb", "syntax": "comb[n,r]", "about": "Gets a combination given n number of objects with r number of objects per combination, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. comb[n,[r+x]]."},
+            
         # add
         #  - composition
         #  - partition
+
         ],
 
         # Statistical Module
@@ -130,7 +132,7 @@ info = {
 
             {"name":"Mean", "key":"mean", "syntax": "mean[a,b]", "about": "Gets the mean of the the set of values within square brackets, where that set has at least two comma demarcated items, and each item is a value or an expression that evaluates to a value, e.g. mean[a,[b+x]]."},
 
-            {"name":"Root Mean Square", "key":"rms", "syntax": "rms[a1,a2]", "about": "Gets the geometeric mean of the the set of items within square brackets, where that set has at least two comma-demarcated items, and each item is a value or an expression that evaulates to a value wrapped within square brackets, e.g. rms[10,[2+3]]."},
+            {"name":"Root Mean Square", "key":"rms", "syntax": "rms[a,b]", "about": "Gets the geometeric mean of the the set of items within square brackets, where that set has at least two comma-demarcated items, and each item is a value or an expression that evaulates to a value wrapped within square brackets, e.g. rms[10,[2+3]]."},
                 
             # Et Cetera
             {"name":"Greatest Common Factor", "key":"gcf", "syntax": "gcf[a,b]", "about": "Gets the greatest common factor of a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. gcf[a,[b+x]]."},
@@ -143,8 +145,9 @@ info = {
         ],
 
         # Algebraic
+        # note: algebraic module must be at end index of key_functions
         [
-            {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[a],[x+y]]"},
+            {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[x+1],[1+1]] = (x+1)*(x+1)"},
             
             # {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x+y][a+b]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
@@ -164,11 +167,14 @@ def evaluator(input):
     # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
     paren_limit = 100
 
-    # the c_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
-    c_limit = 100
+    # the const_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
+    const_limit = 100
 
     # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
     key_limit = 100
+
+    # the simp_limit parameter constrols the maximum number of simplifications in any one evaluation
+    simp_limit = 100
 
     # PROGRAM ENTITY REFERENCE
 
@@ -194,6 +200,10 @@ def evaluator(input):
 
     # represents a string containing all of the valid non-numeral characters
     valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    
+    # global_bypass is an emergeny brake which preents the continuation of the program
+    # If False, bypasses the whole program 
+    global_bypass = False
     
     # is_var indicates if variables in problem structure
     # and controls whether the program solves for an algebraic expression, True, or a single value, False
@@ -536,10 +546,39 @@ def evaluator(input):
         return difference
 
     def factorial(x):
-        y = 1
-        for i in range(int(x), 1, -1):
-            y = y * i
-        return y
+        if int(x) == x:
+            if x == 1:
+                return 1
+            elif x > 1:
+                # accumulate factorial in y
+                y = 1
+                for i in range(int(x), 1, -1):
+                    y = y * i
+                
+                # return answer
+                return y
+            
+            elif x < 0:
+                # accumulate factorial in y
+                y = 1
+                x = abs(x)
+                for i in range(int(x), 1, -1):
+                    y = y * i
+                
+                # test odd number of negative multiplications
+                if x % 2 != 0:
+                    y = -y
+
+                # return answer
+                return y
+            
+        else:
+            # x is not an integer
+            nonlocal global_bypass
+            global_bypass = True
+
+            # return error
+            return 0
 
     def get_mean(arr):
         # returns the mean of a list of values
@@ -561,7 +600,7 @@ def evaluator(input):
         
         # test front end
         elif c1 - 1 > -1:
-            if arr[c1 - 1] == operation["addition"] or operation["subtraction"]:
+            if arr[c1 - 1] == operation["addition"] or arr[c1 + 1] == operation["subtraction"]:
                 return True
         
         # test back end
@@ -570,10 +609,10 @@ def evaluator(input):
                 return True
         
         # no ends to test
-        else:
+        elif c1 == 0 and c2 + 1 == arr_len:
             return True
         
-        # no true condition reached
+        # no true condition reached (e.g. index out of range)
         return False
 
     # def getTerms(arr):
@@ -601,76 +640,8 @@ def evaluator(input):
 
     #     return sect_struct
     
-    # def combineLikeTerms(arr):
-
-    #     # combines like terms in algebraic and returns simplified expression
-    #     nonlocal variables
-
-    #     # identify terms
-    #     sect_struct = getTerms(arr)
-
-    #     # compare to test for like terms
-    #     likeness = []
-
-    #     # get variables + exponents for each term
-    #     for term in sect_struct:
-    #         # each term gets a "t object"
-    #         t = {"variables": [], "exponent":""}
-
-    #         for c in range(0, len(term)):
-    #             # each character
-
-    #             # test for exponents
-    #             if term[c] == operation["exponentiation"]:
-    #                 if c + 1 < len(term):
-    #                     if term[c + 1] == operation["open_parenthesis"]:
-
-    #                         # c + 1 is an expression
-
-    #                         nest = 0
-    #                         expression = []
-    #                         # compile to expression until finding end parenthesis
-    #                         for char in range(c + 1, len(term)):
-    #                             # compile
-    #                             expression.append(char)
-    #                             # test for end parenthesis
-    #                             if char == operation["open_parenthesis"]:
-    #                                 nest += 1
-    #                             elif char == operation["close_parenthesis"]:
-    #                                 nest -= 1
-    #                                 if nest == 0:
-    #                                     # found end parenthesis
-    #                                     t["exponent"] = expression
-    #                                     break
-
-    #                     else:
-
-    #                         # c + 1 is a value
-
-    #                         t["exponent"] = term[c + 1]
-
-    #                 else:
-
-    #                     # c + 1 is last character of term; is a value
-
-    #                     t["exponent"] = term[c + 1]
-    #             else:
-    #                 # current character is not a exponentiation symbol
-
-    #                 # test for variables
-    #                 if var_test(term[c]):
-    #                     t["variables"].append(term[c])
-
-
-    #         # append t object to likeness
-    #         likeness.append(t)
-        
-    #     # print(sect_struct)
-    #     # print(likeness)
-        
-    #     return arr
-    
     def simplify(arr):
+        nonlocal simp_limit
         # log process label
         log_process("Simplifying")
 
@@ -680,11 +651,11 @@ def evaluator(input):
         # define process of simplification
         # 1.) identify first variable in arr testing from left to right
         # 2.) test for simplifications until one is discovered and run that
-        # 3.) restart step 1 - 3 until no simplification are discovered during step 2
+        # 3.) repeat step 1 - 2 until no simplification are discovered during step 2
         
         simplifying = True
         x = 0
-        while x < 10 and simplifying == True:
+        while x < simp_limit and simplifying == True:
             # each while loop interation is one simplification
             x += 1
             
@@ -863,6 +834,7 @@ def evaluator(input):
                                     break
 
                             # SIMP8: combine terms for variable with coefficients divided
+
                             if testTermEnds(c - 2, c + 4, arrVar):
                                 # correct term length for c index
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
@@ -1036,8 +1008,9 @@ def evaluator(input):
                     # no further simplifications; on end character and no simplifications run
                     simplifying = False
 
-        # log
+        # log end of simplification
         log_process("Simplified")
+
         # return simplified expression
         return arrVar
 
@@ -1080,7 +1053,9 @@ def evaluator(input):
     def trigonomic(arr):
         # key function module for trigonomic functions
         arrVar = arr
-        if key_modules[0]["use"] == True:
+        nonlocal global_bypass
+
+        if key_modules[0]["use"] == True and global_bypass == False:
 
             # fundamental functions
 
@@ -1089,12 +1064,13 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.sin(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("sin", arrVar)
 
@@ -1103,40 +1079,43 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
                 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arcsin(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("asin", arrVar)
-            
+                
             # perform all cosine functions
             ref = getIdx("cos", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.cos(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("cos", arrVar)
-        
+            
             # perform all arcus cosine functions
             ref = getIdx("acos", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
                 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arccos(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("acos", arrVar)
 
@@ -1145,26 +1124,28 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.tan(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("tan", arrVar)
-            
+                
             # perform all arcus tangent functions
             ref = getIdx("atan", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arctan(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("atan", arrVar)
 
@@ -1175,26 +1156,28 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = 1 / np.sin(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("csc", arrVar)
-            
+                
             # perform all arc cosecant functions
             ref = getIdx("acsc", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arcsin(1/x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("acsc", arrVar)
 
@@ -1203,40 +1186,43 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = 1 / np.cos(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("sec", arrVar)
-            
+                
             # perform all arc secant functions
-            ref = getIdx("sec", arrVar)
+            ref = getIdx("asec", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arccos(1/x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("sec", arrVar)
+                ref = getIdx("asec", arrVar)
 
             # perform all cotangent functions
             ref = getIdx("cot", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = 1 / np.tan(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("cot", arrVar)
             
@@ -1245,12 +1231,13 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.arctan(1/x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("acot", arrVar)
             
@@ -1262,12 +1249,13 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.sinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("sinh", arrVar)
             
@@ -1276,12 +1264,13 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.asinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("asinh", arrVar)
             
@@ -1290,12 +1279,13 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.sinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("cosh", arrVar)
             
@@ -1304,40 +1294,43 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.asinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("acosh", arrVar)
-            
+        
             # perform all hyperbolic tangent functions
             ref = getIdx("tanh", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.sinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("tanh", arrVar)
-            
+        
             # perform all arcus hyperbolic tangent functions
             ref = getIdx("atanh", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = np.asinh(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("atanh", arrVar)
 
@@ -1346,12 +1339,18 @@ def evaluator(input):
     def geometric(arr):
         # key function module for geometric functions
         arrVar = arr
-        if key_modules[1]["use"] == True:
+        nonlocal global_bypass
+
+        if key_modules[1]["use"] == True and global_bypass == False:
+
             # perform all right triangle hypotenuse functions
             ref = getIdx("hypot", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1371,9 +1370,8 @@ def evaluator(input):
                 leg2 = set_2[1]
                 
                 y = np.hypot(leg1, leg2)
-
-                # Log keyword
-                log_process(arrVar[ref])
+                
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("hypot", arrVar)
 
@@ -1382,6 +1380,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1408,8 +1409,7 @@ def evaluator(input):
                 # area calculation
                 area = (s * (s - a) * (s - b) * (s - c))**0.5
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(area, ref, ref + 1, arrVar)
                 ref = getIdx("heron", arrVar)
 
@@ -1418,19 +1418,22 @@ def evaluator(input):
     def combinatoric(arr):
         # key function module for combinatoric functions
         arrVar = arr
+        nonlocal global_bypass
 
-        if key_modules[2]["use"] == True:
+        if key_modules[2]["use"] == True and global_bypass == False:
+
             # perform all Factorial functions
             ref = getIdx("fact", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
                 y = factorial(x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("fact", arrVar)
 
@@ -1439,6 +1442,46 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = float(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of objects
+                r = set_2[1] # number of objects per permutation
+
+                if n >= r:
+                    perm = factorial(n) / factorial(n - r)
+                else:
+                    # n cannot be less than r
+                    global_bypass = True
+                    return arrVar
+
+                # apply answer and search for new problem
+                arrVar = restructure(perm, ref, ref + 1, arrVar)
+                ref = getIdx("perm", arrVar)
+
+            # perform all Combination functions
+            ref = getIdx("comb", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # log keyword
+                log_process(arrVar[ref])
+
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1456,39 +1499,15 @@ def evaluator(input):
                 # perform calculation using numeral set
                 n = set_2[0]
                 r = set_2[1]
-                perm = factorial(n) / factorial(n - r)
 
-                # Log keyword
-                log_process(arrVar[ref])
-                arrVar = restructure(perm, ref, ref + 1, arrVar)
-                ref = getIdx("perm", arrVar)
-            
-            # perform all Combination functions
-            ref = getIdx("comb", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        xx = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0]
-                r = set_2[1]
-                comb = factorial(n) / (factorial(r) * factorial(n - r))
-
-                # Log keyword
-                log_process(arrVar[ref])
+                if n >= r:
+                    comb = factorial(n) / (factorial(r) * factorial(n - r))
+                else:
+                    # n cannot be greater than r
+                    global_bypass = True
+                    return arrVar
+                
+                # apply answer and search for new problem
                 arrVar = restructure(comb, ref, ref + 1, arrVar)
                 ref = getIdx("comb", arrVar)
 
@@ -1497,13 +1516,18 @@ def evaluator(input):
     def statistical(arr):
         # key function module for statistical functions
         arrVar = arr
-        if key_modules[3]["use"] == True:
+        nonlocal global_bypass
+
+        if key_modules[3]["use"] == True and global_bypass == False:
             
             # perform all Standard Deviation functions
             ref = getIdx("sd", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1517,26 +1541,28 @@ def evaluator(input):
                     else:
                         x = num_cast(section(i))
                         set_2.append(x)
+                    
+                    # print(set_2)
+
+                    # perform calculation using numeral set
+                    mean = get_mean(set_2)
+                    set_3 = []
+                    for i in set_2:
+                        set_3.append(math.pow(i - mean, 2))
+                    sd = math.pow(sum(set_3)/len(set_3), 1/2)
+
+                    # apply answer and search for new problem
+                    arrVar = restructure(sd, ref, ref + 1, arrVar)
+                    ref = getIdx("sd", arrVar)
                 
-                print(set_2)
-
-                # perform calculation using numeral set
-                mean = get_mean(set_2)
-                set_3 = []
-                for i in set_2:
-                    set_3.append(math.pow(i - mean, 2))
-                sd = math.pow(sum(set_3)/len(set_3), 1/2)
-
-                # Log keyword
-                log_process(arrVar[ref])
-                arrVar = restructure(sd, ref, ref + 1, arrVar)
-                ref = getIdx("sd", arrVar)
-            
             # perform all Variance functions
             ref = getIdx("var", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1558,8 +1584,7 @@ def evaluator(input):
                     set_3.append(math.pow(i - mean, 2))
                 sd = sum(set_3)/len(set_3)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(sd, ref, ref + 1, arrVar)
                 ref = getIdx("var", arrVar)
 
@@ -1568,6 +1593,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1584,16 +1612,18 @@ def evaluator(input):
                 # perform calculation using numeral set
                 mean = len(set_2) / sum(set_2)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(mean, ref, ref + 1, arrVar)
                 ref = getIdx("meanh", arrVar)
-            
+                
             # perform all Geometeric Mean functions
             ref = getIdx("meang", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1610,8 +1640,7 @@ def evaluator(input):
                 # perform calculation using numeral set
                 mean = math.pow(set_2, 1/len(set_1))
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(mean, ref, ref + 1, arrVar)
                 ref = getIdx("meang", arrVar)
 
@@ -1619,8 +1648,10 @@ def evaluator(input):
             ref = getIdx("meanw", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
-            
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1644,8 +1675,7 @@ def evaluator(input):
                 # perform calculation using numeral set
                 mean = sum(set_2) / n
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(mean, ref, ref + 1, arrVar)
                 ref = getIdx("meanw", arrVar)
 
@@ -1654,6 +1684,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1671,8 +1704,7 @@ def evaluator(input):
                 # perform calculation using numeral set
                 mean = get_mean(set_2)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(mean, ref, ref + 1, arrVar)
                 ref = getIdx("mean", arrVar)
             
@@ -1681,6 +1713,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1702,8 +1737,7 @@ def evaluator(input):
                 mean = get_mean(square)
                 root = math.pow(mean, 1/2)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(root, ref, ref + 1, arrVar)
                 ref = getIdx("rms", arrVar)
             
@@ -1712,6 +1746,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1771,8 +1808,7 @@ def evaluator(input):
                 else:
                     gcf = set_2[0]
                 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(gcf, ref, ref + 1, arrVar)
                 ref = getIdx("gcf", arrVar)
             
@@ -1781,6 +1817,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1816,8 +1855,7 @@ def evaluator(input):
                         mult_1.append(mult_1[0] * x)
                         mult_2.append(mult_2[0] * x)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                # apply answer and search for new problem
                 arrVar = restructure(lcm, ref, ref + 1, arrVar)
                 ref = getIdx("lcm", arrVar)
             
@@ -1826,6 +1864,9 @@ def evaluator(input):
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
                 # get string string set
                 set_1 = arrVar[ref + 1]
                 log_process(set_1)
@@ -1842,10 +1883,15 @@ def evaluator(input):
                 
                 x = set_2[0]
                 b = set_2[1]
-                y = math.log(x, b)
 
-                # Log keyword
-                log_process(arrVar[ref])
+                if x > 0:
+                    y = np.emath.logn(b, x)
+                else:
+                    # complex result
+                    global_bypass = True
+                    y = 0
+
+                # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
                 ref = getIdx("log", arrVar)
             
@@ -1853,16 +1899,23 @@ def evaluator(input):
             ref = getIdx("ln", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
-                itr = itr + 1
+                    itr = itr + 1
+                    # Log keyword
+                    log_process(arrVar[ref])
 
-                x = num_cast(arrVar[ref + 1])
-                y = math.log(x)
+                    x = num_cast(arrVar[ref + 1])
 
-                # Log keyword
-                log_process(arrVar[ref])
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("ln", arrVar)
-            
+                    if x > 0:
+                        y = np.log(x)
+                    else:
+                        # complex result
+                        global_bypass = True
+                        y = 0
+
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("ln", arrVar)
+                
         return arrVar
 
     def algebraic(arr):
@@ -1870,15 +1923,15 @@ def evaluator(input):
         # algebraic operations translate to algebraic expressions
         # rather than solving for single value
         arrVar = arr
+        nonlocal global_bypass
 
-        if key_modules[4]["use"] == True:
+        if key_modules[4]["use"] == True and global_bypass == False:
 
             # performs all algebraic exponentiation
             ref = getIdx("algexp", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
-
                 # Log keyword
                 log_process(arrVar[ref])
 
@@ -2244,164 +2297,180 @@ def evaluator(input):
                 # run key functions on section
                 arrVar = key_functions(arrVar)
         
-        # perform all arithmetic operations accounting for operator precedence
-        
-        # perform all Multiplications and Divisions as they appear from left to right
-        if is_mult == True and is_div == True:
-            m_ref = getIdx(operation["multiplication"], arrVar)
-            d_ref = getIdx(operation["division"], arrVar)
-            while m_ref is not None or d_ref is not None:
-                if d_ref is None and m_ref is not None:
-                    # Only Multiply
-                    x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                    arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                    m_ref = getIdx(operation["multiplication"], arrVar)
-
-                elif m_ref is None and d_ref is not None:
-                    # Only Divide
-                    x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                    arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                    d_ref = getIdx(operation["division"], arrVar)
-
-                elif m_ref is not None and d_ref is not None and m_ref < d_ref:
-                    # Multiply first
-                    x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                    arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-
-                    d_ref = getIdx(operation["division"], arrVar)
-                    y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                    arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
-
-                    m_ref = getIdx(operation["multiplication"], arrVar)
-                    d_ref = getIdx(operation["division"], arrVar)
-
-                elif d_ref is not None and m_ref is not None and d_ref < m_ref:
-                    # Divide First
-                    x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                    arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                    m_ref = getIdx(operation["multiplication"], arrVar)
-
-                    y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                    arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
-
-                    m_ref = getIdx(operation["multiplication"], arrVar)
-                    d_ref = getIdx(operation["division"], arrVar)
-
-        elif is_mult == True:
-            m_ref = getIdx(operation["multiplication"], arrVar)
-            while m_ref is not None:
-                x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                m_ref = getIdx(operation["multiplication"], arrVar)
-
-        elif is_div == True:
-            d_ref = getIdx(operation["division"], arrVar)
-            while d_ref is not None:
-                x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                d_ref = getIdx(operation["division"], arrVar)
-
-        # perform all Additions and Subtractions as they appear from left to right
-        if is_add == True and is_sub == True:
-            a_ref = getIdx(operation["addition"], arrVar)
-            s_ref = getIdx(operation["subtraction"], arrVar)
-            while a_ref is not None or s_ref is not None:
-                if s_ref is None and a_ref is not None:
-                    # only add
-                    x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                    arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                    a_ref = getIdx(operation["addition"], arrVar)
-
-                elif a_ref is None and s_ref is not None:
-                    # only subtract
-                    x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                    arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-
-                elif a_ref is not None and s_ref is not None and a_ref < s_ref:
-                    # add first
-                    x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                    arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                    a_ref = getIdx(operation["addition"], arrVar)
-
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-                    y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                    arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
-
-                    a_ref = getIdx(operation["addition"], arrVar)
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-
-                elif s_ref is not None and a_ref is not None and s_ref < a_ref:
-                    # subtract first
-                    x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                    arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-
-                    a_ref = getIdx(operation["addition"], arrVar)
-                    y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                    arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
-
-                    a_ref = getIdx(operation["addition"], arrVar)
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-        
-        elif is_add == True:
-            a_ref = getIdx(operation["addition"], arrVar)
-            while a_ref is not None:
-                x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                a_ref = getIdx(operation["addition"], arrVar)
-        
-        elif is_sub == True:
-            s_ref = getIdx(operation["subtraction"], arrVar)
-            while s_ref is not None:
-                x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                s_ref = getIdx(operation["subtraction"], arrVar)
-        
-        # perform all exponentiations
-        if is_exp == True:
-            ref = getIdx(operation["exponentiation"], arrVar)
-            while ref is not None:
-                x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
-                arrVar = restructure(x, ref - 1, ref + 1, arrVar)
-                ref = getIdx(operation["exponentiation"], arrVar)
-
-        # Perform all square roots
-        if is_root == True:
-            ref = getIdx(operation["radication"], arrVar)
-            while ref is not None:
-                x = root(arrVar[ref + 1], 2)
-                arrVar = restructure(x, ref, ref + 1, arrVar)
-                ref = getIdx(operation["radication"], arrVar)
-        
-        log_process("Calculated")
-        
-        # test for variables in section
-        is_variables = False
-        for i in range(0, len(arrVar)):
-            if var_test(arrVar[i]) == True:
-                is_variables = True
-                break
-        
-        if is_variables == True:
-            # run algebraic simplifications
-            arrVar = simplify(arrVar)
-            # return algebraic expression
+        nonlocal global_bypass
+        if global_bypass == True:
             return arrVar
         else:
-            # return single value
-            return arrVar[0]
+            # perform all arithmetic operations accounting for operator precedence
+
+            # perform all exponentiations
+            if is_exp == True:
+                ref = getIdx(operation["exponentiation"], arrVar)
+                while ref is not None:
+                    x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
+                    arrVar = restructure(x, ref - 1, ref + 1, arrVar)
+                    ref = getIdx(operation["exponentiation"], arrVar)
+
+            # Perform all square roots
+            if is_root == True:
+                ref = getIdx(operation["radication"], arrVar)
+                while ref is not None:
+                    x = 0
+                    if ref - 1 > -1 and not op_test(arrVar[ref - 1]):
+                        # radication of given degree
+                        x = root(arrVar[ref + 1], arrVar[ref - 1])
+                        arrVar = restructure(x, ref - 1, ref + 1, arrVar)
+                        ref = getIdx(operation["radication"], arrVar)
+                    else:
+                        # square root
+                        x = root(arrVar[ref + 1], 2)
+                        arrVar = restructure(x, ref, ref + 1, arrVar)
+                        ref = getIdx(operation["radication"], arrVar)
+
+            # perform all Multiplications and Divisions as they appear from left to right
+            if is_mult == True and is_div == True:
+                m_ref = getIdx(operation["multiplication"], arrVar)
+                d_ref = getIdx(operation["division"], arrVar)
+                while m_ref is not None or d_ref is not None:
+                    if d_ref is None and m_ref is not None:
+                        # Only Multiply
+                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+
+                    elif m_ref is None and d_ref is not None:
+                        # Only Divide
+                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
+
+                    elif m_ref is not None and d_ref is not None and m_ref < d_ref:
+                        # Multiply first
+                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+
+                        d_ref = getIdx(operation["division"], arrVar)
+                        y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                        arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
+
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
+
+                    elif d_ref is not None and m_ref is not None and d_ref < m_ref:
+                        # Divide First
+                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+
+                        y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                        arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
+
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
+
+            elif is_mult == True:
+                m_ref = getIdx(operation["multiplication"], arrVar)
+                while m_ref is not None:
+                    x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                    arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+                    m_ref = getIdx(operation["multiplication"], arrVar)
+
+            elif is_div == True:
+                d_ref = getIdx(operation["division"], arrVar)
+                while d_ref is not None:
+                    x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                    arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
+
+            # perform all Additions and Subtractions as they appear from left to right
+            if is_add == True and is_sub == True:
+                a_ref = getIdx(operation["addition"], arrVar)
+                s_ref = getIdx(operation["subtraction"], arrVar)
+                while a_ref is not None or s_ref is not None:
+                    if s_ref is None and a_ref is not None:
+                        # only add
+                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
+
+                    elif a_ref is None and s_ref is not None:
+                        # only subtract
+                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+
+                    elif a_ref is not None and s_ref is not None and a_ref < s_ref:
+                        # add first
+                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
+
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+                        y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                        arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
+
+                        a_ref = getIdx(operation["addition"], arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+
+                    elif s_ref is not None and a_ref is not None and s_ref < a_ref:
+                        # subtract first
+                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+
+                        a_ref = getIdx(operation["addition"], arrVar)
+                        y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                        arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
+
+                        a_ref = getIdx(operation["addition"], arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+            
+            elif is_add == True:
+                a_ref = getIdx(operation["addition"], arrVar)
+                while a_ref is not None:
+                    x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                    arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                    a_ref = getIdx(operation["addition"], arrVar)
+            
+            elif is_sub == True:
+                s_ref = getIdx(operation["subtraction"], arrVar)
+                while s_ref is not None:
+                    x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                    arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+            
+            log_process("Calculated")
+            
+            # test for variables in section
+            is_variables = False
+            for i in range(0, len(arrVar)):
+                if var_test(arrVar[i]) == True:
+                    is_variables = True
+                    break
+            
+            if is_variables == True:
+                # run algebraic simplifications
+                arrVar = simplify(arrVar)
+                # return algebraic expression
+                return arrVar
+            else:
+                # return single value
+                return arrVar[0]
 
     def section(arr):
         # performs calculations in order of parenthesis nesting
+        nonlocal global_bypass
         nonlocal is_paren
         arrVar = arr
         thresh = 0
         while is_paren == True and thresh < paren_limit:
             thresh = thresh + 1
+
             # test for parenthesis
             parens = []
             count = 0
+
+            # build reference structure
             for i in range(0, len(arrVar)):
                 if arrVar[i] == "(":
                     count = count + 1
@@ -2409,9 +2478,10 @@ def evaluator(input):
                 elif arrVar[i] == ")":
                     count = count + 1
                     parens.append({"index": i, "char": ")"})
+            
             if count == 0:
                 is_paren = False
-                continue
+                break
             else:
                 log_process("Parenthesis")
             
@@ -2422,22 +2492,30 @@ def evaluator(input):
                     arr_sect = arrVar[parens[i]["index"] + 1:parens[i + 1]["index"]]
                     # send to osme for restructing
                     osme.append({"section": arr_sect, "start": parens[i]["index"] + 1, "end": parens[i + 1]["index"]})
-            
-            # print(osme)
 
             # restructuring
-            for i in range(0, len(osme)):
-                start = osme[len(osme) - 1 - i]["start"] - 1
-                end = osme[len(osme) - 1 - i]["end"] + 1
-                section = osme[len(osme) - 1 - i]["section"]
+            osme_length = len(osme)
+            for i in range(0, osme_length):
+
+                start = osme[osme_length - 1 - i]["start"] - 1
+                end = osme[osme_length - 1 - i]["end"] + 1
+                section = osme[osme_length - 1 - i]["section"]
+
                 log_process(section)
+
                 if len(section) > 1:
+
                     section = calculate(section)
+
+                    if global_bypass == True:
+                        return arrVar
+                
                 arrVar = restructure(section, start, end - 1, arrVar)
         
-        # if paren_limit was not reached
+        # if paren_limit was not reached and nested expressions are solved
         if thresh < paren_limit:
-            # perform remaining calculations
+
+            # perform remaining calculations on un-nested expression
             arrVar = calculate(arrVar)
         
         # return result
@@ -2520,7 +2598,7 @@ def evaluator(input):
             # structure pi
             ref = get_word("pi", structure)
             itr = 0
-            while itr < c_limit and ref is not None:
+            while itr < const_limit and ref is not None:
                 itr = itr + 1
                 structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
                 ref = get_word("pi", structure)
@@ -2528,7 +2606,7 @@ def evaluator(input):
             # structure euler's number
             ref = get_word("euler", structure)
             itr = 0
-            while itr < c_limit and ref is not None:
+            while itr < const_limit and ref is not None:
                 itr = itr + 1
                 structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
                 ref = get_word("euler", structure)
@@ -2541,6 +2619,8 @@ def evaluator(input):
                 for i in range(0, len(info["key_functions"][module])):
                     structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
             log_process(key_modules)
+
+            log_process("Structured")
 
             # change first log
             if use_logs == "1":
@@ -2561,10 +2641,18 @@ def evaluator(input):
             test3 = True
             test4 = True
             test5 = True
+            test6 = True
             key_error = ""
             structure_length = len(structure)
 
+            # TEST6: Zero Division
+            for i in range(0, structure_length):
+                if i + 1 < structure_length and structure[i] == operation["division"] and structure[i + 1] == "0":
+                    test6 = False
+                    break
+
             # TEST5: consecutive operations
+
             for i in range(0, structure_length):
                 # each index in problem structure
                 if i + 1 < structure_length:
@@ -2577,15 +2665,15 @@ def evaluator(input):
                             first = True
                             break
 
-                    for j in range(0, len(info["operations"]) - 5):
-                        if structure[i + 1] == info["operations"][j]["syntax"]:
-                            second = True
-                            break
+                    if first == True:
+                        for j in range(0, len(info["operations"]) - 5):
+                            if structure[i + 1] == info["operations"][j]["syntax"] and not structure[i + 1] == operation["radication"]:
+                                second = True
+                                break
 
                     if first == True and second == True:
                         test5 = False
                         break
-
 
             # TEST1: valid parenthesis
             
@@ -2677,6 +2765,7 @@ def evaluator(input):
             if len(is_key) > 0:
                 if is_paren == False and is_brack == False:
                     # is key but no parenthesis and no brackets
+                    print("pass")
                     test4 = False
                     key_error = 'key requires arguments wrapped in parenthesis or brackets'
                 else:
@@ -2700,8 +2789,8 @@ def evaluator(input):
                                     break
 
                                 else:
-                                    # scan for key in info structure
-                                    for module in range(0, len(info["key_functions"])):
+                                    # scan for key in info structure (ommitting algebraic module)
+                                    for module in range(0, len(info["key_functions"]) - 1):
                                         # use key modules to determine which module(s) to scan
                                         if key_modules[module]["use"] == True:
                                             # scan module
@@ -2762,14 +2851,9 @@ def evaluator(input):
                                                                     end_idx = c
                                                                     break
                                                         arguments = structure[i + 1:end_idx]
-
-                                                        print(key)
-                                                        print(arguments)
                                                         
                                                         # remove open bracket
                                                         arguments.pop(0)
-                                                        
-                                                        print(arguments)
 
                                                         # test for no argument
                                                         if len(arguments) == 0:
@@ -2850,6 +2934,9 @@ def evaluator(input):
             elif test5 == False:
                 # consecutive operations => terminate program
                 return "no consecutive operations"
+            elif test6 == False:
+                # dicision by zero => terminate program
+                return "no division by zero"
             else:
 
                 # generates substructures, i.e. "sets", within structure
@@ -2888,8 +2975,12 @@ def evaluator(input):
                                         sets_ref.append({"char": "]", "index": i})
                                 break
 
-                # parenthetically section and solve
-                return section(structure)
+                if is_paren == True:
+                    # parenthetically section and solve
+                    return section(structure)
+                else:
+                    # calculate answer from problem structure
+                    return calculate(structure)
 
     # Evaluation
     use_logs = input["use_logs"]
@@ -2926,12 +3017,19 @@ def evaluator(input):
 
 # # test data
 # input = {
-#     # tests for problem validation
+#     # PROBLEM VALIDATION
+
+#     # TEST0
 #     # "problem": "1+1/&%$#", # returns "invalid character: &"
 
-#     # TEST5
-#     "problem": "1++1", # 
+#     # TEST6
+#     # "problem": "1/0", # no division by zero
 
+#     # TEST5
+#     # "problem": "1++1", # no consecutive operations for addition
+#     # "problem": "1+-1", # no consecutive operations for different operations
+#     # "problem": "2*√16", # no consecutive operations for different operations except for second operation being √
+#     # "problem": "1√*16", # no consecutive operations for different operations including for first operation being √
 
 #     # TEST1
 #     # "problem": "1)+(1*2)", #      )()     : unequal number of open and close characters
@@ -2966,12 +3064,14 @@ def evaluator(input):
 #     # "problem": "mean[4,4+4]", # prevents running of key function without expression arguments wrapped in square brackets
 #     # "problem": "mean[4,[4+4]]", # as it should be; gets 6.0
 
-#     # "problem": "sd[[mean[0,0]],1]", # validation works for key function composition
+#     # "problem": "sd[[mean[0,0]],1]", # validation works for key function composition; gets 0.5
 
 #     # "problem": "mean[10]", # prevents program from evaluating problem structure if insufficient arguments for key function
 #     # "problem": "meanw[[10,0.5]]", # prevents program from evaluating problem structure if insufficient arguments for key function
 
-#     # algebraic simplification
+    
+#     # ALGEBRAIC SIMPLIFICATION
+
 #     # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
 
 #     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
@@ -2999,19 +3099,64 @@ def evaluator(input):
 #     # "problem": "8*x-3*x", # subtract coefficients of like terms
 #     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
 
-#     # "problem": "1++1", # no consecutive operations for addition
-#     # "problem": "1+-1", # no consecutive operations for different operations
+    
+#     # KEY FUNCTION ARGUMENT VALIDATION
 
-#     # tests for key functions
+#     # "problem": "1+(perm[2,3]-1)", # uses global_bypass to stop program for key function with faulty arguments
+
+    
+#     # KEY FUNCTION TESTS
+    
+#     # TRIGONOMIC
+#     # "problem": "acsc(csc(1))", # pass = 1
+#     # "problem": "asec(sec(1))", # pass = 1
+#     # "problem": "acot(cot(1))", # pass = 1
+
+#     # "problem": "asinh(sinh(1))", # pass = 1
+#     # "problem": "acosh(cosh(1))", # pass = 1
+#     # "problem": "atanh(tanh(1))", # pass = 1
+
+#     # "problem": "asin(sin(1))", # pass = 1
+#     # "problem": "acos(cos(1))", # pass = 1
+#     # "problem": "atan(tan(1))", # pass = 1
+
+#     # GEOMTERIC
+#     # "problem": "hypot[3,4]", # pass = 5
+#     # "problem": "heron[3,4,5]", # pass = 6
+
+#     # COMBINATORIC
+#     # "problem": "fact(5)", # pass = 120
+#     # "problem": "perm[3,2]", # pass = 6
+#     # "problem": "comb[3,2]", # pass = 3
+
+#     # STATISTICAL
+#     # "problem": "sd[0,2]", # pass = 1
+#     # "problem": "var[0,2]", # pass = 1
+#     # "problem": "meanh[2,2]", # pass = 2
+#     # "problem": "meang[1,4]", # pass = 2
+#     # "problem": "meanw[[1,3],[5,1]]", # pass = 2
+#     # "problem": "mean[1,3]", # pass = 2
+#     # "problem": "rms[2,3]", # pass = 2.5495097567963922
+
+#     # "problem": "gcf[10,15]", # pass = 5
+#     # "problem": "lcm[7,2]", # pass = 14
+
+#     # "problem": "log[10,10]", # pass = 1
+#     # "problem": "ln(1)", # pass = 1
+
+#     # ALGEBRAIC 
+#     # "problem": "algexp[[x+y],[1+1]]", # pass = (x+y)*(x+y)
+
 #     # "problem": "sd[[sin(0)],[cos(0)]]", # should get 0.5; key functions can run as arguments to other key functions for key function composition
-
+#     # "problem": "3√8", # permits n-th degree radication
+    
 #     "use_logs": "1", # 1 = yes
 # }
 # evaluator(input)
 
 # development tasks
 #  - design remaining simplifications in simplify function
-#  - complete and test expand key function with simplifications
+#  - complete and test expand key function
 #  - order each term at the end of the get terms function ( exempli gratia x*2*y => 2*x*y; x^2*3 => 3*x^2)
 
 

@@ -11,4 +11,12 @@ Eval API is a backend resource for pythonic cloud calculation. It is developed a
 
 ## Developer Resources
 **Flask commands**:
- - run development server:    `$flask run`
+ - run development server:      `$flask run`
+**pipenv commands**
+ - purge dependencies:          `$pipenv uninstall --all`
+ - install dependencies:        `$pipenv install`
+ - activate shell:              `$pipenv shell`
+ - deactivate shell:            `$exit`
+
+
+ *Note*: run `$pipenv shell` after dependency install and before running server
