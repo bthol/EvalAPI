@@ -1031,11 +1031,17 @@ def evaluator(input):
             val = None
             for i in range(0, length):
                 if arr[i] == str:
-                    # test for operation on variables
-                    if i - 1 > -1 and i + 1 < length and not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
-                        val = i
-                        # arithmetic operation approved; not operating on variable
-                        return val
+                    # test for index range of test
+                    if i - 1 > -1 and i + 1 < length:
+                        a = arr[i - 1]
+                        b = arr[i + 1]
+                        # test for operation on parenthesis and square brackets
+                        if a != operation["open_parenthesis"] and a != operation["close_parenthesis"] and a != operation["open_bracket"] and a != operation["close_bracket"] and b != operation["open_parenthesis"] and b != operation["close_parenthesis"] and b != operation["open_bracket"] and b != operation["close_bracket"]:
+                            # test for operation on variables
+                            if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
+                                # arithmetic operation approved
+                                val = i
+                                return val
             
             # no operation from string not on variable
             return val
@@ -1542,18 +1548,18 @@ def evaluator(input):
                         x = num_cast(section(i))
                         set_2.append(x)
                     
-                    # print(set_2)
+                # print(set_2)
 
-                    # perform calculation using numeral set
-                    mean = get_mean(set_2)
-                    set_3 = []
-                    for i in set_2:
-                        set_3.append(math.pow(i - mean, 2))
-                    sd = math.pow(sum(set_3)/len(set_3), 1/2)
+                # perform calculation using numeral set
+                mean = get_mean(set_2)
+                set_3 = []
+                for i in set_2:
+                    set_3.append(math.pow(i - mean, 2))
+                sd = math.pow(sum(set_3)/len(set_3), 1/2)
 
-                    # apply answer and search for new problem
-                    arrVar = restructure(sd, ref, ref + 1, arrVar)
-                    ref = getIdx("sd", arrVar)
+                # apply answer and search for new problem
+                arrVar = restructure(sd, ref, ref + 1, arrVar)
+                ref = getIdx("sd", arrVar)
                 
             # perform all Variance functions
             ref = getIdx("var", arrVar)
@@ -1849,6 +1855,9 @@ def evaluator(input):
                             if i == j:
                                 same = True
                                 lcm = i
+                                break
+                        if same == True:
+                            break
 
                     # if no multiples were found, add next multiple to each list, and test again
                     if same != True:
@@ -1899,22 +1908,22 @@ def evaluator(input):
             ref = getIdx("ln", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
-                    itr = itr + 1
-                    # Log keyword
-                    log_process(arrVar[ref])
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
 
-                    x = num_cast(arrVar[ref + 1])
+                x = num_cast(arrVar[ref + 1])
 
-                    if x > 0:
-                        y = np.log(x)
-                    else:
-                        # complex result
-                        global_bypass = True
-                        y = 0
+                if x > 0:
+                    y = np.log(x)
+                else:
+                    # complex result
+                    global_bypass = True
+                    y = 0
 
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("ln", arrVar)
+                # apply answer and search for new problem
+                arrVar = restructure(y, ref, ref + 1, arrVar)
+                ref = getIdx("ln", arrVar)
                 
         return arrVar
 
@@ -1960,8 +1969,7 @@ def evaluator(input):
                 # build exponentiation by power value
                 if power == 0:
                     # x^0 = 1
-                    # Log keyword
-                    log_process(arrVar[ref])
+
                     # restructure with section
                     arrVar = restructure(["1"], ref, ref + 1, arrVar)
                     # get next instance
@@ -1969,14 +1977,13 @@ def evaluator(input):
 
                 elif power < 0:
                     # x^-y = 1/(x^y)
+
                     sect = ["1", "/", "("] + base
                     for j in range(0, abs(power) - 1):
                         sect = sect + ["*"]
                         sect = sect + base
                     sect = sect + [")"]
 
-                    # Log keyword
-                    log_process(arrVar[ref])
                     # restructure with section
                     arrVar = restructure(sect, ref, ref + 1, arrVar)
                     # get next instance
@@ -2246,7 +2253,7 @@ def evaluator(input):
             #     # arrVar = restructure(product, ref, ref + 1, arrVar)
             #     # # identify further cases of polynomial expansion
             #     # ref = getIdx("expand", arrVar)
-        
+
         return arrVar
 
     def key_functions(arr):
@@ -2270,6 +2277,7 @@ def evaluator(input):
             # STATISTICAL MODULE
             arrVar = statistical(arrVar)
 
+        print(arrVar)
         return arrVar
     
     # KEY FUNCTIONS END
@@ -3142,15 +3150,15 @@ def evaluator(input):
 #     # "problem": "lcm[7,2]", # pass = 14
 
 #     # "problem": "log[10,10]", # pass = 1
-#     # "problem": "ln(1)", # pass = 1
+#     # "problem": "ln(1)", # pass = 0
 
 #     # ALGEBRAIC 
-#     # "problem": "algexp[[x+y],[1+1]]", # pass = (x+y)*(x+y)
+#     # "problem": "algexp[[x+y],[2*1/1+1-1]]", # pass = (x+y)*(x+y)
 
-#     # "problem": "sd[[sin(0)],[cos(0)]]", # should get 0.5; key functions can run as arguments to other key functions for key function composition
+#     "problem": "sd[[sin(0)],[cos(0)]]", # should get 0.5; key functions can run as arguments to other key functions for key function composition
 #     # "problem": "3√8", # permits n-th degree radication
     
-#     "use_logs": "1", # 1 = yes
+#     "use_logs": "", # 1 = yes
 # }
 # evaluator(input)
 
