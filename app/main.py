@@ -201,8 +201,8 @@ def evaluator(input):
     # represents a string containing all of the valid non-numeral characters
     valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
-    # global_bypass is an emergeny brake which preents the continuation of the program
-    # If False, bypasses the whole program 
+    # global_bypass is an emergeny brake which prevents the continuation of the program
+    # If True, bypasses the whole program 
     global_bypass = False
     
     # is_var indicates if variables in problem structure
@@ -1474,7 +1474,7 @@ def evaluator(input):
                 else:
                     # n cannot be less than r
                     global_bypass = True
-                    return arrVar
+                    return 'Invalid Arguments'
 
                 # apply answer and search for new problem
                 arrVar = restructure(perm, ref, ref + 1, arrVar)
@@ -2277,38 +2277,37 @@ def evaluator(input):
             # STATISTICAL MODULE
             arrVar = statistical(arrVar)
 
-        print(arrVar)
         return arrVar
     
     # KEY FUNCTIONS END
 
     def calculate(arr):
-        # scans for operations and calculates
-        log_process("Calculating")
-        arrVar = arr
-
-        # perform all key functions (in section)
-
-        # if there are identified key functions
-        is_key_len = len(is_key)
-        if is_key_len > 0:
-            # test if there are keys in section
-            keys_in_section = False
-            for i in range(0, is_key_len):
-                for j in range(0, len(arrVar)):
-                    if is_key[i] == arrVar[j]:
-                        keys_in_section = True
-                        break
-                if keys_in_section == True:
-                    break
-            if keys_in_section == True:
-                # run key functions on section
-                arrVar = key_functions(arrVar)
-        
         nonlocal global_bypass
+        arrVar = arr
         if global_bypass == True:
             return arrVar
         else:
+            # scans for operations and calculates then simplifies
+            log_process("Calculating")
+
+            # perform all key functions (in section)
+
+            # if there are identified key functions
+            is_key_len = len(is_key)
+            if is_key_len > 0:
+                # test if there are keys in section
+                keys_in_section = False
+                for i in range(0, is_key_len):
+                    for j in range(0, len(arrVar)):
+                        if is_key[i] == arrVar[j]:
+                            keys_in_section = True
+                            break
+                    if keys_in_section == True:
+                        break
+                if keys_in_section == True:
+                    # run key functions on section
+                    arrVar = key_functions(arrVar)
+            
             # perform all arithmetic operations accounting for operator precedence
 
             # perform all exponentiations
@@ -2466,12 +2465,12 @@ def evaluator(input):
                 return arrVar[0]
 
     def section(arr):
-        # performs calculations in order of parenthesis nesting
+        # performs calculations in order from most to least parenthesis nesting
         nonlocal global_bypass
         nonlocal is_paren
         arrVar = arr
         thresh = 0
-        while is_paren == True and thresh < paren_limit:
+        while global_bypass == False and is_paren == True and thresh < paren_limit:
             thresh = thresh + 1
 
             # test for parenthesis
@@ -2513,15 +2512,27 @@ def evaluator(input):
 
                 if len(section) > 1:
 
+                    # calculate on section
                     section = calculate(section)
 
-                    if global_bypass == True:
+                    # test for variables in section
+                    is_variables = False
+                    for i in range(0, len(arrVar)):
+                        if var_test(arrVar[i]) == True:
+                            is_variables = True
+                            break
+                    
+                    # terminate program on global_bypass or if variables in section after simplification
+                    if is_variables == True:
+                        global_bypass = True
+                        log_process("unresolvable algebraic expression in parenthesis")
                         return arrVar
                 
+                # update arrVar with calculations and simplifications 
                 arrVar = restructure(section, start, end - 1, arrVar)
         
         # if paren_limit was not reached and nested expressions are solved
-        if thresh < paren_limit:
+        if global_bypass == False and thresh < paren_limit:
 
             # perform remaining calculations on un-nested expression
             arrVar = calculate(arrVar)
@@ -2531,6 +2542,7 @@ def evaluator(input):
 
     def evaluate(str):
         # top level function runs high level functions
+        # evaluate > section > calculate > key_functions + arithmetic + simplify
         nonlocal valid_chars
 
         # TEST0: character validation
@@ -2556,6 +2568,10 @@ def evaluator(input):
             # invalid character => terminate program
             return 'Invalid character: %s' % character
         else:
+            # change first log
+            if use_logs == "1":
+                process_log["0"] = "Process Log Start"
+
             # valid characters => proceed to structuring
             log_process("Structuring")
             # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
@@ -2622,7 +2638,7 @@ def evaluator(input):
             # structure keywords
             log_process("Keywords")
             
-            # key functions
+            # structure key functions
             for module in range(0, len(info["key_functions"])):
                 for i in range(0, len(info["key_functions"][module])):
                     structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
@@ -2630,15 +2646,10 @@ def evaluator(input):
 
             log_process("Structured")
 
-            # change first log
-            if use_logs == "1":
-                process_log["0"] = "Process Log Start"
-
             # Identify program entities in structured string
             identify_entities(structure)
 
             # validate problem structure
-
             nonlocal is_key
             nonlocal is_brack
             nonlocal is_paren
@@ -2654,6 +2665,7 @@ def evaluator(input):
             structure_length = len(structure)
 
             # TEST6: Zero Division
+
             for i in range(0, structure_length):
                 if i + 1 < structure_length and structure[i] == operation["division"] and structure[i + 1] == "0":
                     test6 = False
@@ -2661,31 +2673,32 @@ def evaluator(input):
 
             # TEST5: consecutive operations
 
-            for i in range(0, structure_length):
-                # each index in problem structure
-                if i + 1 < structure_length:
+            if test6 == True:
+                for i in range(0, structure_length):
+                    # each index in problem structure
+                    if i + 1 < structure_length:
 
-                    first = False
-                    second = False
+                        first = False
+                        second = False
 
-                    for j in range(0, len(info["operations"]) - 5):
-                        if structure[i] == info["operations"][j]["syntax"]:
-                            first = True
-                            break
-
-                    if first == True:
                         for j in range(0, len(info["operations"]) - 5):
-                            if structure[i + 1] == info["operations"][j]["syntax"] and not structure[i + 1] == operation["radication"]:
-                                second = True
+                            if structure[i] == info["operations"][j]["syntax"]:
+                                first = True
                                 break
 
-                    if first == True and second == True:
-                        test5 = False
-                        break
+                        if first == True:
+                            for j in range(0, len(info["operations"]) - 5):
+                                if structure[i + 1] == info["operations"][j]["syntax"] and not structure[i + 1] == operation["radication"]:
+                                    second = True
+                                    break
+
+                        if first == True and second == True:
+                            test5 = False
+                            break
 
             # TEST1: valid parenthesis
             
-            if is_paren == True:
+            if is_paren == True and test6 == True and test5 == True:
 
                 nest_lvl = 0
                 parens = []
@@ -2724,7 +2737,7 @@ def evaluator(input):
             
             # TEST2: valid brackets
 
-            if is_brack == True:
+            if is_brack == True and test6 == True and test5 == True and test1 == True:
                     
                 nest_lvl = 0
                 bracks = []
@@ -2762,18 +2775,17 @@ def evaluator(input):
                                 test2 = False
             
             # TEST3: consecutive variables
-
-            for i in range(0, structure_length):
-                if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
-                    test3 = False
-                    break
+            if test6 == True and test5 == True and test1 == True and test2 == True:
+                for i in range(0, structure_length):
+                    if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
+                        test3 = False
+                        break
             
             # TEST4: valid key function syntax
 
-            if len(is_key) > 0:
+            if len(is_key) > 0 and test6 == True and test5 == True and test1 == True and test2 == True and test3 == True:
                 if is_paren == False and is_brack == False:
                     # is key but no parenthesis and no brackets
-                    print("pass")
                     test4 = False
                     key_error = 'key requires arguments wrapped in parenthesis or brackets'
                 else:
@@ -2829,7 +2841,7 @@ def evaluator(input):
 
                                                         arguments = structure[i + 1:end_idx]
 
-                                                        # remove parenthesis
+                                                        # remove parenthesis from argument section
                                                         arguments.pop(0)
                                                         arguments.pop(len(arguments) - 1)
 
@@ -3023,150 +3035,165 @@ def evaluator(input):
 #     print(output["answer"])
 #     print(logs)
 
-# # test data
+# # test case
 # input = {
+#     # "problem": "sin(1,2)", # case 1
+#     # "problem": "1+(perm[2,3]-1)", # case 2
+#     "problem": "perm[2,3]", # case 2
+#     "use_logs": "", # 1 = yes
+# }
+# evaluator(input)
+
+# comprehensive test
+# tests = [
 #     # PROBLEM VALIDATION
 
 #     # TEST0
-#     # "problem": "1+1/&%$#", # returns "invalid character: &"
+#     {"problem": "1+1/&%$#", "answer": "Invalid character: &"},
 
 #     # TEST6
-#     # "problem": "1/0", # no division by zero
+#     {"problem": "1/0", "answer": "no division by zero"},
 
 #     # TEST5
-#     # "problem": "1++1", # no consecutive operations for addition
-#     # "problem": "1+-1", # no consecutive operations for different operations
-#     # "problem": "2*√16", # no consecutive operations for different operations except for second operation being √
-#     # "problem": "1√*16", # no consecutive operations for different operations including for first operation being √
+#     {"problem": "1++1", "answer": "no consecutive operations"},
+#     {"problem": "1+-1", "answer": "no consecutive operations"}, # different operations
+#     {"problem": "2*√16", "answer": "8"}, # except for second operation being √
+#     {"problem": "1√*16", "answer": "no consecutive operations"}, # including for first operation being √
 
 #     # TEST1
-#     # "problem": "1)+(1*2)", #      )()     : unequal number of open and close characters
-#     # "problem": "1+)1(+(1*2)", #   )(()    : no close on first parens
-#     # "problem": "(1*2)+)1(+1", #   ())(    : no open on last parens
-#     # "problem": "(1*2)+)3(+(1)", # ())(()  : all open characters have a closing pair
+#     {"problem": "1)+(1*2)", "answer": "invalid parenthesis"}, #      )()     : unequal number of open and close characters
+#     {"problem": "1+)1(+(1*2)", "answer": "invalid parenthesis"}, #   )(()    : no close on first parens
+#     {"problem": "(1*2)+)1(+1", "answer": "invalid parenthesis"}, #   ())(    : no open on last parens
+#     {"problem": "(1*2)+)3(+(1)", "answer": "invalid parenthesis"}, # ())(()  : all open characters have a closing pair
     
 #     # TEST2    
-#     # "problem": "1]+[1*2]", #      ][]     : unequal number of open and close characters
-#     # "problem": "1+]1[+[1*2]", #   ][[]    : no close on first parens
-#     # "problem": "[1*2]+]1[+1", #   ]][     : no open on last parens
-#     # "problem": "[1*2]+]3[+[1]", # []][[]  : all open characters have a closing pair
+#     {"problem": "1]+[1*2]", "answer": "invalid brackets"}, #      ][]     : unequal number of open and close characters
+#     {"problem": "1+]1[+[1*2]", "answer": "invalid brackets"}, #   ][[]    : no close on first parens
+#     {"problem": "[1*2]+]1[+1", "answer": "invalid brackets"}, #   ]][     : no open on last parens
+#     {"problem": "[1*2]+]3[+[1]", "answer": "invalid brackets"}, # []][[]  : all open characters have a closing pair
 
 #     # TEST3
-#     # "problem": "2+3-xi", # prevents program from evaluating problem structure if the problem structure has consecutive variables
+#     {"problem": "2+3-xi", "answer": "no consecutive variables"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
 
 #     # TEST4
-#     # "problem": "sin", # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
-#     # "problem": "(1+2)*3-sin", # prevents program from evaulating problem structure if there is a key at the end with no argument
-#     # "problem": "sin+1*(2-3)", # prevents program from evaulating problem structure if there is a key before the end with no argument
+#     {"problem": "sin", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
+#     {"problem": "(1+2)*3-sin", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
+#     {"problem": "sin+1*(2-3)", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
 
-#     # "problem": "sin[0]", # prevents program from evaulating problem structure if wrong open and close characters are used
-#     # "problem": "mean(4,8)", # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "sin[0]", "answer": "sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "mean(4,8)", "answer": "mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
 
-#     # "problem": "sin(x)", # prevents program from evaulating problem structure if variable argument in parenthesis
-#     # "problem": "sin(1+2/x)", # prevents program from evaulating problem structure if variable in expression argument in parenthesis
-#     # "problem": "sin()", # prevents running of key function with no argument in parenthesis
+#     {"problem": "sin(x)", "answer": "variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable argument in parenthesis
+#     {"problem": "sin(1+2/x)", "answer": "variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable in expression argument in parenthesis
+#     {"problem": "sin()", "answer": "sin key requires an argument"}, # prevents running of key function with no argument in parenthesis
 
-#     # "problem": "mean[4,x]", # prevents program from evaulating problem structure if variable argument in brackets
-#     # "problem": "mean[4,[2*x]]", # prevents program from evaulating problem structure if variable in expression argument in brackets
-#     # "problem": "mean[]", # prevents running of key function with no argument in brackets
-#     # "problem": "mean[4,4+4]", # prevents running of key function without expression arguments wrapped in square brackets
-#     # "problem": "mean[4,[4+4]]", # as it should be; gets 6.0
+#     {"problem": "mean[4,x]", "answer": "variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable argument in brackets
+#     {"problem": "mean[4,[2*x]]", "answer": "variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable in expression argument in brackets
+#     {"problem": "mean[]", "answer": "mean key requires an argument"}, # prevents running of key function with no argument in brackets
+#     {"problem": "mean[4,4+4]", "answer": "wrap expression arguments in brackets for mean key"}, # prevents running of key function without expression arguments wrapped in square brackets
+#     {"problem": "mean[4,[4+4]]", "answer": "6.0"}, # as it should be; gets 6.0
 
-#     # "problem": "sd[[mean[0,0]],1]", # validation works for key function composition; gets 0.5
+#     {"problem": "sd[[mean[0,0]],1]", "answer": "0.5"}, # validation works for key function composition; gets 0.5
 
-#     # "problem": "mean[10]", # prevents program from evaluating problem structure if insufficient arguments for key function
-#     # "problem": "meanw[[10,0.5]]", # prevents program from evaluating problem structure if insufficient arguments for key function
-
+#     {"problem": "mean[10]", "answer": "mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
+#     {"problem": "meanw[[10,0.5]]", "answer": "meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
+    
+#     # "problem": "sin(1,2)", # 
     
 #     # ALGEBRAIC SIMPLIFICATION
 
-#     # "problem": "a+a+a-2*3", # solve arithmetic in algebraic expression even if not in parens
+#     {"problem": "a+a+a-2*3", "answer": "3*a-6"}, # solve arithmetic in algebraic expression even if not in parens
 
-#     # "problem": "a*a*a", # simplifies algebraic expression for consecutive multiplications
-#     # "problem": "2*x*9", #  a * x * b => (a*b) * x
-#     # "problem": "2/x*9", #  a / x * b => (a*b) / x
-#     # "problem": "3*x*7*x", #  combine terms for variable with coefficients multiplied
+#     {"problem": "a*a*a", "answer": "a^3"}, # simplifies algebraic expression for consecutive multiplications
+#     {"problem": "2*x*9", "answer": "18*x"}, #  a * x * b => (a*b) * x
+#     {"problem": "2/x*9", "answer": "18/x"}, #  a / x * b => (a*b) / x
+#     {"problem": "3*x*7*x", "answer": "21*x^2"}, #  combine terms for variable with coefficients multiplied
 
-#     # "problem": "a/a/a/a", # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-#     # "problem": "x*a/a", # simplifies algebraic expression for cancelling out division by self with multiplication; x
-#     # "problem": "x/a/a", # simplifies algebraic expression for cancelling out division by self with division; x
-#     # "problem": "a/a", # simplifies algebraic expression for variable divide by itself; 1
-#     # "problem": "10*x/2", # a * x / b => (a/b) * x
-#     # "problem": "10/x/2", # a / x / b => (a/b) / x
-#     # "problem": "4*x/2*x", #  combine terms for variable with coefficients divided
+#     {"problem": "a/a/a/a", "answer": "a/(a^3)"}, # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+#     {"problem": "x*a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with multiplication; x
+#     {"problem": "x/a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with division; x
+#     {"problem": "a/a", "answer": "1"}, # simplifies algebraic expression for variable divide by itself; 1
+#     {"problem": "10*x/2", "answer": "5.0*x"}, # a * x / b => (a/b) * x
+#     {"problem": "10/x/2", "answer": "5.0/x"}, # a / x / b => (a/b) / x
+#     {"problem": "4*x/2*x", "answer": "2.0"}, #  combine terms for variable with coefficients divided
     
-#     # "problem": "a+a+a", # simplifies algebraic expression for consecutive additions
-#     # "problem": "10+x+2", # a + x + b => (a+b) + x
-#     # "problem": "10-x+2", # a - x + b => (a+b) - x
-#     # "problem": "2*x+4*x", # add coefficients of like terms
-#     # "problem": "2*x+4*y", # don't add coefficients of not like terms
+#     {"problem": "a+a+a", "answer": "3*a"}, # simplifies algebraic expression for consecutive additions
+#     {"problem": "10+x+2", "answer": "12+x"}, # a + x + b => (a+b) + x
+#     {"problem": "10-x+2", "answer": "12-x"}, # a - x + b => (a+b) - x
+#     {"problem": "2*x+4*x", "answer": "6*x"}, # add coefficients of like terms
+#     {"problem": "2*x+4*y", "answer": "2*x+4*y"}, # don't add coefficients of not like terms
     
-#     # "problem": "a-a-a-a", # simplifies algebraic expression for consecutive substractions
-#     # "problem": "10+x-2", # a + x - b => (a-b) + x
-#     # "problem": "10-x-2", # a - x - b => (a-b) - x
-#     # "problem": "8*x-3*x", # subtract coefficients of like terms
-#     # "problem": "8*x-3*y", # don't subtract coefficients of not like terms
-
+#     {"problem": "a-a-a-a", "answer": "a-3*a"}, # simplifies algebraic expression for consecutive substractions
+#     {"problem": "10+x-2", "answer": "8+x"}, # a + x - b => (a-b) + x
+#     {"problem": "10-x-2", "answer": "8-x"}, # a - x - b => (a-b) - x
+#     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
+#     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
     
 #     # KEY FUNCTION ARGUMENT VALIDATION
 
-#     # "problem": "1+(perm[2,3]-1)", # uses global_bypass to stop program for key function with faulty arguments
-
+#     # {"problem": "1+(perm[2,3]-1)", "answer": ""}, # uses global_bypass to stop program for key function with faulty arguments
     
 #     # KEY FUNCTION TESTS
     
 #     # TRIGONOMIC
-#     # "problem": "acsc(csc(1))", # pass = 1
-#     # "problem": "asec(sec(1))", # pass = 1
-#     # "problem": "acot(cot(1))", # pass = 1
+#     {"problem": "acsc(csc(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "asec(sec(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "acot(cot(1))", "answer": "1.0"}, # pass = 1
 
-#     # "problem": "asinh(sinh(1))", # pass = 1
-#     # "problem": "acosh(cosh(1))", # pass = 1
-#     # "problem": "atanh(tanh(1))", # pass = 1
+#     {"problem": "asinh(sinh(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "acosh(cosh(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "atanh(tanh(1))", "answer": "1.0"}, # pass = 1
 
-#     # "problem": "asin(sin(1))", # pass = 1
-#     # "problem": "acos(cos(1))", # pass = 1
-#     # "problem": "atan(tan(1))", # pass = 1
+#     {"problem": "asin(sin(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "acos(cos(1))", "answer": "1.0"}, # pass = 1
+#     {"problem": "atan(tan(1))", "answer": "1.0"}, # pass = 1
 
 #     # GEOMTERIC
-#     # "problem": "hypot[3,4]", # pass = 5
-#     # "problem": "heron[3,4,5]", # pass = 6
+#     {"problem": "hypot[3,4]", "answer": "5.0"}, # pass = 5
+#     {"problem": "heron[3,4,5]", "answer": "6.0"}, # pass = 6
 
 #     # COMBINATORIC
-#     # "problem": "fact(5)", # pass = 120
-#     # "problem": "perm[3,2]", # pass = 6
-#     # "problem": "comb[3,2]", # pass = 3
+#     {"problem": "fact(5)", "answer": "120"}, # pass = 120
+#     {"problem": "perm[3,2]", "answer": "6.0"}, # pass = 6.0
+#     {"problem": "comb[3,2]", "answer": "3.0"}, # pass = 3.0
 
 #     # STATISTICAL
-#     # "problem": "sd[0,2]", # pass = 1
-#     # "problem": "var[0,2]", # pass = 1
-#     # "problem": "meanh[2,2]", # pass = 2
-#     # "problem": "meang[1,4]", # pass = 2
-#     # "problem": "meanw[[1,3],[5,1]]", # pass = 2
-#     # "problem": "mean[1,3]", # pass = 2
-#     # "problem": "rms[2,3]", # pass = 2.5495097567963922
+#     {"problem": "sd[0,2]", "answer": "1.0"}, # pass = 1.0
+#     {"problem": "var[0,2]", "answer": "1.0"}, # pass = 1.0
+#     {"problem": "meanh[2,2]", "answer": "2.0"}, # pass = 2.0
+#     {"problem": "meang[1,4]", "answer": "2.0"}, # pass = 2.0
+#     {"problem": "meanw[[1,3],[5,1]]", "answer": "2.0"}, # pass = 2.0
+#     {"problem": "mean[1,3]", "answer": "2.0"}, # pass = 2.0
+#     {"problem": "rms[2,3]", "answer": "2.5495097567963922"}, # pass = 2.5495097567963922
 
-#     # "problem": "gcf[10,15]", # pass = 5
-#     # "problem": "lcm[7,2]", # pass = 14
+#     {"problem": "gcf[10,15]", "answer": "5"}, # pass = 5
+#     {"problem": "lcm[7,2]", "answer": "14"}, # pass = 14
 
-#     # "problem": "log[10,10]", # pass = 1
-#     # "problem": "ln(1)", # pass = 0
+#     {"problem": "log[10,10]", "answer": "1.0"}, # pass = 1.0
+#     {"problem": "ln(1)", "answer": "0.0"}, # pass = 0.0
 
 #     # ALGEBRAIC 
-#     # "problem": "algexp[[x+y],[2*1/1+1-1]]", # pass = (x+y)*(x+y)
+#     {"problem": "algexp[[x+y],[2*1/1+1-1]]", "answer": "(x+y)*(x+y)"}, # pass = (x+y)*(x+y)
 
-#     "problem": "sd[[sin(0)],[cos(0)]]", # should get 0.5; key functions can run as arguments to other key functions for key function composition
-#     # "problem": "3√8", # permits n-th degree radication
+#     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
+#     {"problem": "3√8", "answer": "2.0"}, # permits n-th degree radication
     
-#     "use_logs": "", # 1 = yes
-# }
-# evaluator(input)
+#     {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
+#     {"problem": "(x)+2", "answer": "x+2"}, # should get "x+2"; removes parenthesis on variables wrapped with no operations
+# ]
+# def run_tests():
+#     global tests
+#     for i, obj in enumerate(tests):
+#         output = evaluator({"problem": obj["problem"], "use_logs": ''})
+#         if str(output["answer"]) != obj["answer"]:
+#             return obj["problem"]
+#     return 'passed all tests'
+# print(run_tests())
 
 # development tasks
 #  - design remaining simplifications in simplify function
 #  - complete and test expand key function
 #  - order each term at the end of the get terms function ( exempli gratia x*2*y => 2*x*y; x^2*3 => 3*x^2)
-
 
 # Flask APP
 app = Flask(__name__)
