@@ -199,7 +199,7 @@ def evaluator(input):
         variables = variables + v
 
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = " " + "." + "," + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
     # global_bypass is an emergeny brake which prevents the continuation of the program
     # If True, bypasses the whole program 
@@ -1020,41 +1020,48 @@ def evaluator(input):
 
     def getIdx(str, arr):
         # gets index of string in structure
+        nonlocal global_bypass
 
-        # get length of arr
-        length = len(arr)
+        if global_bypass == False:
 
-        # test if string contains an operation
-        if op_test(str):
+            # get length of arr
+            length = len(arr)
 
-            # operation string
-            val = None
-            for i in range(0, length):
-                if arr[i] == str:
-                    # test for index range of test
-                    if i - 1 > -1 and i + 1 < length:
-                        a = arr[i - 1]
-                        b = arr[i + 1]
-                        # test for operation on parenthesis and square brackets
-                        if a != operation["open_parenthesis"] and a != operation["close_parenthesis"] and a != operation["open_bracket"] and a != operation["close_bracket"] and b != operation["open_parenthesis"] and b != operation["close_parenthesis"] and b != operation["open_bracket"] and b != operation["close_bracket"]:
-                            # test for operation on variables
-                            if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
-                                # arithmetic operation approved
-                                val = i
-                                return val
-            
-            # no operation from string not on variable
-            return val
-                        
+            # test if string contains an operation
+            if op_test(str):
+
+                # operation string
+                val = None
+                
+                for i in range(0, length):
+                    if arr[i] == str:
+                        # test for index range of test
+                        if i - 1 > -1 and i + 1 < length:
+                            a = arr[i - 1]
+                            b = arr[i + 1]
+                            # test for operation on parenthesis and square brackets
+                            if a != operation["open_parenthesis"] and a != operation["close_parenthesis"] and a != operation["open_bracket"] and a != operation["close_bracket"] and b != operation["open_parenthesis"] and b != operation["close_parenthesis"] and b != operation["open_bracket"] and b != operation["close_bracket"]:
+                                # test for operation on variables
+                                if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
+                                    # arithmetic operation approved
+                                    val = i
+                                    return val
+                
+                # no operation from string not on variable
+                return val
+                            
+            else:
+
+                # not operation string
+                val = None
+                for i in range(0, length):
+                    if arr[i] == str:
+                        val = i
+                        break
+                return val
         else:
-
-            # not operation string
-            val = None
-            for i in range(0, length):
-                if arr[i] == str:
-                    val = i
-                    break
-            return val
+            # globally bypassed
+            return None
 
     def trigonomic(arr):
         # key function module for trigonomic functions
@@ -1089,11 +1096,17 @@ def evaluator(input):
                 log_process(arrVar[ref])
                 
                 x = num_cast(arrVar[ref + 1])
-                y = np.arcsin(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("asin", arrVar)
+                if x >= -1 and x <= 1:
+                    y = np.arcsin(x)
+
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("asin", arrVar)
+                else:
+                    # invalid arguments
+                    global_bypass = True
+                    return "invalid argument = x, x < -1 or x > 1"
                 
             # perform all cosine functions
             ref = getIdx("cos", arrVar)
@@ -1119,11 +1132,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
                 
                 x = num_cast(arrVar[ref + 1])
-                y = np.arccos(x)
+                if x >= -1 and x <= 1:
+                    y = np.arccos(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("acos", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("acos", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x < -1 or x > 1"
 
             # perform all tangent functions
             ref = getIdx("tan", arrVar)
@@ -1134,11 +1152,17 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.tan(x)
+                
+                if x % np.pi != 0 and x <= - 1 or x % np.pi != 0 and x >= 1:
+                    y = np.tan(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("tan", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("tan", arrVar)
+                else:
+                    # invalid arguments
+                    global_bypass = True
+                    return "invalid argument = x, -1 < x < 1 or x mod π = 0"
                 
             # perform all arcus tangent functions
             ref = getIdx("atan", arrVar)
@@ -1166,11 +1190,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = 1 / np.sin(x)
+                if x != 0:
+                    y = 1 / np.sin(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("csc", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("csc", arrVar)
+                else:
+                    # x = 0
+                    global_bypass = True
+                    return 'no zero argument'
                 
             # perform all arc cosecant functions
             ref = getIdx("acsc", arrVar)
@@ -1181,11 +1210,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.arcsin(1/x)
+                if x <= -1 or x >= 1:
+                    y = np.arcsin(1/x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("acsc", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("acsc", arrVar)
+                else:
+                    # -1 < x < 1
+                    global_bypass = True
+                    return "invalid argument = x, -1 < x < 1"
 
             # perform all secant functions
             ref = getIdx("sec", arrVar)
@@ -1196,11 +1230,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = 1 / np.cos(x)
+                if x > 0 and x < np.pi:
+                    y = 1 / np.cos(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("sec", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("sec", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0 or x >= π"
                 
             # perform all arc secant functions
             ref = getIdx("asec", arrVar)
@@ -1211,11 +1250,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.arccos(1/x)
+                if x <= -1 or x >= 1:
+                    y = np.arccos(1/x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("asec", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("asec", arrVar)
+                else:
+                    # -1 < x < 1
+                    global_bypass = True
+                    return 'invalid argument = x, -1 < x < 1'
 
             # perform all cotangent functions
             ref = getIdx("cot", arrVar)
@@ -1226,11 +1270,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = 1 / np.tan(x)
+                if x != 0 and x % np.pi != 0:
+                    y = 1 / np.tan(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("cot", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("cot", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x = 0 or x mod π = 0"
             
             # perform all cotangent functions
             ref = getIdx("acot", arrVar)
@@ -1241,12 +1290,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.arctan(1/x)
+                if x != 0:
+                    y = np.arctan(1/x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("acot", arrVar)
-            
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("acot", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return 'no zero argument'
 
             # hyperbolic functions
 
@@ -1304,11 +1357,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.asinh(x)
+                if x >= 1:
+                    y = np.asinh(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("acosh", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("acosh", arrVar)
+                else:
+                    # invalid arguments
+                    global_bypass = True
+                    return "invalid argument = x, x < 1"
         
             # perform all hyperbolic tangent functions
             ref = getIdx("tanh", arrVar)
@@ -1334,11 +1392,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                y = np.asinh(x)
+                if x <= -1 or x >= 1:
+                    y = np.asinh(x)
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("atanh", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("atanh", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, -1 < x < 1"
 
         return arrVar
 
@@ -1375,11 +1438,16 @@ def evaluator(input):
                 leg1 = set_2[0]
                 leg2 = set_2[1]
                 
-                y = np.hypot(leg1, leg2)
-                
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("hypot", arrVar)
+                if leg1 > 0 and leg2 > 0:
+                    y = np.hypot(leg1, leg2)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(y, ref, ref + 1, arrVar)
+                    ref = getIdx("hypot", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
 
             # perform all Heron's Formula functions
             ref = getIdx("heron", arrVar)
@@ -1409,15 +1477,20 @@ def evaluator(input):
                 b = set_2[1]
                 c = set_2[2]
                 
-                # semiperimeter
-                s = (a + b + c) / 2
-                
-                # area calculation
-                area = (s * (s - a) * (s - b) * (s - c))**0.5
+                if a > 0 and b > 0 and c > 0:
+                    # semiperimeter
+                    s = (a + b + c) / 2
+                    
+                    # area calculation
+                    area = (s * (s - a) * (s - b) * (s - c))**0.5
 
-                # apply answer and search for new problem
-                arrVar = restructure(area, ref, ref + 1, arrVar)
-                ref = getIdx("heron", arrVar)
+                    # apply answer and search for new problem
+                    arrVar = restructure(area, ref, ref + 1, arrVar)
+                    ref = getIdx("heron", arrVar)
+                else:
+                    # invalid arguments
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
 
         return arrVar
 
@@ -1468,17 +1541,23 @@ def evaluator(input):
                 # perform calculation using numeral set
                 n = set_2[0] # number of objects
                 r = set_2[1] # number of objects per permutation
+                if n == r:
+                    perm  = 1
+                    # apply answer and search for new problem
+                    arrVar = restructure(perm, ref, ref + 1, arrVar)
+                    ref = getIdx("perm", arrVar)
 
-                if n >= r:
+                elif n > 0 and r > 0 and n > r:
                     perm = factorial(n) / factorial(n - r)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(perm, ref, ref + 1, arrVar)
+                    ref = getIdx("perm", arrVar)
+
                 else:
                     # n cannot be less than r
                     global_bypass = True
-                    return 'Invalid Arguments'
-
-                # apply answer and search for new problem
-                arrVar = restructure(perm, ref, ref + 1, arrVar)
-                ref = getIdx("perm", arrVar)
+                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
 
             # perform all Combination functions
             ref = getIdx("comb", arrVar)
@@ -1506,16 +1585,15 @@ def evaluator(input):
                 n = set_2[0]
                 r = set_2[1]
 
-                if n >= r:
+                if n > 0 and r > 0 and n > r:
                     comb = factorial(n) / (factorial(r) * factorial(n - r))
+                    # apply answer and search for new problem
+                    arrVar = restructure(comb, ref, ref + 1, arrVar)
+                    ref = getIdx("comb", arrVar)
                 else:
                     # n cannot be greater than r
                     global_bypass = True
-                    return arrVar
-                
-                # apply answer and search for new problem
-                arrVar = restructure(comb, ref, ref + 1, arrVar)
-                ref = getIdx("comb", arrVar)
+                    return "invalid arguments: n <= 0 or r <= 0 or n <= r"
 
         return arrVar
 
@@ -1610,10 +1688,20 @@ def evaluator(input):
                 for i in set_1:
                     if isinstance(i, str):
                         x = float(i)
-                        set_2.append(1/x)
+                        if x != 0:
+                            set_2.append(1/x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "no zero argument"
                     else:
                         x = num_cast(section(i))
-                        set_2.append(1/x)
+                        if x != 0:
+                            set_2.append(1/x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "no zero argument"
 
                 # perform calculation using numeral set
                 mean = len(set_2) / sum(set_2)
@@ -1764,10 +1852,20 @@ def evaluator(input):
                 for i in set_1:
                     if isinstance(i, str):
                         x = num_cast(i)
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
                     else:
                         x = num_cast(section(i))
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
 
                 # perform calculation using numeral set
                 gcf = 0
@@ -1835,10 +1933,20 @@ def evaluator(input):
                 for i in set_1:
                     if isinstance(i, str):
                         x = num_cast(i)
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
                     else:
                         x = num_cast(section(i))
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
 
                 # perform calculation using numeral set
                 lcm = 0
@@ -1885,10 +1993,20 @@ def evaluator(input):
                 for i in set_1:
                     if isinstance(i, str):
                         x = num_cast(i)
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
                     else:
                         x = num_cast(section(i))
-                        set_2.append(x)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return "invalid argument = x, x <= 0"
                 
                 x = set_2[0]
                 b = set_2[1]
@@ -1919,7 +2037,7 @@ def evaluator(input):
                 else:
                     # complex result
                     global_bypass = True
-                    y = 0
+                    return "invalid argument = x, x <= 0"
 
                 # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
@@ -2526,10 +2644,14 @@ def evaluator(input):
                     if is_variables == True:
                         global_bypass = True
                         log_process("unresolvable algebraic expression in parenthesis")
-                        return arrVar
-                
-                # update arrVar with calculations and simplifications 
-                arrVar = restructure(section, start, end - 1, arrVar)
+                        return section
+
+                if global_bypass == False:
+                    # update arrVar with calculations and simplifications
+                    arrVar = restructure(section, start, end - 1, arrVar)
+                else:
+                    # section contains error message from calculation
+                    return section
         
         # if paren_limit was not reached and nested expressions are solved
         if global_bypass == False and thresh < paren_limit:
@@ -2795,11 +2917,11 @@ def evaluator(input):
                             # key at i
                             key = structure[i]
                             if i + 3 >= structure_length:
-                                # key on last index
+                                # key passed last valid index to also have arguments
                                 test4 = False
                                 key_error = '%s key requires an argument' % key
                                 break
-                            else:
+                            elif i + 1 < structure_length:
                                 after_key = structure[i + 1]
 
                                 if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
@@ -2837,24 +2959,32 @@ def evaluator(input):
                                                             elif structure[c] == operation["close_parenthesis"]:
                                                                 nest_lvl -= 1
                                                                 if nest_lvl == 0:
-                                                                    end_index = c
-
+                                                                    end_idx = c
+                                                                    break
+                                                        
                                                         arguments = structure[i + 1:end_idx]
-
+                                                        
                                                         # remove parenthesis from argument section
-                                                        arguments.pop(0)
-                                                        arguments.pop(len(arguments) - 1)
+                                                        # arguments.pop(0)
+                                                        # arguments.pop(len(arguments) - 1)
 
                                                         # test for no argument
                                                         if len(arguments) == 0:
+                                                            print("pass")
                                                             test4 = False
                                                             key_error = '%s key requires an argument' % key
 
-                                                        # test argument for variables
+                                                        # test argument for variable + single argument
                                                         for c in arguments:
                                                             if var_test(c):
                                                                 test4 = False
                                                                 key_error = 'variables detected in argument for %s key' % key
+                                                                break
+                                                            elif c == ",":
+                                                                # parenthesis cannot contain multiple arguments
+                                                                test4 = False
+                                                                key_error = '%s key only accepts a single argument' % key
+                                                                break
 
                                                     elif open_char == operation["open_bracket"]:
 
@@ -3037,9 +3167,9 @@ def evaluator(input):
 
 # # test case
 # input = {
-#     # "problem": "sin(1,2)", # case 1
-#     # "problem": "1+(perm[2,3]-1)", # case 2
-#     "problem": "perm[2,3]", # case 2
+#     # "problem": "(x-1*6/2)+2", # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
+#     # "problem": "(x+1)+2", # prevents calculation on unresolvable algebraic expressions
+#     "problem": "(x-1*6/2)+2", # next case to develop
 #     "use_logs": "", # 1 = yes
 # }
 # evaluator(input)
@@ -3077,8 +3207,10 @@ def evaluator(input):
 
 #     # TEST4
 #     {"problem": "sin", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
+#     {"problem": "7-sin+1", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
 #     {"problem": "(1+2)*3-sin", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
 #     {"problem": "sin+1*(2-3)", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
+#     {"problem": "sin([9-8],2)", "answer": "sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
 
 #     {"problem": "sin[0]", "answer": "sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
 #     {"problem": "mean(4,8)", "answer": "mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
@@ -3129,11 +3261,73 @@ def evaluator(input):
 #     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
 #     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
     
-#     # KEY FUNCTION ARGUMENT VALIDATION
+#     # KEY FUNCTION ARGUMENT DOMAIN VALIDATION
 
-#     # {"problem": "1+(perm[2,3]-1)", "answer": ""}, # uses global_bypass to stop program for key function with faulty arguments
+#     # TRIGONOMIC
+#     {"problem": "acsc(0)", "answer": "invalid argument = x, -1 < x < 1"},
+
+#     {"problem": "csc(0)", "answer": "no zero argument"},
+
+#     {"problem": "asec(0)", "answer": "invalid argument = x, -1 < x < 1"},
+
+#     {"problem": "sec((-1))", "answer": "invalid argument = x, x <= 0 or x >= π"},
+#     {"problem": "sec(0)", "answer": "invalid argument = x, x <= 0 or x >= π"},
+#     {"problem": "sec(pi)", "answer": "invalid argument = x, x <= 0 or x >= π"},
+#     {"problem": "sec(pi+1)", "answer": "invalid argument = x, x <= 0 or x >= π"},
+
+#     {"problem": "acot(0)", "answer": "no zero argument"},
+
+#     {"problem": "cot(0)", "answer": "invalid argument = x, x = 0 or x mod π = 0"},
+#     {"problem": "cot(2*pi)", "answer": "invalid argument = x, x = 0 or x mod π = 0"},
     
-#     # KEY FUNCTION TESTS
+#     {"problem": "acosh(0)", "answer": "invalid argument = x, x < 1"},
+
+#     {"problem": "atanh(0)", "answer": "invalid argument = x, -1 < x < 1"},
+
+#     {"problem": "asin(2)", "answer": "invalid argument = x, x < -1 or x > 1"},
+
+#     {"problem": "acos(2)", "answer": "invalid argument = x, x < -1 or x > 1"},
+
+#     {"problem": "tan(0)", "answer": "invalid argument = x, -1 < x < 1 or x mod π = 0"},
+#     {"problem": "tan(2*pi)", "answer": "invalid argument = x, -1 < x < 1 or x mod π = 0"},
+
+#     # GEOMTERIC
+#     {"problem": "hypot[1,0]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hypot[1,(-1)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hypot[0,1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hypot[(-1),1]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "heron[1,1,0]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[1,1,(-1)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[1,0,1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[1,(-1),1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[0,1,1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[(-1),1,1]", "answer": "invalid argument = x, x <= 0"},
+
+#     # COMBINATORIC
+#     {"problem": "perm[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "perm[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "perm[2,3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+
+#     {"problem": "comb[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
+#     {"problem": "comb[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
+#     {"problem": "comb[2,5]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
+
+#     # STATISTICAL
+#     {"problem": "meanh[1,0,2]", "answer": "no zero argument"},
+    
+#     {"problem": "gcf[2,(-3)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "lcm[2,(-3)]", "answer": "invalid argument = x, x <= 0"},
+    
+#     {"problem": "log[(-1),10]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "ln((-3))", "answer": "invalid argument = x, x <= 0"},
+
+#     # ALGEBRAIC
+
+    
+#     # KEY FUNCTION LOGIC TESTS
     
 #     # TRIGONOMIC
 #     {"problem": "acsc(csc(1))", "answer": "1.0"}, # pass = 1
@@ -3175,20 +3369,26 @@ def evaluator(input):
 #     # ALGEBRAIC 
 #     {"problem": "algexp[[x+y],[2*1/1+1-1]]", "answer": "(x+y)*(x+y)"}, # pass = (x+y)*(x+y)
 
+#     # KEY FUNCTION COMPOSITION TEST
 #     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
+    
+#     # N-TH RADICATION
 #     {"problem": "3√8", "answer": "2.0"}, # permits n-th degree radication
     
-#     {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
+#     # ARITHMETIC IN ALGEBRAIC EXPRESSION
 #     {"problem": "(x)+2", "answer": "x+2"}, # should get "x+2"; removes parenthesis on variables wrapped with no operations
+#     # {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
+#     # {"problem": "(x+1)+2", "answer": "x+2"}, # prevents calculation on unresolvable algebraic expressions
 # ]
-# def run_tests():
+# def diagnostic():
 #     global tests
+#     print('Total number of tests: %s' % len(tests))
 #     for i, obj in enumerate(tests):
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
-#             return obj["problem"]
+#             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
 #     return 'passed all tests'
-# print(run_tests())
+# print(diagnostic())
 
 # development tasks
 #  - design remaining simplifications in simplify function
