@@ -139,9 +139,9 @@ info = {
 
             {"name":"Least Common Multiple", "key":"lcm", "syntax": "lcm[a,b]", "about": "Gets the least common multiple of values a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. lcm[a,[b+x]]."},
             
-            {"name":"Logarithm", "key":"log", "syntax": "log[x,b]", "about": "Gets the logarithm of x with base b, where x and b are values or an expression wrapped in square brackets that evaluates to a value."},
+            {"name":"Logarithm", "key":"log", "syntax": "log[x,b]", "about": "Gets the logarithm of x with base b, where x and b are values or expressions wrapped in square brackets that evaluate to a value, e.g. log[x,[b+2]]."},
 
-            {"name":"Natural Log", "key":"ln", "syntax": "ln(x)", "about": "Gets the natural log of x with base e, where x is a value or an expression wrapped in square brackets that evaluates to a value."},
+            {"name":"Natural Log", "key":"ln", "syntax": "ln(x)", "about": "Gets the natural log of x with base e, where x is a value or an expression that evaluates to a value, e.g. ln(2-1*0)."},
         ],
 
         # Algebraic
@@ -193,6 +193,9 @@ def evaluator(input):
         "close_bracket": info["operations"][10]["syntax"]
     }
 
+    # Operator Precedence is from highest to least in this structure
+    operator_precedence = [operation["subtraction"], operation["addition"], operation["division"], operation["multiplication"], operation["radication"], operation["exponentiation"]]
+    
     # variable characters
     variables = ""
     for v in info["variables"]:
@@ -273,7 +276,7 @@ def evaluator(input):
         # a single data type converter for all your data type conversion needs!
         try:
             num = float(str)
-            if (num / 1 % 1 == 0):
+            if (num % 1 == 0):
                 num = int(num)
             return num
         except:
@@ -469,11 +472,11 @@ def evaluator(input):
 
     def exponentiate(base, exponent):
         base = float(base)
-        if base / 1 % 1 == 0:
+        if base % 1 == 0:
             base = int(base)
 
         exponent = float(exponent)
-        if exponent / 1 % 1 == 0:
+        if exponent % 1 == 0:
             exponent = int(exponent)
 
         power = math.pow(base, exponent)
@@ -482,11 +485,11 @@ def evaluator(input):
 
     def root(radicand, degree):
         radicand = float(radicand)
-        if radicand / 1 % 1 == 0:
+        if radicand % 1 == 0:
             radicand = int(radicand)
 
         degree = float(degree)
-        if degree / 1 % 1 == 0:
+        if degree % 1 == 0:
             degree = int(degree)
 
         root = math.pow(radicand, 1/degree)
@@ -495,11 +498,11 @@ def evaluator(input):
 
     def multiply(multiplicand, multiplier):
         multiplicand = float(multiplicand)
-        if multiplicand / 1 % 1 == 0:
+        if multiplicand % 1 == 0:
             multiplicand = int(multiplicand)
 
         multiplier = float(multiplier)
-        if multiplier / 1 % 1 == 0:
+        if multiplier % 1 == 0:
             multiplier = int(multiplier)
 
         product = multiplicand * multiplier
@@ -507,25 +510,31 @@ def evaluator(input):
         return product
 
     def divide(dividend, divisor):
+        nonlocal global_bypass
         dividend = float(dividend)
-        if dividend / 1 % 1 == 0:
+        if dividend % 1 == 0:
             dividend = int(dividend)
 
         divisor = float(divisor)
-        if divisor / 1 % 1 == 0:
+        if divisor % 1 == 0:
             divisor = int(divisor)
 
-        quotient = dividend / divisor
-
-        return quotient
+        if divisor != 0:
+            quotient = dividend / divisor
+            if quotient % 1 == 0:
+                quotient = int(quotient)
+            return quotient
+        else:
+            global_bypass = True
+            return "no division by zero"
 
     def add(augend, addend):
         augend = float(augend)
-        if augend / 1 % 1 == 0:
+        if augend % 1 == 0:
             augend = int(augend)
 
         addend = float(addend)
-        if addend / 1 % 1 == 0:
+        if addend % 1 == 0:
             addend = int(addend)
 
         total = augend + addend
@@ -534,16 +543,30 @@ def evaluator(input):
 
     def subtract(minuend, subtrahend):
         minuend = float(minuend)
-        if minuend / 1 % 1 == 0:
+        if minuend % 1 == 0:
             minuend = int(minuend)
 
         subtrahend = float(subtrahend)
-        if subtrahend / 1 % 1 == 0:
+        if subtrahend % 1 == 0:
             subtrahend = int(subtrahend)
 
         difference = minuend - subtrahend
 
         return difference
+
+    def monus(a, b):
+        # monus; truncated minus; doz (difference or zero)
+        a = float(a)
+        if a % 1 == 0:
+            a = int(a)
+        b = float(b)
+        if b % 1 == 0:
+            b = int(b)
+        
+        if a >= b:
+            return a - b
+        else:
+            return 0
 
     def factorial(x):
         if int(x) == x:
@@ -615,43 +638,482 @@ def evaluator(input):
         # no true condition reached (e.g. index out of range)
         return False
 
-    # def getTerms(arr):
-    #     # identifies terms in algebraic expression and returns structured as such
-    #     sect_struct = []
-    #     term = []
-    #     for i in range(0, len(arr)):
-    #         if arr[i] == operation["addition"]:
-    #             # end of term
-    #             sect_struct.append(term)
-    #             term = []
-    #         elif arr[i] == operation["subtraction"]:
-    #             # prevent end of term on negation
-    #             if arr[i - 1] != operation["open_parenthesis"]:
-    #                 # non-negative value
-    #                 # end of term
-    #                 sect_struct.append(term)
-    #                 term = []
-    #         else:
-    #             # compile term
-    #             term.append(arr[i])
-        
-    #     # append last term
-    #     sect_struct.append(term)
+    def standardize_format(arr):
+        # identifies terms in algebraic expression,
+        # standardizes term forms, combines like terms,
+        # standardizes expression form, returns result
+        log_process("Standardizing Format of Algebraic Terms and Expressions")
 
-    #     return sect_struct
+        # return empty argument
+        if len(arr) == 0:
+            log_process("Standardization Aborted")
+            return arr
+
+        # prevent standardization on parenthetical or bracketed algebraic expressions
+        for i in arr:
+            if i == operation["open_parenthesis"] or i == operation["close_parenthesis"] or i == operation["open_bracket"] or i == operation["close_bracket"]:
+                log_process("Standardization Aborted")
+                return arr
+
+        # term standards
+        #  - single coefficient at starting index 2*x^2*3*y => 6*x^2*y
+        #  - variables in alphabetical order within divisional sections of term b^2*3*a^3/b*a => 3*a^3*b^2/a*b
+        #  - 
+
+        # expression standards
+        #  - Decremental order of term degree  x^2 + 2*x^3 - 6*x => 2*x^3 + x^2 - 6*x
+        #  - arithmetic terms are combined into single constant at end of expression
+        #  - 
+        
+        sect_struct = [] # stores terms as sublists
+        term = [] # buffer for sect_struct term appending
+        expression = [] # stores terms as sublists in original order but with term standards
+        formatted = [] # stores terms concatenated into single list with term and expression standards
+        subtract_key = "sub" # key used to track subtraction of a term throughout the standardization process
+        
+        for i in range(0, len(arr)):
+            if arr[i] == operation["addition"]:
+                # end of term
+                sect_struct.append(term)
+                term = []
+            elif arr[i] == operation["subtraction"]:
+                # prevent end of term on negation
+                if arr[i - 1] != operation["open_parenthesis"]:
+                    # non-negative value
+                    # end of term
+                    sect_struct.append(term)
+                    term = [subtract_key]
+            else:
+                # compile term
+                term.append(arr[i])
+        
+        # append last term
+        sect_struct.append(term)
+
+        # print(sect_struct)
+
+        # --- TERM STANDARDS ---
+
+        # iterate over each term
+        for t in sect_struct:
+            # decalre variables
+            is_vars = False
+            is_subtracted = False
+            if t[0] == subtract_key:
+                # flip key switch
+                is_subtracted = True
+                # remove subtract key
+                t.pop(0)
+            length = len(t)
+            tdata = []
+            var_count = 0
+            coef_count = 0
+            divisions = [] # stores the numbers for variables after which there is division
+            alphabet = "abcdefghijklmnopqrstuvwxyz"
+            
+            # collect term data
+            for j in range(0, length):
+
+                if var_test(t[j]): # is a variable
+                    # get alphabetic index of variable for later alphabetization
+                    alpha = None
+                    for a in range(0, 26):
+                        if t[j] == alphabet[a]:
+                            alpha = a
+                            break
+                    var_count += 1
+                    is_vars = True       
+                    tdata.append({"coef": False, "value": t[j], "term_index": j, "alpha_index": alpha})
+
+                else:
+                    try: # is a coefficient
+                        val = int(t[j])
+                        if j + 2 < length and t[j + 1] == operation["multiplication"] and var_test(t[j + 2]):
+                            # case: a * x
+                            if j - 1 > -1:
+                                if t[j - 1] != operation["exponentiation"] and t[j - 1] != operation["radication"]:
+                                    # prevent appending non-coefficients
+                                    tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None})
+                                    coef_count += 1
+                                else:
+                                    # non-coefficient value
+                                    tdata.append({"coef": False, "value": val, "term_index": j, "alpha_index": None})
+                            else:
+                                tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None})
+                                coef_count += 1
+
+                        elif j - 2 > -1 and t[j - 1] == operation["multiplication"] and var_test(t[j - 2]):
+                            # case: x * a
+                            if j + 1 < length:
+                                if t[j + 1] != operation["exponentiation"] and t[j + 1] != operation["radication"]:
+                                    # prevent appending non-coefficients
+                                    tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None})    
+                                    coef_count += 1
+                                else:
+                                    # non-coefficient value
+                                    tdata.append({"coef": False, "value": val, "term_index": j, "alpha_index": None})
+                            else:
+                                tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None})
+                                coef_count += 1
+                        else:
+                            # non-coefficient value
+                            tdata.append({"coef": False, "value": val, "term_index": j, "alpha_index": None})
+
+                    except: # is an operation
+                        tdata.append({"coef": False, "value": t[j], "term_index": j, "alpha_index": None})
+                        
+                        # append variable number before a division
+                        if t[j] == operation["division"]:
+                            divisions.append({"var_count": var_count, "term_index": j})
+            
+            # print(tdata)
+            # print(divisions)
+
+            # analyze term data
+            if is_vars == True:
+                last = 0 # farthest alphabetic index
+                start = 0 # next starting index for alphabetization after division
+                end = length # next ending index for alphabetization before division
+                divisions_i = 0
+                d_length = len(divisions)
+                if d_length > 0:
+                    end = divisions[divisions_i]["term_index"]
+                
+                # store product of coeffients from each section in term
+                coefficiency = []
+                for i in range(0, coef_count):
+                    # get product of coefficients in divisional section
+                    product = 1
+                    for j in range(start, end):
+                        c = tdata[j]["coef"]
+                        x = tdata[j]["value"]
+                        if c == True:
+                            try:
+                                x = float(x)
+                                product *= x
+                            except:
+                                continue
+                    
+                    # append product to coefficiency
+                    try:
+                        if product % 1 == 0:
+                            product = int(product)
+                    except:
+                        continue
+
+                    coefficiency.append(product)
+
+                    start = end
+                    divisions_i += 1
+                    if divisions_i < d_length:
+                        end = divisions[divisions_i]["term_index"]
+                    else:
+                        end = length - 1
+
+                # print(coefficiency)
+                
+                # reinitialize section variables
+                divisions_i = 0
+                start = 0
+                end = length
+                if d_length > 0:
+                    end = divisions[divisions_i]["term_index"]
+
+                # sectionally alphabetize variables from term, sectioning by division
+                alphabetical = []
+                for i in range(0, var_count):
+
+                    # calculate differences ommitting below previous minimum
+                    diffs = []
+                    for j in range(start, end):
+                        d = tdata[j]["alpha_index"]
+                        ti = tdata[j]["term_index"]
+                        if d != None and d >= last:
+                            use = True
+                            # test alphabetical for duplicates
+                            for a in alphabetical:
+                                if ti == a["term_index"]:
+                                    use = False
+                                    break
+                            
+                            if use == True:
+                                diffs.append({"diff": d - last, "term_index": ti})
+
+                    # print(diffs)
+
+                    # determine smallest difference
+                    small = diffs[0]["diff"]
+                    for d in diffs:
+                        diff = d["diff"]
+                        if diff < small:
+                            small = diff
+
+                    # use smallest difference to append data in order to section list
+                    for d in diffs:
+                        if d["diff"] == small:
+                            # found matching difference
+                            alphabetical.append(tdata[d["term_index"]])
+                            last = tdata[d["term_index"]]["alpha_index"]
+                            if divisions_i < d_length and i == divisions[divisions_i]["var_count"] - 1 or i == var_count - 1:
+                                # on end of divisional section
+                                last = 0
+                                start = end
+                                divisions_i += 1
+                                if divisions_i < d_length:
+                                    end = divisions[divisions_i]["term_index"]
+                                else:
+                                    end = length
+                            
+                            break
+                
+                # print(alphabetical)
+                        
+                # append sub-lists of divisional sections from section list to alphabetical list
+                divisions_i = 0 # reset to zero
+                div_sect = []
+                sectional = []
+                for i in range(0, len(alphabetical)):
+                    div_sect.append(alphabetical[i])
+                    if divisions_i < d_length and i == divisions[divisions_i]["var_count"] - 1:
+                        # end of divisional section
+                        sectional.append(div_sect)
+                        div_sect = []
+                        divisions_i += 1
+                sectional.append(div_sect)
+
+                # print(sectional)
+
+                # print(coefficiency)
+
+                # use sectional and coeffiency data to create expression term structure
+                term = []
+                coefficiency_len = len(coefficiency)
+                for i in range(0, d_length + 1):
+                    # iterate over each divisional section
+                    # coefficient goes at start of divisional section in term
+                    # coefficients are broken down by divisional section to avoid rounding errors frpom division
+                    # ommit coefficients of 1
+                    if coefficiency_len > 0 and coefficiency[i] != 1:
+                        term.append(coefficiency[i])
+                    for obj in sectional[i]:
+                        t_i = obj["term_index"]
+                        start = t_i
+                        end = t_i
+                        # test for bounds of variable
+                        if t_i + 2 < len(t) and t[t_i + 1] == operation["exponentiation"]:
+                            end += 2
+                        if t_i - 1 > -1 and t[t_i - 1] == operation["radication"]:
+                            if t_i - 2 > -1 and not op_test(t[t_i - 2]):
+                                # n-th root, where n != 2
+                                start -= 2
+                            else:
+                                # square root
+                                start -= 1
+                    
+                        # add data to term
+                        if start == end:
+                            # single variable
+                            if len(term) == 0:
+                                # variable at start
+                                term.append(t[t_i])
+                            else:
+                                # intermittent variable
+                                if term[len(term) - 1] != operation["division"]:
+                                    # variable in middle of divisional section
+                                    term.append(operation["multiplication"])
+                                    term.append(t[t_i])
+                                else:
+                                    # variable at start of second or later divisional section
+                                    term.append(t[t_i])
+                        else:
+                            # variable expression
+                            if len(term) > 0:
+                                # intermittent expression
+                                term.append(operation["multiplication"])
+                            exp = t[start:end + 1]
+                            for obj in exp:
+                                term.append(obj)
+                        
+                    # add divison symbol after each divisional section
+                    term.append(operation["division"])
+
+                # remove extra division symbol at end
+                term.pop()
+
+                # if switch is flipped
+                if is_subtracted == True:
+                    # re-add subtract key
+                    term = [subtract_key] + term
+                
+                # add standardized term to expression structure
+                expression.append(term)
+                
+            else:
+                # arithmetic expressions require no formatting
+
+                # if switch is flipped
+                if is_subtracted == True:
+                    # re-add subtract key
+                    t = [subtract_key] + t
+                
+                # add arithmetic term to expression structure
+                expression.append(t)
+                
+        # --- EXPRESSION STANDARDS ---
+        # print(expression)
+
+        # combine all arithemtic terms into single constant term at end of expression
+        constant = []
+        indexes_removal = []
+        expression_len = len(expression)
+        for t in range(0, expression_len):
+            is_var = False
+            for i in range(0, len(expression[t])):
+                if var_test(expression[t][i]):
+                    # is algebraic term
+                    is_var = True
+                    break
+            if is_var == False:
+                # arithmetic term
+                indexes_removal.append(t)
+                # combine arithmetic terms
+                if expression[t][0] == subtract_key:
+                    # remove subtract key
+                    expression[t].pop(0)
+                    # subtract or negate
+                    if len(constant) > 0:
+                        # replace last addition with subtraction
+                        constant.pop()
+                        constant += [operation["subtraction"]]
+                    else:
+                        # negate first value in constant
+                        constant[0] = operation["negation"] + constant[0]
+                    
+                    constant += expression[t]
+                    constant += [operation["addition"]]
+                else:
+                    constant += expression[t]
+                    constant += [operation["addition"]]
+        
+        # if there are arithmetic terms
+        if len(constant) > 0:
+            # remove last operation symbol
+            constant.pop()
+        
+            # remove arithmetic terms from expression
+            indexes_removal = sorted(indexes_removal, reverse=True)
+            for i in indexes_removal:
+                expression.pop(i)
+
+            # calculate constant from arithmetic terms
+            c = calculate(constant)
+
+            # format constant for handling subtraction
+            if c >= 0:
+                constant = [str(c)]
+            else:
+                constant = [subtract_key, str(-c)]
+            
+            # put constant on end of term
+            expression.append(constant)
+
+        # order expression in decremental order of term degree
+        degrees = []
+        for i in range(0, len(expression)):
+            # append largest exponent in each term to represent term degree
+            degree = 0
+            trm = expression[i]
+            trm_len = len(trm)
+            for j in range(0, trm_len):
+                if j + 1 < trm_len and trm[j] == operation["exponentiation"]:
+                    # for each exponent in term
+                    x = num_cast(trm[j + 1])
+                    if x and x > degree:
+                        # update as largest
+                        degree = x
+            # append degree of term (zero for linear terms)
+            degrees.append(degree)
+        
+        # print(degrees)
+        
+        # store indexes of terms in expression in order from greatest to least degree
+        degrees_sorted = sorted(degrees, reverse=True)
+        degree_indexes = [] # stores indexes
+        degree_order = [] # stores terms ordered by degree
+        for d in degrees_sorted:
+            for i in range(0, len(degrees)):
+                if d == degrees[i]:
+                    if len(degree_indexes + [i]) == len(set(degree_indexes + [i])):
+                        # index is unique
+                        degree_indexes.append(i)
+                        break
+        
+        # print(degree_indexes)
+
+        # use indexes to create expression structure ordered by degree
+        for i in degree_indexes:
+            degree_order.append(expression[i])
+
+        # print(degree_order)
+
+        # concatenate terms into formatted expression
+        degree_order_len = len(degree_order)
+
+        # first iteration
+        if degree_order[0][0] == subtract_key:
+            # remove subtract key
+            degree_order[0].pop(0)
+            # negate coefficient of first divisional section
+            x = num_cast(degree_order[0][0])
+            if x:
+                x = -x
+                degree_order[0][0] = x
+        
+        # extend with next term 
+        formatted.extend(degree_order[0])
+        
+        # append addition symbol 
+        formatted.append(operation["addition"])
+
+        # rest of the iterations
+        if degree_order_len > 1:
+            for i in range(1, degree_order_len):
+                if degree_order[i][0] == subtract_key:
+                    # remove subtract key
+                    degree_order[i].pop(0)
+                    # replace previous addition symbol with subtraction symbol
+                    formatted[len(formatted) - 1] = operation["subtraction"]
+                
+                # extend with next term 
+                formatted.extend(degree_order[i])
+                
+                # append addition symbol 
+                formatted.append(operation["addition"])
+
+        # remove extra addition symbol at end
+        formatted.pop()
+
+        # return formatted algebraic expression
+        log_process("Standardization Complete")
+        log_process(formatted)
+        return formatted
     
     def simplify(arr):
+        nonlocal global_bypass
         nonlocal simp_limit
         # log process label
-        log_process("Simplifying")
+        log_process("Simplification of Algebraic Expression")
+        log_process(arr)
 
         # simplifies algebraic expressions
-        arrVar = arr
+        arrVar = standardize_format(arr)
 
         # define process of simplification
-        # 1.) identify first variable in arr testing from left to right
-        # 2.) test for simplifications until one is discovered and run that
-        # 3.) repeat step 1 - 2 until no simplification are discovered during step 2
+        # 1.) Format expression and terms into standard forms
+        # 2.) identify first variable in arr testing from left to right
+        # 3.) test for simplifications until one is discovered and run that
+        # 4.) repeat step 1 - 2 until no simplifications are discovered during step 2
+        # 5.) return result
         
         simplifying = True
         x = 0
@@ -663,6 +1125,7 @@ def evaluator(input):
             length = len(arrVar)
 
             for c in range(0, length):
+                
                 # each character
                 if var_test(arrVar[c]):
                     # each variable
@@ -670,13 +1133,42 @@ def evaluator(input):
 
                     # run simplifications
 
+                    # Operation on current variable
                     if c + 2 < length:
-                        # is operation on current variable
 
                         # MULTIPLICATION
                         if arrVar[c + 1] == operation["multiplication"]:
 
-                            # SIMP1: multiply a variable by itself
+                            # SIMP1: multiplication of variables with coefficients
+
+                            # case: a * x * b * x => (a*b) * x ^ 2, where a and b are particular values
+                            if c - 2 > -1 and c + 4 < length and testTermEnds(c - 2, c + 4, arrVar):
+                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
+
+                                    # get term data
+                                    coefficient1 = arrVar[c - 2]
+                                    coefficient2 = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % multiply(coefficient1, coefficient2), operation["multiplication"], var, operation["exponentiation"], "2"], c - 2, c + 4, arrVar)
+                                    
+                                    # end current simplification
+                                    break
+
+                            # case: x * a * x => a * x ^ 2, where a is a particular value
+                            elif c + 4 < length and testTermEnds(c, c + 4, arrVar):
+                                if arrVar[c + 4] == var and not var_test(arrVar[c + 2]):
+
+                                    # get term data
+                                    coefficient = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure(['%s' % coefficient, operation["multiplication"], var, operation["exponentiation"], "2"], c, c + 4, arrVar)
+                                    
+                                    # end current simplification
+                                    break
+
+                            # SIMP2: multiply a variable by itself
 
                             if arrVar[c + 2] == var:
                             
@@ -703,9 +1195,9 @@ def evaluator(input):
                                 # end current simplification
                                 break
                             
-                            if testTermEnds(c - 2, c + 2, arrVar):
+                            if c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
 
-                            # SIMP2: a * x * b => (a*b) * x
+                            # SIMP3: a * x * b => (a*b) * x
 
                                 if arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -719,7 +1211,7 @@ def evaluator(input):
                                     # end current simplification
                                     break
 
-                            # SIMP3: a / x * b => (a*b) / x
+                            # SIMP4: a / x * b => (a*b) / x
 
                                 if arrVar[c - 1] == operation["division"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -732,28 +1224,32 @@ def evaluator(input):
 
                                     # end current simplification
                                     break
+                            
+                        # DIVISION
+                        elif arrVar[c + 1] == operation["division"]:
 
-                            # SIMP4: combine terms for variable with coefficients multiplied
+                            # SIMP5: division of variables with coefficients
 
-                            if testTermEnds(c - 2, c + 4, arrVar):
-                                # correct term length for c index
+                            # case: a * x / b * x => a / b, where a and b are particular values
+                            if c - 2 > -1 and c + 4 < length and testTermEnds(c - 2, c + 4, arrVar):
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
-                                    # case: a * x * b * x => (a*b) * x ^ 2, where a and b are particular values
 
                                     # get term data
                                     coefficient1 = arrVar[c - 2]
                                     coefficient2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % multiply(coefficient1, coefficient2), operation["multiplication"], var, operation["exponentiation"], "2"], c - 2, c + 4, arrVar)
+                                    quotient = divide(coefficient1, coefficient2)
+                                    if global_bypass == False:
+                                        arrVar = restructure(['%s' % quotient], c - 2, c + 4, arrVar)
+                                    else:
+                                        # division by zero
+                                        return quotient
                                     
                                     # end current simplification
                                     break
-                        
-                        # DIVISION            
-                        elif arrVar[c + 1] == operation["division"]:
-
-                            # SIMP5: divide a variable by itself
+                            
+                            # SIMP6: divide a variable by itself
 
                             if arrVar[c + 2] == var:
 
@@ -803,9 +1299,9 @@ def evaluator(input):
                                     # end current simplification
                                     break
 
-                            if testTermEnds(c - 2, c + 2, arrVar):
+                            if c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
 
-                            # SIMP6: a * x / b => (a/b) * x
+                            # SIMP7: a * x / b => (a/b) * x
 
                                 if arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -814,12 +1310,17 @@ def evaluator(input):
                                     val2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % divide(val1, val2), operation["multiplication"], var], c - 2, c + 2, arrVar)
+                                    quotient = divide(val1, val2)
+                                    if global_bypass == False:
+                                        arrVar = restructure(['%s' % quotient, operation["multiplication"], var], c - 2, c + 2, arrVar)
+                                    else:
+                                        # division by zero
+                                        return quotient
 
                                     # end current simplification
                                     break
 
-                            # SIMP7: a / x / b => (a/b) / x
+                            # SIMP8: a / x / b => (a/b) / x
 
                                 if arrVar[c - 1] == operation["division"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -832,28 +1333,53 @@ def evaluator(input):
                                     
                                     # end current simplification
                                     break
+                            
+                        # ADDITION
+                        elif arrVar[c + 1] == operation["addition"]:
 
-                            # SIMP8: combine terms for variable with coefficients divided
-
-                            if testTermEnds(c - 2, c + 4, arrVar):
-                                # correct term length for c index
+                            # SIMP9: add coefficients between terms with no exponents
+                            
+                            # case: a * x + b * x => (a+b) * x
+                            if c - 2 > -1 and c + 4 < length and testTermEnds(c - 2, c + 4, arrVar):
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
-                                    # case: a * x * b * x => (a*b), where a and b are particular values
-
+                                    
                                     # get term data
                                     coefficient1 = arrVar[c - 2]
                                     coefficient2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % divide(coefficient1, coefficient2)], c - 2, c + 4, arrVar)
+                                    arrVar = restructure(['%s' % add(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
                                     
                                     # end current simplification
                                     break
-                        
-                        # ADDITION
-                        elif arrVar[c + 1] == operation["addition"]:
 
-                            # SIMP9: add a variable to itself
+                            # case: a * x + x => (a + 1) * x, where a is a particular value
+                            elif c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
+                                if arrVar[c + 2] == var and arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]):
+                                    
+                                    # get term data
+                                    coefficient = arrVar[c - 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure([str(int(coefficient) + 1), operation["multiplication"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
+                            
+                            # case: x + a * x => (a + 1) * x, where a is a particular value
+                            elif c + 4 < length and testTermEnds(c, c + 4, arrVar):
+                                if arrVar[c + 4] == var and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c + 2]):
+
+                                    # get term data
+                                    coefficient = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure([str(int(coefficient) + 1), operation["multiplication"], var], c, c + 4, arrVar)
+
+                                    # end current simplification
+                                    break
+                                
+                            # SIMP10: add a variable to itself
                             
                             if arrVar[c + 2] == var:
                                 
@@ -879,9 +1405,9 @@ def evaluator(input):
                                 # end current simplification
                                 break
                             
-                            if testTermEnds(c - 2, c + 2, arrVar):
+                            if c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
                             
-                            # SIMP10: a + x + b => (a+b) + x
+                            # SIMP11: a + x + b => (a+b) + x
 
                                 if arrVar[c - 1] == operation["addition"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -895,7 +1421,7 @@ def evaluator(input):
                                     # end current simplification
                                     break
                             
-                            # SIMP11: a - x + b => (a+b) - x
+                            # SIMP12: a - x + b => (a+b) - x
 
                                 if arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -909,27 +1435,52 @@ def evaluator(input):
                                     # end current simplification
                                     break
                             
-                            # SIMP12: add coefficients between terms with no exponents
-                            
-                            if testTermEnds(c - 2, c + 4, arrVar):
+                        # SUBTRACTION
+                        elif arrVar[c + 1] == operation["subtraction"]:
 
+                            # SIMP13: subtract coefficients between terms with no exponents
+
+                            # case: a * x - b * x => (a-b) * x
+                            if c - 2 > -1 and c + 4 < length and testTermEnds(c - 2, c + 4, arrVar):
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
-                                    # case: a * x + b * x => (a+b) * x
-                                    
+
                                     # get term data
                                     coefficient1 = arrVar[c - 2]
                                     coefficient2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % add(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
+                                    arrVar = restructure(['%s' % subtract(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
                                     
                                     # end current simplification
-                                    break              
+                                    break
 
-                        # SUBTRACTION
-                        elif arrVar[c + 1] == operation["subtraction"]:
+                            # case: a * x - x => (a - 1) * x, where a is a particular value
+                            elif c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
+                                if arrVar[c + 2] == var and arrVar[c - 1] == operation["multiplication"] and not var_test(arrVar[c - 2]):
+                                    
+                                    # get term data
+                                    coefficient = arrVar[c - 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure([str(int(coefficient) - 1), operation["multiplication"], var], c - 2, c + 2, arrVar)
+
+                                    # end current simplification
+                                    break
                             
-                            # SIMP13: subtracted from itself
+                            # case: x - a * x => (1 - a) * x, where a is a particular value
+                            elif c + 4 < length and testTermEnds(c, c + 4, arrVar):
+                                if arrVar[c + 4] == var and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c + 2]):
+
+                                    # get term data
+                                    coefficient = arrVar[c + 2]
+
+                                    # apply simplification to problem structure
+                                    arrVar = restructure([str(1 - int(coefficient)), operation["multiplication"], var], c, c + 4, arrVar)
+
+                                    # end current simplification
+                                    break
+
+                            # SIMP14: subtracted from itself
 
                             if arrVar[c + 2] == var:
                             
@@ -951,13 +1502,13 @@ def evaluator(input):
                                         break
                                 
                                 # apply simplification to problem structure
-                                arrVar = restructure([var, operation["subtraction"], '%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
+                                arrVar = restructure(['%s' % (1 - multiplier), operation["multiplication"], var], c, place, arrVar)
                                 # end current simplification
                                 break
+                            
+                            if c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
 
-                            if testTermEnds(c - 2, c + 2, arrVar):
-
-                            # SIMP14: a + x - b => (a-b) + x
+                            # SIMP15: a + x - b => (a-b) + x
 
                                 if arrVar[c - 1] == operation["addition"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -971,7 +1522,7 @@ def evaluator(input):
                                     # end current simplification
                                     break
                             
-                            # SIMP15: a - x - b => (a-b) - x
+                            # SIMP16: a - x - b => (a-b) - x
 
                                 if arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                         
@@ -985,31 +1536,13 @@ def evaluator(input):
                                         # end current simplification
                                         break
                             
-                            # SIMP16: subtract coefficients between terms with no exponents
-
-                            if testTermEnds(c - 2, c + 4, arrVar):
-                                # correct term length for c index
-                                if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
-                                    # a * x - b * x => (a-b) * x
-
-                                    # get term data
-                                    coefficient1 = arrVar[c - 2]
-                                    coefficient2 = arrVar[c + 2]
-
-                                    # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % subtract(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
-                                    
-                                    # end current simplification
-                                    break
-
-                
                 # test terminating condition
                 if c + 1 == length:
                     # no further simplifications; on end character and no simplifications run
                     simplifying = False
 
         # log end of simplification
-        log_process("Simplified")
+        log_process("Simplification Complete")
 
         # return simplified expression
         return arrVar
@@ -1021,6 +1554,7 @@ def evaluator(input):
     def getIdx(str, arr):
         # gets index of string in structure
         nonlocal global_bypass
+        nonlocal operator_precedence
 
         if global_bypass == False:
 
@@ -1032,7 +1566,6 @@ def evaluator(input):
 
                 # operation string
                 val = None
-                
                 for i in range(0, length):
                     if arr[i] == str:
                         # test for index range of test
@@ -1043,10 +1576,48 @@ def evaluator(input):
                             if a != operation["open_parenthesis"] and a != operation["close_parenthesis"] and a != operation["open_bracket"] and a != operation["close_bracket"] and b != operation["open_parenthesis"] and b != operation["close_parenthesis"] and b != operation["open_bracket"] and b != operation["close_bracket"]:
                                 # test for operation on variables
                                 if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
-                                    # arithmetic operation approved
-                                    val = i
-                                    return val
-                
+                                    # test for operation on exponent with algebraic base
+                                    if i - 2 <= -1 or arr[i - 2] != operation["exponentiation"]:
+                                        # test for operation on numbers operating on variables with operators with higher operator precedence
+                                        if i - 2 > -1 and var_test(arr[i - 2]) or i + 2 < length and var_test(arr[i + 2]):
+                                            # larger op value indicates larger operator precedence
+                                            op1 = arr[i]
+                                            op2 = ""
+                                            op2_len = 0
+                                            op3 = ""
+                                            op3_len = 0
+
+                                            if i - 2 > -1 and op_test(arr[i - 2]):
+                                                op2 = arr[i  -2]
+                                                op2_len = len(op2)
+                                            if i + 2 < length and op_test(arr[i + 2]):
+                                                op3 = arr[i + 2]
+                                                op3_len = len(op3)
+                                            
+                                            for o in range(0, len(operator_precedence)):
+                                                if op1 == operator_precedence[o]:
+                                                    op1 = o
+                                                    break
+                                            if op2_len > 0:
+                                                for o in range(0, len(operator_precedence)):
+                                                    if op2 == operator_precedence[o]:
+                                                        op2 = o
+                                                        break
+                                            if op3_len > 0:
+                                                for o in range(0, len(operator_precedence)):
+                                                    if op3 == operator_precedence[o]:
+                                                        op3 = o
+                                                        break
+                                            if op2_len > 0 and op1 > op2 or op3_len > 0 and op1 > op3:
+                                                # arithmetic operation approved
+                                                val = i
+                                                return val
+                                        else:
+                                            # arithmetic operation approved
+                                            val = i
+                                            return val
+
+
                 # no operation from string not on variable
                 return val
                             
@@ -2406,7 +2977,6 @@ def evaluator(input):
             return arrVar
         else:
             # scans for operations and calculates then simplifies
-            log_process("Calculating")
 
             # perform all key functions (in section)
 
@@ -2426,161 +2996,182 @@ def evaluator(input):
                     # run key functions on section
                     arrVar = key_functions(arrVar)
             
-            # perform all arithmetic operations accounting for operator precedence
-
-            # perform all exponentiations
-            if is_exp == True:
-                ref = getIdx(operation["exponentiation"], arrVar)
-                while ref is not None:
-                    x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
-                    arrVar = restructure(x, ref - 1, ref + 1, arrVar)
-                    ref = getIdx(operation["exponentiation"], arrVar)
-
-            # Perform all square roots
-            if is_root == True:
-                ref = getIdx(operation["radication"], arrVar)
-                while ref is not None:
-                    x = 0
-                    if ref - 1 > -1 and not op_test(arrVar[ref - 1]):
-                        # radication of given degree
-                        x = root(arrVar[ref + 1], arrVar[ref - 1])
-                        arrVar = restructure(x, ref - 1, ref + 1, arrVar)
-                        ref = getIdx(operation["radication"], arrVar)
-                    else:
-                        # square root
-                        x = root(arrVar[ref + 1], 2)
-                        arrVar = restructure(x, ref, ref + 1, arrVar)
-                        ref = getIdx(operation["radication"], arrVar)
-
-            # perform all Multiplications and Divisions as they appear from left to right
-            if is_mult == True and is_div == True:
-                m_ref = getIdx(operation["multiplication"], arrVar)
-                d_ref = getIdx(operation["division"], arrVar)
-                while m_ref is not None or d_ref is not None:
-                    if d_ref is None and m_ref is not None:
-                        # Only Multiply
-                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-
-                    elif m_ref is None and d_ref is not None:
-                        # Only Divide
-                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-                    elif m_ref is not None and d_ref is not None and m_ref < d_ref:
-                        # Multiply first
-                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-
-                        d_ref = getIdx(operation["division"], arrVar)
-                        y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
-
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-                    elif d_ref is not None and m_ref is not None and d_ref < m_ref:
-                        # Divide First
-                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-
-                        y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                        arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
-
-                        m_ref = getIdx(operation["multiplication"], arrVar)
-                        d_ref = getIdx(operation["division"], arrVar)
-
-            elif is_mult == True:
-                m_ref = getIdx(operation["multiplication"], arrVar)
-                while m_ref is not None:
-                    x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                    arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
-                    m_ref = getIdx(operation["multiplication"], arrVar)
-
-            elif is_div == True:
-                d_ref = getIdx(operation["division"], arrVar)
-                while d_ref is not None:
-                    x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                    arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                    d_ref = getIdx(operation["division"], arrVar)
-
-            # perform all Additions and Subtractions as they appear from left to right
-            if is_add == True and is_sub == True:
-                a_ref = getIdx(operation["addition"], arrVar)
-                s_ref = getIdx(operation["subtraction"], arrVar)
-                while a_ref is not None or s_ref is not None:
-                    if s_ref is None and a_ref is not None:
-                        # only add
-                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx(operation["addition"], arrVar)
-
-                    elif a_ref is None and s_ref is not None:
-                        # only subtract
-                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-
-                    elif a_ref is not None and s_ref is not None and a_ref < s_ref:
-                        # add first
-                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                        a_ref = getIdx(operation["addition"], arrVar)
-
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-                        y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
-
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-
-                    elif s_ref is not None and a_ref is not None and s_ref < a_ref:
-                        # subtract first
-                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                        arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
-
-                        a_ref = getIdx(operation["addition"], arrVar)
-                        s_ref = getIdx(operation["subtraction"], arrVar)
-            
-            elif is_add == True:
-                a_ref = getIdx(operation["addition"], arrVar)
-                while a_ref is not None:
-                    x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
-                    arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
-                    a_ref = getIdx(operation["addition"], arrVar)
-            
-            elif is_sub == True:
-                s_ref = getIdx(operation["subtraction"], arrVar)
-                while s_ref is not None:
-                    x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
-                    arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
-                    s_ref = getIdx(operation["subtraction"], arrVar)
-            
-            log_process("Calculated")
-            
-            # test for variables in section
-            is_variables = False
-            for i in range(0, len(arrVar)):
-                if var_test(arrVar[i]) == True:
-                    is_variables = True
-                    break
-            
-            if is_variables == True:
-                # run algebraic simplifications
-                arrVar = simplify(arrVar)
-                # return algebraic expression
+            if global_bypass == True:
                 return arrVar
             else:
-                # return single value
-                return arrVar[0]
+                # perform all arithmetic operations accounting for operator precedence
+                log_process("Calculating Arithmetic Operations in Operator Precedence")
+                log_process(arrVar)
+
+                # perform all exponentiations
+                if is_exp == True:
+                    ref = getIdx(operation["exponentiation"], arrVar)
+                    while ref is not None:
+                        x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
+                        arrVar = restructure(x, ref - 1, ref + 1, arrVar)
+                        ref = getIdx(operation["exponentiation"], arrVar)
+
+                # Perform all square roots
+                if is_root == True:
+                    ref = getIdx(operation["radication"], arrVar)
+                    while ref is not None:
+                        x = 0
+                        if ref - 1 > -1 and not op_test(arrVar[ref - 1]):
+                            # radication of given degree
+                            x = root(arrVar[ref + 1], arrVar[ref - 1])
+                            arrVar = restructure(x, ref - 1, ref + 1, arrVar)
+                            ref = getIdx(operation["radication"], arrVar)
+                        else:
+                            # square root
+                            x = root(arrVar[ref + 1], 2)
+                            arrVar = restructure(x, ref, ref + 1, arrVar)
+                            ref = getIdx(operation["radication"], arrVar)
+
+                # perform all Multiplications and Divisions as they appear from left to right
+                if is_mult == True and is_div == True:
+                    m_ref = getIdx(operation["multiplication"], arrVar)
+                    d_ref = getIdx(operation["division"], arrVar)
+                    while m_ref is not None or d_ref is not None:
+                        if d_ref is None and m_ref is not None:
+                            # Only Multiply
+                            x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                            arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+                            m_ref = getIdx(operation["multiplication"], arrVar)
+
+                        elif m_ref is None and d_ref is not None:
+                            # Only Divide
+                            x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                            if global_bypass == False:
+                                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                                d_ref = getIdx(operation["division"], arrVar)
+                            else:
+                                # division by zero
+                                return x
+                                
+                        elif m_ref is not None and d_ref is not None and m_ref < d_ref:
+                            # Multiply first
+                            x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                            arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+
+                            d_ref = getIdx(operation["division"], arrVar)
+                            y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                            if global_bypass == False:
+                                arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
+
+                                m_ref = getIdx(operation["multiplication"], arrVar)
+                                d_ref = getIdx(operation["division"], arrVar)
+                            else:
+                                # divison by zero
+                                return y
+
+                        elif d_ref is not None and m_ref is not None and d_ref < m_ref:
+                            # Divide First
+                            x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                            if global_bypass == False:
+                                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                                m_ref = getIdx(operation["multiplication"], arrVar)
+
+                                y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                                arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
+
+                                m_ref = getIdx(operation["multiplication"], arrVar)
+                                d_ref = getIdx(operation["division"], arrVar)
+                            else:
+                                # division by zero
+                                return x
+
+                elif is_mult == True:
+                    m_ref = getIdx(operation["multiplication"], arrVar)
+                    while m_ref is not None:
+                        x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                        arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
+                        m_ref = getIdx(operation["multiplication"], arrVar)
+
+                elif is_div == True:
+                    d_ref = getIdx(operation["division"], arrVar)
+                    while d_ref is not None:
+                        x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
+                        if global_bypass == False:
+                            arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                            d_ref = getIdx(operation["division"], arrVar)
+                        else:
+                            # division by zero
+                            return x
+
+                # perform all Additions and Subtractions as they appear from left to right
+                if is_add == True and is_sub == True:
+                    a_ref = getIdx(operation["addition"], arrVar)
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+                    while a_ref is not None or s_ref is not None:
+                        if s_ref is None and a_ref is not None:
+                            # only add
+                            x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                            a_ref = getIdx(operation["addition"], arrVar)
+
+                        elif a_ref is None and s_ref is not None:
+                            # only subtract
+                            x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                            s_ref = getIdx(operation["subtraction"], arrVar)
+
+                        elif a_ref is not None and s_ref is not None and a_ref < s_ref:
+                            # add first
+                            x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                            a_ref = getIdx(operation["addition"], arrVar)
+
+                            s_ref = getIdx(operation["subtraction"], arrVar)
+                            y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
+
+                            a_ref = getIdx(operation["addition"], arrVar)
+                            s_ref = getIdx(operation["subtraction"], arrVar)
+
+                        elif s_ref is not None and a_ref is not None and s_ref < a_ref:
+                            # subtract first
+                            x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                            s_ref = getIdx(operation["subtraction"], arrVar)
+
+                            a_ref = getIdx(operation["addition"], arrVar)
+                            y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
+
+                            a_ref = getIdx(operation["addition"], arrVar)
+                            s_ref = getIdx(operation["subtraction"], arrVar)
+                
+                elif is_add == True:
+                    a_ref = getIdx(operation["addition"], arrVar)
+                    while a_ref is not None:
+                        x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                        arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
+                        a_ref = getIdx(operation["addition"], arrVar)
+                
+                elif is_sub == True:
+                    s_ref = getIdx(operation["subtraction"], arrVar)
+                    while s_ref is not None:
+                        x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                        arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
+                        s_ref = getIdx(operation["subtraction"], arrVar)
+                
+                log_process("Calculation Complete")
+                
+                # test for variables in section
+                is_variables = False
+                for i in range(0, len(arrVar)):
+                    if var_test(arrVar[i]) == True:
+                        is_variables = True
+                        break
+                
+                if is_variables == True:
+                    # run algebraic simplifications
+                    arrVar = simplify(arrVar)
+                    # return algebraic expression
+                    return arrVar
+                else:
+                    # return single value
+                    return arrVar[0]
 
     def section(arr):
         # performs calculations in order from most to least parenthesis nesting
@@ -2633,25 +3224,38 @@ def evaluator(input):
                     # calculate on section
                     section = calculate(section)
 
-                    # test for variables in section
-                    is_variables = False
-                    for i in range(0, len(arrVar)):
-                        if var_test(arrVar[i]) == True:
-                            is_variables = True
-                            break
-                    
-                    # terminate program on global_bypass or if variables in section after simplification
-                    if is_variables == True:
-                        global_bypass = True
-                        log_process("unresolvable algebraic expression in parenthesis")
-                        return section
+                    if global_bypass == False:
 
-                if global_bypass == False:
+                        # test for variables in section
+                        is_variables = False
+                        for i in range(0, len(arrVar)):
+                            if var_test(arrVar[i]) == True:
+                                is_variables = True
+                                break
+                        
+                        # terminate program on global_bypass or if variables in section after simplification
+                        if is_variables == True:
+                            if start - 1 > 0 and arrVar[start - 1] == operation["division"]:
+                                # division by algebraic expression
+                                log_process("division by algebraic expression")
+                                global_bypass = True
+                                return arrVar
+                            else:
+                                # unresolvable algebraic expression in parenthesis
+                                global_bypass = True
+                                log_process("unresolvable algebraic expression in parenthesis")
+                                return arrVar
+                        else:
+                            # update arrVar with calculations and simplifications
+                            arrVar = restructure(section, start, end - 1, arrVar)
+
+                    else:
+                        # section contains error message from calculation
+                        return section
+                    
+                else:
                     # update arrVar with calculations and simplifications
                     arrVar = restructure(section, start, end - 1, arrVar)
-                else:
-                    # section contains error message from calculation
-                    return section
         
         # if paren_limit was not reached and nested expressions are solved
         if global_bypass == False and thresh < paren_limit:
@@ -2695,7 +3299,8 @@ def evaluator(input):
                 process_log["0"] = "Process Log Start"
 
             # valid characters => proceed to structuring
-            log_process("Structuring")
+            log_process("Generating Problem Structure from Problem String")
+            log_process("Structuring multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets")
             # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
             structure = []
             digits = ""
@@ -2737,9 +3342,9 @@ def evaluator(input):
                     finally:
                         if (i == len(str) - 1 and len(digits) > 0):
                             structure.append(digits)
+            
             log_process(structure)
-
-            log_process("Constants")
+            log_process("Structuring Constants")
 
             # structure pi
             ref = get_word("pi", structure)
@@ -2758,17 +3363,16 @@ def evaluator(input):
                 ref = get_word("euler", structure)
 
             # structure keywords
-            log_process("Keywords")
+            log_process("Structuring Keywords")
             
             # structure key functions
             for module in range(0, len(info["key_functions"])):
                 for i in range(0, len(info["key_functions"][module])):
                     structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
+
             log_process(key_modules)
 
-            log_process("Structured")
-
-            # Identify program entities in structured string
+            # Identify program entities in problem structure
             identify_entities(structure)
 
             # validate problem structure
@@ -3092,17 +3696,19 @@ def evaluator(input):
                 # generates substructures, i.e. "sets", within structure
                 # sets exist so that multiple arguments can be accessed at a single index for key functions
                 if is_brack == True:
+                    # structure sets
                     log_process("Structure Sets")
                     log_process(structure)
-                    # structure sets
                     sets_ref = []
                     for i in range(0, len(structure)):
                         if structure[i] == "[":
                             sets_ref.append({"char": "[", "index": i})
                         elif structure[i] == "]":
                             sets_ref.append({"char": "]", "index": i})
+                    
                     # identify next set to structure using sets_ref
                     while len(sets_ref) > 0:
+                        log_process(structure)
                         for i in range(0, len(sets_ref)):
                             if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
                                 # build set
@@ -3124,6 +3730,9 @@ def evaluator(input):
                                     elif structure[i] == "]":
                                         sets_ref.append({"char": "]", "index": i})
                                 break
+                
+                # mark end of structuring pocess
+                log_process("Problem Structure Generation Complete")
 
                 if is_paren == True:
                     # parenthetically section and solve
@@ -3134,9 +3743,31 @@ def evaluator(input):
 
     # Evaluation
     use_logs = input["use_logs"]
-    answer = evaluate(input["problem"])
+    problem = "empty string"
+    answer = "empty string"
 
-    # convert expressions to answer string
+    # pre-structure problem validation
+    if len(input["problem"]) > 0:
+        # non-empty string
+        if len(set(input["problem"])) > 1:
+
+            # run evaluation
+            problem = input["problem"]
+            answer = evaluate(problem)
+
+        else:
+            # string of single character type
+            try:
+                # numeral character type
+                int(input["problem"])
+                problem = input["problem"]
+                answer = input["problem"]
+            except:
+                # non-numeral character type
+                problem = input["problem"]
+                answer = "single type of character"
+
+    # convert answer expressions to answer string
     if isinstance(answer, list):
         string = ""
         for i in answer:
@@ -3145,7 +3776,7 @@ def evaluator(input):
 
     # assign output object
     output = {
-        "problem": input["problem"],
+        "problem": problem,
         "answer": answer,
         "logs": process_log,
     }
@@ -3167,22 +3798,33 @@ def evaluator(input):
 
 # # test case
 # input = {
-#     # "problem": "(x-1*6/2)+2", # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
-#     # "problem": "(x+1)+2", # prevents calculation on unresolvable algebraic expressions
-#     "problem": "(x-1*6/2)+2", # next case to develop
-#     "use_logs": "", # 1 = yes
+#     # next case to develop
+#     # "problem": "(4*x)/(2*x)", # note: 
+#     # "problem": "(4*x)/(2*x)", # note: 
+#     # "problem": "acsc(0)", # note: 
+#     "problem": "algexp[[x+y],[4/2*1/1+1-1]]", # note: 
+#     "use_logs": "1", # 1 = yes
+#     # "problem": "", # note: 
 # }
 # evaluator(input)
 
-# comprehensive test
+# comprehensive testing
 # tests = [
-#     # PROBLEM VALIDATION
+
+#     # PRE-STRUCTURE VALIDATION
+
+#     {"problem": "", "answer": "empty string"}, # prevents evaluation on empty string
+#     {"problem": "        ", "answer": "single type of character"}, # prevents evaluation of string with single type of character
+#     {"problem": "11111111", "answer": "11111111"}, # returns problem of string with single type of numeral character
 
 #     # TEST0
 #     {"problem": "1+1/&%$#", "answer": "Invalid character: &"},
 
+#     # PROBLEM STRUCTURE VALIDATION
+
 #     # TEST6
 #     {"problem": "1/0", "answer": "no division by zero"},
+#     {"problem": "3/(2-2)", "answer": "no division by zero"},
 
 #     # TEST5
 #     {"problem": "1++1", "answer": "no consecutive operations"},
@@ -3230,36 +3872,7 @@ def evaluator(input):
 #     {"problem": "mean[10]", "answer": "mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
 #     {"problem": "meanw[[10,0.5]]", "answer": "meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
     
-#     # "problem": "sin(1,2)", # 
-    
-#     # ALGEBRAIC SIMPLIFICATION
-
-#     {"problem": "a+a+a-2*3", "answer": "3*a-6"}, # solve arithmetic in algebraic expression even if not in parens
-
-#     {"problem": "a*a*a", "answer": "a^3"}, # simplifies algebraic expression for consecutive multiplications
-#     {"problem": "2*x*9", "answer": "18*x"}, #  a * x * b => (a*b) * x
-#     {"problem": "2/x*9", "answer": "18/x"}, #  a / x * b => (a*b) / x
-#     {"problem": "3*x*7*x", "answer": "21*x^2"}, #  combine terms for variable with coefficients multiplied
-
-#     {"problem": "a/a/a/a", "answer": "a/(a^3)"}, # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-#     {"problem": "x*a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with multiplication; x
-#     {"problem": "x/a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with division; x
-#     {"problem": "a/a", "answer": "1"}, # simplifies algebraic expression for variable divide by itself; 1
-#     {"problem": "10*x/2", "answer": "5.0*x"}, # a * x / b => (a/b) * x
-#     {"problem": "10/x/2", "answer": "5.0/x"}, # a / x / b => (a/b) / x
-#     {"problem": "4*x/2*x", "answer": "2.0"}, #  combine terms for variable with coefficients divided
-    
-#     {"problem": "a+a+a", "answer": "3*a"}, # simplifies algebraic expression for consecutive additions
-#     {"problem": "10+x+2", "answer": "12+x"}, # a + x + b => (a+b) + x
-#     {"problem": "10-x+2", "answer": "12-x"}, # a - x + b => (a+b) - x
-#     {"problem": "2*x+4*x", "answer": "6*x"}, # add coefficients of like terms
-#     {"problem": "2*x+4*y", "answer": "2*x+4*y"}, # don't add coefficients of not like terms
-    
-#     {"problem": "a-a-a-a", "answer": "a-3*a"}, # simplifies algebraic expression for consecutive substractions
-#     {"problem": "10+x-2", "answer": "8+x"}, # a + x - b => (a-b) + x
-#     {"problem": "10-x-2", "answer": "8-x"}, # a - x - b => (a-b) - x
-#     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
-#     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
+#     {"problem": "sin(1,[2*8/4-2])", "answer": "sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
     
 #     # KEY FUNCTION ARGUMENT DOMAIN VALIDATION
 
@@ -3374,11 +3987,59 @@ def evaluator(input):
     
 #     # N-TH RADICATION
 #     {"problem": "3√8", "answer": "2.0"}, # permits n-th degree radication
+
     
-#     # ARITHMETIC IN ALGEBRAIC EXPRESSION
+#     # ALGEBRAIC SIMPLIFICATION
+
+#     {"problem": "a+a+a-2*3", "answer": "3*a-6"}, # solve arithmetic in algebraic expression even if not in parens
+
+#     {"problem": "a*a*a", "answer": "a^3"}, # simplifies algebraic expression for consecutive multiplications
+#     {"problem": "2*x*9", "answer": "18*x"}, #  a * x * b => (a*b) * x
+#     {"problem": "2/x*9", "answer": "18/x"}, #  a / x * b => (a*b) / x
+#     {"problem": "3*x*7*x", "answer": "21*x^2"}, # combine terms for variable with coefficients multiplied
+#     {"problem": "3*x*x", "answer": "3*x^2"}, # combine terms one variable with coefficients multiplied
+#     {"problem": "x*3*x", "answer": "3*x^2"}, # combine terms one variable with coefficients multiplied
+
+#     {"problem": "a/a/a/a", "answer": "a/(a^3)"}, # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
+#     {"problem": "x*a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with multiplication; x
+#     {"problem": "x/a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with division; x
+#     {"problem": "a/a", "answer": "1"}, # simplifies algebraic expression for variable divide by itself; 1
+#     {"problem": "10*x/2", "answer": "5*x"}, # a * x / b => (a/b) * x
+#     {"problem": "10/x/2", "answer": "5/x"}, # a / x / b => (a/b) / x
+#     {"problem": "4*x/2*x", "answer": "2"}, #  combine terms for variable with coefficients divided
+#     {"problem": "3*x/x", "answer": "3"}, # combine terms one variable with coefficients divided
+#     {"problem": "x/3", "answer": "x/3"}, # x / a cannot be further simplified
+    
+#     {"problem": "a+a+a", "answer": "3*a"}, # simplifies algebraic expression for consecutive additions
+#     {"problem": "10+x+2", "answer": "12+x"}, # a + x + b => (a+b) + x
+#     {"problem": "10-x+2", "answer": "12-x"}, # a - x + b => (a+b) - x
+#     {"problem": "2*x+4*x", "answer": "6*x"}, # add coefficients of like terms
+#     {"problem": "2*x+4*y", "answer": "2*x+4*y"}, # don't add coefficients of not like terms
+#     {"problem": "3*x+x", "answer": "4*x"}, # combine terms one variable with coefficients added
+#     {"problem": "x+3*x", "answer": "4*x"}, # combine terms one variable with coefficients added
+    
+#     {"problem": "a-a-a-a", "answer": "-2*a"}, # simplifies algebraic expression for consecutive substractions
+#     {"problem": "10+x-2", "answer": "8+x"}, # a + x - b => (a-b) + x
+#     {"problem": "10-x-2", "answer": "8-x"}, # a - x - b => (a-b) - x
+#     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
+#     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
+#     {"problem": "3*x-x", "answer": "2*x"}, # combine terms one variable with coefficients subtracted
+#     {"problem": "x-3*x", "answer": "-2*x"}, # combine terms one variable with coefficients subtracted
+#     {"problem": "3*x-x", "answer": "2*x"}, # a * x - x => (a - 1) * x
+#     {"problem": "x-3*x", "answer": "-2*x"}, # x - a * x => (1 - a) * x
+
+#     {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
+#     {"problem": "(x+1)+2", "answer": "(x+1)+2"}, # prevents calculation on unresolvable algebraic expressions
 #     {"problem": "(x)+2", "answer": "x+2"}, # should get "x+2"; removes parenthesis on variables wrapped with no operations
-#     # {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
-#     # {"problem": "(x+1)+2", "answer": "x+2"}, # prevents calculation on unresolvable algebraic expressions
+
+#     # ALGEBRAIC EXPRESSION FORMAT STANDARDIZATION
+
+#     {"problem": "2-3*x", "answer": "2-3*x"}, # prevents operation out of precedence in algebraic expressions
+#     {"problem": "x^2-3*y", "anser": "x^2-3*y"}, # prevents operation out of precedence in algebraic expressions
+#     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
+#     {"problem": "3+3*x-7-3*x^3", "answer": "-3*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
+#     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # x / ( a * x ) => 1 / ( (a-1) * x )
+#     # {"problem": "", "anser": ""}, # 
 # ]
 # def diagnostic():
 #     global tests
@@ -3390,10 +4051,6 @@ def evaluator(input):
 #     return 'passed all tests'
 # print(diagnostic())
 
-# development tasks
-#  - design remaining simplifications in simplify function
-#  - complete and test expand key function
-#  - order each term at the end of the get terms function ( exempli gratia x*2*y => 2*x*y; x^2*3 => 3*x^2)
 
 # Flask APP
 app = Flask(__name__)
