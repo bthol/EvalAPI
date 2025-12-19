@@ -165,16 +165,16 @@ def evaluator(input):
     global info
 
     # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
-    paren_limit = 100
+    paren_limit = 1000
 
     # the const_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
-    const_limit = 100
+    const_limit = 1000
 
     # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
-    key_limit = 100
+    key_limit = 1000
 
     # the simp_limit parameter constrols the maximum number of simplifications in any one evaluation
-    simp_limit = 100
+    simp_limit = 1000
 
     # PROGRAM ENTITY REFERENCE
 
@@ -643,6 +643,7 @@ def evaluator(input):
         # standardizes term forms, combines like terms,
         # standardizes expression form, returns result
         log_process("Standardizing Format of Algebraic Terms and Expressions")
+        log_process(arr)
 
         # return empty argument
         if len(arr) == 0:
@@ -693,11 +694,13 @@ def evaluator(input):
         # print(sect_struct)
 
         # --- TERM STANDARDS ---
+        log_process("Imposition of Term Standards")
 
         # iterate over each term
         for t in sect_struct:
+            # print(t)
+
             # decalre variables
-            is_vars = False
             is_subtracted = False
             if t[0] == subtract_key:
                 # flip key switch
@@ -722,7 +725,6 @@ def evaluator(input):
                             alpha = a
                             break
                     var_count += 1
-                    is_vars = True       
                     tdata.append({"coef": False, "value": t[j], "term_index": j, "alpha_index": alpha})
 
                 else:
@@ -770,7 +772,7 @@ def evaluator(input):
             # print(divisions)
 
             # analyze term data
-            if is_vars == True:
+            if var_count > 0:
                 last = 0 # farthest alphabetic index
                 start = 0 # next starting index for alphabetization after division
                 end = length # next ending index for alphabetization before division
@@ -778,37 +780,40 @@ def evaluator(input):
                 d_length = len(divisions)
                 if d_length > 0:
                     end = divisions[divisions_i]["term_index"]
-                
+
                 # store product of coeffients from each section in term
+                log_process("Determination of Coefficient Product in Divisional Sections of Term")
                 coefficiency = []
-                for i in range(0, coef_count):
-                    # get product of coefficients in divisional section
-                    product = 1
-                    for j in range(start, end):
-                        c = tdata[j]["coef"]
-                        x = tdata[j]["value"]
-                        if c == True:
-                            try:
-                                x = float(x)
-                                product *= x
-                            except:
-                                continue
-                    
-                    # append product to coefficiency
-                    try:
-                        if product % 1 == 0:
-                            product = int(product)
-                    except:
-                        continue
+                if coef_count > 0:
+                    for i in range(0, d_length + 1):
+                        # get product of coefficients in divisional section
+                        product = 1
+                        for j in range(start, end):
+                            c = tdata[j]["coef"]
+                            x = tdata[j]["value"]
+                            if c == True:
+                                try:
+                                    x = float(x)
+                                    product *= x
+                                except:
+                                    continue
+                        
+                        # append product to coefficiency
+                        try:
+                            if product % 1 == 0:
+                                product = int(product)
+                        except:
+                            continue
 
-                    coefficiency.append(product)
+                        coefficiency.append(product)
 
-                    start = end
-                    divisions_i += 1
-                    if divisions_i < d_length:
-                        end = divisions[divisions_i]["term_index"]
-                    else:
-                        end = length - 1
+                        # move to next divisional section
+                        start = end
+                        divisions_i += 1
+                        if divisions_i < d_length:
+                            end = divisions[divisions_i]["term_index"]
+                        else:
+                            end = length
 
                 # print(coefficiency)
                 
@@ -818,9 +823,28 @@ def evaluator(input):
                 end = length
                 if d_length > 0:
                     end = divisions[divisions_i]["term_index"]
+                
+                # declare alphabetical structure before skipping divisional sections to add placeholders
+                alphabetical = []
+
+                # skip divisional sections without variables
+                loop_count = 0
+                while loop_count < d_length and divisions[divisions_i]["var_count"] == 0:
+                    loop_count += 1
+
+                    # append placeholder for divisional section
+                    alphabetical.append({"term_index": None})
+
+                    # move to next divisional section
+                    start = end
+                    divisions_i += 1
+                    if divisions_i < d_length:
+                        end = divisions[divisions_i]["term_index"]
+                    else:
+                        end = length - 1
 
                 # sectionally alphabetize variables from term, sectioning by division
-                alphabetical = []
+                log_process("Alphabetization of Variables in Divisional Sections of Term")
                 for i in range(0, var_count):
 
                     # calculate differences ommitting below previous minimum
@@ -842,103 +866,163 @@ def evaluator(input):
                     # print(diffs)
 
                     # determine smallest difference
-                    small = diffs[0]["diff"]
-                    for d in diffs:
-                        diff = d["diff"]
-                        if diff < small:
-                            small = diff
+                    if len(diffs) > 0:
+                        # for divisional sections with variables
+                        small = diffs[0]["diff"]
+                        for d in diffs:
+                            diff = d["diff"]
+                            if diff < small:
+                                small = diff
 
-                    # use smallest difference to append data in order to section list
-                    for d in diffs:
-                        if d["diff"] == small:
-                            # found matching difference
-                            alphabetical.append(tdata[d["term_index"]])
-                            last = tdata[d["term_index"]]["alpha_index"]
-                            if divisions_i < d_length and i == divisions[divisions_i]["var_count"] - 1 or i == var_count - 1:
-                                # on end of divisional section
-                                last = 0
-                                start = end
-                                divisions_i += 1
-                                if divisions_i < d_length:
-                                    end = divisions[divisions_i]["term_index"]
-                                else:
-                                    end = length
-                            
-                            break
+                        # use smallest difference to append data in order to section list
+                        for d in diffs:
+                            if d["diff"] == small:
+                                # found matching difference
+                                alphabetical.append(tdata[d["term_index"]])
+                                last = tdata[d["term_index"]]["alpha_index"]
+                                if divisions_i < d_length and i == divisions[divisions_i]["var_count"] - 1 or i == var_count - 1:
+                                    # on end of divisional section
+                                    last = 0
+                                    start = end
+                                    divisions_i += 1
+                                    if divisions_i < d_length:
+                                        end = divisions[divisions_i]["term_index"]
+                                    else:
+                                        end = length
+                                
+                                break
                 
                 # print(alphabetical)
-                        
+
                 # append sub-lists of divisional sections from section list to alphabetical list
                 divisions_i = 0 # reset to zero
                 div_sect = []
                 sectional = []
+                div_placeholder_count = 0 # stores the number of divisional sections with a placeholder
                 for i in range(0, len(alphabetical)):
                     div_sect.append(alphabetical[i])
-                    if divisions_i < d_length and i == divisions[divisions_i]["var_count"] - 1:
+                    if alphabetical[i]["term_index"] == None:
+                        # end of divisional section with placeholder
+                        sectional.append(div_sect)
+                        div_sect = []
+                        divisions_i += 1
+                        # count placeholder for divisional section
+                        div_placeholder_count += 1
+                    elif divisions_i < d_length and i - div_placeholder_count == divisions[divisions_i]["var_count"] - 1:
                         # end of divisional section
                         sectional.append(div_sect)
                         div_sect = []
                         divisions_i += 1
                 sectional.append(div_sect)
 
-                # print(sectional)
+                # collect non-coefficient values by divisional section
+                add_placeholder = True
+                noncoef_vals = []
+                div_sect = [] # repurpose as buffer for noncoef_vals
+                divisions_i = 0 # reset to zero
+                end = length
+                if d_length > 0:
+                    end = divisions[divisions_i]["term_index"]
+                
+                for i in range(0, length):
+                    if i < end:
+                        if tdata[i]["coef"] == False and tdata[i]["alpha_index"] == None and not op_test(tdata[i]["value"]):
+                            if i - 1 <= -1 or tdata[i - 1]["value"] != operation["exponentiation"] and tdata[i - 1]["value"] != operation["radication"]:
+                                # start and middle
+                                add_placeholder = False
+                                div_sect.append(tdata[i])
 
+                    elif i == length - 1 and len(noncoef_vals) == d_length:
+                        if tdata[i]["coef"] == False and tdata[i]["alpha_index"] == None and not op_test(tdata[i]["value"]):
+                            # special end case
+                            div_sect.append(tdata[i])
+                            noncoef_vals.append(div_sect)
+
+                    else:
+                        # check at end that at least one value was added in last divisional section
+                        if add_placeholder == True:
+                            # add placeholder
+                            div_sect.append({"term_index": None})
+                        else:
+                            # setup placeholder for next divisional section
+                            add_placeholder = True
+
+                        noncoef_vals.append(div_sect)
+                        div_sect = []
+
+                        divisions_i += 1
+                        if divisions_i < d_length:
+                            end = divisions[divisions_i]["term_index"]
+                        else:
+                            end = length - 1
+
+                # print(sectional)
                 # print(coefficiency)
+                # print(noncoef_vals)
 
                 # use sectional and coeffiency data to create expression term structure
                 term = []
                 coefficiency_len = len(coefficiency)
+                sectional_len = len(sectional)
+                noncoef_vals_len = len(noncoef_vals)
                 for i in range(0, d_length + 1):
                     # iterate over each divisional section
                     # coefficient goes at start of divisional section in term
                     # coefficients are broken down by divisional section to avoid rounding errors frpom division
                     # ommit coefficients of 1
-                    if coefficiency_len > 0 and coefficiency[i] != 1:
+                    if i < coefficiency_len and coefficiency[i] != 1:
                         term.append(coefficiency[i])
-                    for obj in sectional[i]:
-                        t_i = obj["term_index"]
-                        start = t_i
-                        end = t_i
-                        # test for bounds of variable
-                        if t_i + 2 < len(t) and t[t_i + 1] == operation["exponentiation"]:
-                            end += 2
-                        if t_i - 1 > -1 and t[t_i - 1] == operation["radication"]:
-                            if t_i - 2 > -1 and not op_test(t[t_i - 2]):
-                                # n-th root, where n != 2
-                                start -= 2
-                            else:
-                                # square root
-                                start -= 1
-                    
-                        # add data to term
-                        if start == end:
-                            # single variable
-                            if len(term) == 0:
-                                # variable at start
-                                term.append(t[t_i])
-                            else:
-                                # intermittent variable
-                                if term[len(term) - 1] != operation["division"]:
-                                    # variable in middle of divisional section
-                                    term.append(operation["multiplication"])
-                                    term.append(t[t_i])
+
+                    if i < sectional_len:
+                        for obj in sectional[i]:
+                            t_i = obj["term_index"]
+                            start = t_i
+                            end = t_i
+                            if t_i != None: # exclude placeholders
+                                # test for bounds of variable
+                                if t_i + 2 < len(t) and t[t_i + 1] == operation["exponentiation"]:
+                                    end += 2
+                                if t_i - 1 > -1 and t[t_i - 1] == operation["radication"]:
+                                    if t_i - 2 > -1 and not op_test(t[t_i - 2]):
+                                        # n-th root, where n != 2
+                                        start -= 2
+                                    else:
+                                        # square root
+                                        start -= 1
+                            
+                                # add data to term
+                                if start == end:
+                                    # single variable
+                                    if len(term) == 0:
+                                        # variable at start
+                                        term.append(t[t_i])
+                                    else:
+                                        # intermittent variable
+                                        if term[len(term) - 1] != operation["division"]:
+                                            # variable in middle of divisional section
+                                            term.append(operation["multiplication"])
+                                            term.append(t[t_i])
+                                        else:
+                                            # variable at start of second or later divisional section
+                                            term.append(t[t_i])
                                 else:
-                                    # variable at start of second or later divisional section
-                                    term.append(t[t_i])
-                        else:
-                            # variable expression
-                            if len(term) > 0:
-                                # intermittent expression
-                                term.append(operation["multiplication"])
-                            exp = t[start:end + 1]
-                            for obj in exp:
-                                term.append(obj)
-                        
+                                    # variable expression
+                                    if len(term) > 0:
+                                        # intermittent expression
+                                        term.append(operation["multiplication"])
+                                    exp = t[start:end + 1]
+                                    for obj in exp:
+                                        term.append(obj)
+                                
+                    if i < noncoef_vals_len and noncoef_vals[i][0]["term_index"] != None:
+                        term.append(noncoef_vals[i][0]["value"])
+                    
                     # add divison symbol after each divisional section
                     term.append(operation["division"])
 
                 # remove extra division symbol at end
-                term.pop()
+                if term[len(term) - 1] == operation["division"]:
+                    term.pop()
 
                 # if switch is flipped
                 if is_subtracted == True:
@@ -960,9 +1044,11 @@ def evaluator(input):
                 expression.append(t)
                 
         # --- EXPRESSION STANDARDS ---
+        log_process("Imposition of Expression Standards")
         # print(expression)
 
         # combine all arithemtic terms into single constant term at end of expression
+        log_process("Combination of Arithmetic terms into Constant")
         constant = []
         indexes_removal = []
         expression_len = len(expression)
@@ -981,15 +1067,20 @@ def evaluator(input):
                     # remove subtract key
                     expression[t].pop(0)
                     # subtract or negate
-                    if len(constant) > 0:
+                    constant_len = len(constant)
+                    if constant_len == 0:
+                        # negate first value in constant
+                        x = num_cast(operation["subtraction"] + str(expression[t][0]))
+                        if x:
+                            constant = [x]
+                            
+                    elif constant_len > 0:
                         # replace last addition with subtraction
                         constant.pop()
                         constant += [operation["subtraction"]]
-                    else:
-                        # negate first value in constant
-                        constant[0] = operation["negation"] + constant[0]
+                        constant += expression[t]
                     
-                    constant += expression[t]
+                    # add arithmetic terms together
                     constant += [operation["addition"]]
                 else:
                     constant += expression[t]
@@ -1009,7 +1100,7 @@ def evaluator(input):
             c = calculate(constant)
 
             # format constant for handling subtraction
-            if c >= 0:
+            if int(c) >= 0:
                 constant = [str(c)]
             else:
                 constant = [subtract_key, str(-c)]
@@ -1017,7 +1108,10 @@ def evaluator(input):
             # put constant on end of term
             expression.append(constant)
 
+        # print(expression)
+
         # order expression in decremental order of term degree
+        log_process("Polynomials in Decremental Order of Term Degree")
         degrees = []
         for i in range(0, len(expression)):
             # append largest exponent in each term to represent term degree
@@ -1063,11 +1157,17 @@ def evaluator(input):
         if degree_order[0][0] == subtract_key:
             # remove subtract key
             degree_order[0].pop(0)
-            # negate coefficient of first divisional section
-            x = num_cast(degree_order[0][0])
+            # negate term of first divisional section
+            a = degree_order[0][0]
+            x = num_cast(a)
             if x:
+                # negate coefficient
                 x = -x
                 degree_order[0][0] = x
+
+            elif var_test(a):
+                # negate variable
+                degree_order[0][0] = operation["negation"]
         
         # extend with next term 
         formatted.extend(degree_order[0])
@@ -1101,12 +1201,12 @@ def evaluator(input):
     def simplify(arr):
         nonlocal global_bypass
         nonlocal simp_limit
-        # log process label
-        log_process("Simplification of Algebraic Expression")
-        log_process(arr)
 
         # simplifies algebraic expressions
         arrVar = standardize_format(arr)
+        
+        # log process label
+        log_process("Simplification of Algebraic Expression")
 
         # define process of simplification
         # 1.) Format expression and terms into standard forms
@@ -1579,7 +1679,7 @@ def evaluator(input):
                                     # test for operation on exponent with algebraic base
                                     if i - 2 <= -1 or arr[i - 2] != operation["exponentiation"]:
                                         # test for operation on numbers operating on variables with operators with higher operator precedence
-                                        if i - 2 > -1 and var_test(arr[i - 2]) or i + 2 < length and var_test(arr[i + 2]):
+                                        if i - 3 > -1 and var_test(arr[i - 3]) or i + 3 < length and var_test(arr[i + 3]):
                                             # larger op value indicates larger operator precedence
                                             op1 = arr[i]
                                             op2 = ""
@@ -3802,13 +3902,14 @@ def evaluator(input):
 #     # "problem": "(4*x)/(2*x)", # note: 
 #     # "problem": "(4*x)/(2*x)", # note: 
 #     # "problem": "acsc(0)", # note: 
-#     "problem": "algexp[[x+y],[4/2*1/1+1-1]]", # note: 
-#     "use_logs": "1", # 1 = yes
+#     # "problem": "algexp[[x+y],[4/2*1/1+1-1]]", # note: 
+#     "problem": "2*y^2*3*x/b*a-5", # note: 
+#     "use_logs": "", # 1 = yes
 #     # "problem": "", # note: 
 # }
 # evaluator(input)
 
-# comprehensive testing
+# # comprehensive testing
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -3995,13 +4096,13 @@ def evaluator(input):
 
 #     {"problem": "a*a*a", "answer": "a^3"}, # simplifies algebraic expression for consecutive multiplications
 #     {"problem": "2*x*9", "answer": "18*x"}, #  a * x * b => (a*b) * x
-#     {"problem": "2/x*9", "answer": "18/x"}, #  a / x * b => (a*b) / x
+#     {"problem": "2/x*9", "answer": "2/9*x"}, #  a / x * b => a / b * x
 #     {"problem": "3*x*7*x", "answer": "21*x^2"}, # combine terms for variable with coefficients multiplied
 #     {"problem": "3*x*x", "answer": "3*x^2"}, # combine terms one variable with coefficients multiplied
 #     {"problem": "x*3*x", "answer": "3*x^2"}, # combine terms one variable with coefficients multiplied
 
 #     {"problem": "a/a/a/a", "answer": "a/(a^3)"}, # simplifies algebraic expression for consecutive divisions of self; a/(a^3)
-#     {"problem": "x*a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with multiplication; x
+#     {"problem": "a*x/x", "answer": "a"}, # simplifies algebraic expression for cancelling out division by self with multiplication; x
 #     {"problem": "x/a/a", "answer": "x"}, # simplifies algebraic expression for cancelling out division by self with division; x
 #     {"problem": "a/a", "answer": "1"}, # simplifies algebraic expression for variable divide by itself; 1
 #     {"problem": "10*x/2", "answer": "5*x"}, # a * x / b => (a/b) * x
@@ -4011,16 +4112,16 @@ def evaluator(input):
 #     {"problem": "x/3", "answer": "x/3"}, # x / a cannot be further simplified
     
 #     {"problem": "a+a+a", "answer": "3*a"}, # simplifies algebraic expression for consecutive additions
-#     {"problem": "10+x+2", "answer": "12+x"}, # a + x + b => (a+b) + x
-#     {"problem": "10-x+2", "answer": "12-x"}, # a - x + b => (a+b) - x
+#     {"problem": "10+x+2", "answer": "x+12"}, # a + x + b => (a+b) + x
+#     {"problem": "10-x+2", "answer": "(-x)+12"}, # a - x + b => (a+b) - x
 #     {"problem": "2*x+4*x", "answer": "6*x"}, # add coefficients of like terms
 #     {"problem": "2*x+4*y", "answer": "2*x+4*y"}, # don't add coefficients of not like terms
 #     {"problem": "3*x+x", "answer": "4*x"}, # combine terms one variable with coefficients added
 #     {"problem": "x+3*x", "answer": "4*x"}, # combine terms one variable with coefficients added
     
 #     {"problem": "a-a-a-a", "answer": "-2*a"}, # simplifies algebraic expression for consecutive substractions
-#     {"problem": "10+x-2", "answer": "8+x"}, # a + x - b => (a-b) + x
-#     {"problem": "10-x-2", "answer": "8-x"}, # a - x - b => (a-b) - x
+#     {"problem": "10+x-2", "answer": "x+8"}, # a + x - b => (a-b) + x
+#     {"problem": "10-x-2", "answer": "(-x)+8"}, # a - x - b => (a-b) - x
 #     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
 #     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
 #     {"problem": "3*x-x", "answer": "2*x"}, # combine terms one variable with coefficients subtracted
@@ -4034,9 +4135,9 @@ def evaluator(input):
 
 #     # ALGEBRAIC EXPRESSION FORMAT STANDARDIZATION
 
-#     {"problem": "2-3*x", "answer": "2-3*x"}, # prevents operation out of precedence in algebraic expressions
-#     {"problem": "x^2-3*y", "anser": "x^2-3*y"}, # prevents operation out of precedence in algebraic expressions
-#     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
+#     {"problem": "2-3*x", "answer": "-3*x+2"}, # prevents operation out of precedence in algebraic expressions using getidx function
+#     {"problem": "x^2-3*y", "answer": "x^2-3*y"}, # prevents operation out of precedence in algebraic expressions using getidx function
+#     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2/a*b-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
 #     {"problem": "3+3*x-7-3*x^3", "answer": "-3*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
 #     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # x / ( a * x ) => 1 / ( (a-1) * x )
 #     # {"problem": "", "anser": ""}, # 
@@ -4045,6 +4146,7 @@ def evaluator(input):
 #     global tests
 #     print('Total number of tests: %s' % len(tests))
 #     for i, obj in enumerate(tests):
+#         # print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
