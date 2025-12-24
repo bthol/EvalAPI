@@ -11,20 +11,20 @@ load_dotenv()
 
 # PROGRAMIC PROCESS
 
-# Phase I: Character Validation
-# Description: Tests each character in problem string to ensure only valid characters are used, otherwise, the program terminates and returns "invalid character"
+# Phase I: Pre-Structural Validation
+# Description: Performs validation on string and each character to prevent structuring of inputs whose invalidity is easily determinable from a string of characters.
 
 # Phase II: Entity Structuring and Analysis
-# Description: Analyzes problem string to create structure from string data storing relevant problem data as it goes. The problem string is structured into entities including and limited to multi-digit numbers, negative numbers, decimal numbers, operations, parenthesis, sets and keywords. After structuring, the program analyzes the structure to further identify remaining program entities from structure data.
+# Description: Analyzes problem string to create problem structure from problem string data storing relevant problem data as it goes. The problem string is structured into entities including and limited to multi-digit numbers, negative numbers, decimal numbers, operations, parenthesis, sets, variables and keywords.
 
-# Phase III: Structural Manipulation
-# Description: Bypassed unless, as identified in Phase I, there are parenthesis, in which case the section function manipulates the structure to solve section by section.
+# Phase III: Post-structural Validation
+# Description: This is the phase in which rules for problem structure syntax are enforced by running various tests to catch inputs that fail to adhere to the rules of problem construction and produce a relevant error.
 
-# Phase IV: Key Functions
-# Description: Bypassed unless, in one case, there are parenthesis and keywords, in which case search for and run key functions or, in another case, there are square brackets and keywords, in which case manipulate the structure to form sets and search for and run key functions (sets permit key functions to have multiple arguments).
+# Phase IV: Structural Manipulation
+# Description: After determining a valid input, the program analyzes the structure to identify remaining program entities and Sets are structured to allow multiple arguments into a single key functon. From the data stored throughout the process of structuring and validation, the program determines the best course of action for how to begin processing the problem structure into a solution. That may be as simple as calulating arithmetic into a single value solution or as complex as indentifyig the first parenthetical section to handle in an algebraic expression.
 
-# Phase V: Calculation/Simplification
-# Description: Search for and run appropriate operations on contents of structure, restructure with solution, and repeat until no operations are remaining.
+# Phase V: Calculation
+# Description: However the program determines its course for where to begin, the calculate function will ultimately be called, and that function breaks down into three processes which occur in the following order: 1) Key Functions, 2) Arithmetic Operations, and 3) Algebraic Expression Formatting and Simplification. Key functions permit special functions to be called by a key and argument(s), so long as correct syntax is followed. Arithmetic operations are performed in operator precedence one at a time until none are remaining. If an algebraic expression is indentified, its form will be standardized at the level of a term and the level of an expression before being comprehensively tested for cases of simplification until none are remaining.
 
 # Program Information
 info = {
@@ -638,7 +638,7 @@ def evaluator(input):
         # no true condition reached (e.g. index out of range)
         return False
 
-    def standardize_format(arr):
+    def standardize_form(arr):
         # identifies terms in algebraic expression,
         # standardizes term forms, combines like terms,
         # standardizes expression form, returns result
@@ -749,7 +749,7 @@ def evaluator(input):
                             if j + 1 < length:
                                 if t[j + 1] != operation["exponentiation"] and t[j + 1] != operation["radication"]:
                                     # prevent appending non-coefficients
-                                    tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None})    
+                                    tdata.append({"coef": True, "value": val, "term_index": j, "alpha_index": None}) 
                                     coef_count += 1
                                 else:
                                     # non-coefficient value
@@ -841,7 +841,7 @@ def evaluator(input):
                     if divisions_i < d_length:
                         end = divisions[divisions_i]["term_index"]
                     else:
-                        end = length - 1
+                        end = length
 
                 # sectionally alphabetize variables from term, sectioning by division
                 log_process("Alphabetization of Variables in Divisional Sections of Term")
@@ -1054,11 +1054,18 @@ def evaluator(input):
         expression_len = len(expression)
         for t in range(0, expression_len):
             is_var = False
-            for i in range(0, len(expression[t])):
-                if var_test(expression[t][i]):
+            e = expression[t]
+            for i in range(0, len(e)):
+                ee = e[i]
+                if var_test(ee):
                     # is algebraic term
                     is_var = True
                     break
+                elif isinstance(ee, str) and ee[0] == operation["open_parenthesis"] and len(ee) == 4 and ee[1] == operation["subtraction"] and var_test(ee[2]) and ee[3] == operation["close_parenthesis"]:
+                    # handle negative variables
+                    is_var = True
+                    break
+
             if is_var == False:
                 # arithmetic term
                 indexes_removal.append(t)
@@ -1203,7 +1210,7 @@ def evaluator(input):
         nonlocal simp_limit
 
         # simplifies algebraic expressions
-        arrVar = standardize_format(arr)
+        arrVar = standardize_form(arr)
         
         # log process label
         log_process("Simplification of Algebraic Expression")
@@ -1644,6 +1651,9 @@ def evaluator(input):
         # log end of simplification
         log_process("Simplification Complete")
 
+        # standardize simplified expression
+        arrVar = standardize_form(arrVar)
+
         # return simplified expression
         return arrVar
 
@@ -1681,10 +1691,10 @@ def evaluator(input):
                                         # test for operation on numbers operating on variables with operators with higher operator precedence
                                         if i - 3 > -1 and var_test(arr[i - 3]) or i + 3 < length and var_test(arr[i + 3]):
                                             # larger op value indicates larger operator precedence
-                                            op1 = arr[i]
-                                            op2 = ""
+                                            op1 = arr[i] # operation on current index
+                                            op2 = "" # operation before index
+                                            op3 = "" # operation after index
                                             op2_len = 0
-                                            op3 = ""
                                             op3_len = 0
 
                                             if i - 2 > -1 and op_test(arr[i - 2]):
@@ -1693,7 +1703,7 @@ def evaluator(input):
                                             if i + 2 < length and op_test(arr[i + 2]):
                                                 op3 = arr[i + 2]
                                                 op3_len = len(op3)
-                                            
+
                                             for o in range(0, len(operator_precedence)):
                                                 if op1 == operator_precedence[o]:
                                                     op1 = o
@@ -1708,10 +1718,29 @@ def evaluator(input):
                                                     if op3 == operator_precedence[o]:
                                                         op3 = o
                                                         break
-                                            if op2_len > 0 and op1 > op2 or op3_len > 0 and op1 > op3:
-                                                # arithmetic operation approved
-                                                val = i
-                                                return val
+
+                                            # determine what to test
+                                            if op2_len > 0 and op3_len > 0:
+                                                # test op1 by op2 and op1 by op3
+                                                if op1 > op2 and op1 > op3:
+                                                    # arithmetic operation approved
+                                                    val = i
+                                                    return val
+
+                                            elif op2_len > 0 and op3_len == 0:
+                                                # test op1 by op2
+                                                if op1 > op2:
+                                                    # arithmetic operation approved
+                                                    val = i
+                                                    return val
+                                                
+                                            elif op2_len == 0 and op3_len > 0:
+                                                # test op1 by op3
+                                                if op1 > op3:
+                                                    # arithmetic operation approved
+                                                    val = i
+                                                    return val
+                                                
                                         else:
                                             # arithmetic operation approved
                                             val = i
@@ -3850,7 +3879,7 @@ def evaluator(input):
     if len(input["problem"]) > 0:
         # non-empty string
         if len(set(input["problem"])) > 1:
-
+            
             # run evaluation
             problem = input["problem"]
             answer = evaluate(problem)
@@ -3901,15 +3930,13 @@ def evaluator(input):
 #     # next case to develop
 #     # "problem": "(4*x)/(2*x)", # note: 
 #     # "problem": "(4*x)/(2*x)", # note: 
-#     # "problem": "acsc(0)", # note: 
-#     # "problem": "algexp[[x+y],[4/2*1/1+1-1]]", # note: 
-#     "problem": "2*y^2*3*x/b*a-5", # note: 
-#     "use_logs": "", # 1 = yes
+#     "problem": "x*x+x*x*x", # note: enure standards are enforced after simplification
 #     # "problem": "", # note: 
+#     "use_logs": "1", # 1 = yes, else = no
 # }
 # evaluator(input)
 
-# # comprehensive testing
+# comprehensive testing
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -4139,14 +4166,17 @@ def evaluator(input):
 #     {"problem": "x^2-3*y", "answer": "x^2-3*y"}, # prevents operation out of precedence in algebraic expressions using getidx function
 #     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2/a*b-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
 #     {"problem": "3+3*x-7-3*x^3", "answer": "-3*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
+#     {"problem": "3*x^2-1+2*x^3", "answer": "2*x^3+3*x^2-1"}, # orders terms in decrimental order of term degree + prevent arithemetic on values operated on by higher precedence operators
+#     {"problem": "a*x^3+a*x^2*y+a*x*y^2+a*y^3", "answer": "a*x^3+a*y^3+a*x^2*y+a*x*y^2"}, # (term indexes for coeficients) pascal's traingle expression format = 0, 1, 2, 3 => standard expression format = 0, 3, 1, 2; alternate from ends to center term
+#     {"problem": "x*x+x*x*x", "answer": "x^3+x^2"}, # note: enure standards are enforced after simplification 
 #     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # x / ( a * x ) => 1 / ( (a-1) * x )
-#     # {"problem": "", "anser": ""}, # 
+#     # {"problem": "", "answer": ""}, # 
 # ]
 # def diagnostic():
 #     global tests
 #     print('Total number of tests: %s' % len(tests))
 #     for i, obj in enumerate(tests):
-#         # print(obj["problem"])
+#         print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
