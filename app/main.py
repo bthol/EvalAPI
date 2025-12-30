@@ -664,7 +664,7 @@ def evaluator(input):
         # expression standards
         #  - Decremental order of term degree  x^2 + 2*x^3 - 6*x => 2*x^3 + x^2 - 6*x
         #  - arithmetic terms are combined into single constant at end of expression
-        #  - 
+        #  - like algebraic terms are combined
         
         sect_struct = [] # stores terms as sublists
         term = [] # buffer for sect_struct term appending
@@ -782,7 +782,7 @@ def evaluator(input):
                     end = divisions[divisions_i]["term_index"]
 
                 # store product of coeffients from each section in term
-                log_process("Determination of Coefficient Product in Divisional Sections of Term")
+                log_process("Determination of Coefficient Product in Divisional Section of Term")
                 coefficiency = []
                 if coef_count > 0:
                     for i in range(0, d_length + 1):
@@ -844,7 +844,7 @@ def evaluator(input):
                         end = length
 
                 # sectionally alphabetize variables from term, sectioning by division
-                log_process("Alphabetization of Variables in Divisional Sections of Term")
+                log_process("Alphabetization of Variables in Divisional Section of Term")
                 for i in range(0, var_count):
 
                     # calculate differences ommitting below previous minimum
@@ -1048,7 +1048,7 @@ def evaluator(input):
         # print(expression)
 
         # combine all arithemtic terms into single constant term at end of expression
-        log_process("Combination of Arithmetic terms into Constant")
+        log_process("Combination of Arithmetic Terms into Constant")
         constant = []
         indexes_removal = []
         expression_len = len(expression)
@@ -1155,7 +1155,131 @@ def evaluator(input):
         for i in degree_indexes:
             degree_order.append(expression[i])
 
+        log_process("Combination of Like Algebraic Terms")
         # print(degree_order)
+        
+        # combine like terms:
+        #  - same degree in both terms
+        #  - same variables in both terms
+        #  - same exponenets for each variable in both terms
+
+        indexes = list(range(len(degree_order)))
+        while len(indexes) > 1:
+
+            # get a main term to make comparisons
+            index = 0
+            term = degree_order[indexes[index]]
+            term_length = len(term)
+            term_data = []
+
+            # remove index of main term from reference
+            main_index = indexes[index]
+            indexes.pop(index)
+
+            for x in range(term_length):
+                if var_test(term[x]):
+                    if x + 2 < term_length and term[x + 1] == operation["exponentiation"]:
+                        # assumes no power expression
+                        term_data.append({"var": term[x], "pow": term[x + 2]})
+                    else:
+                        # no power
+                        term_data.append({"var": term[x], "pow": 1})
+            
+            term_data_len = len(term_data)
+            
+            # compare against other terms
+            like_indexes = [] # stores indexes of degree_order for terms that are like main term
+            for i in indexes:
+                term2 = degree_order[i]
+                term_len = len(term2)
+                term2_data = []
+
+                # get data for a term to compare with main term
+                for x in range(term_len):
+                    if var_test(term2[x]):
+                        if x + 2 < term_len and term2[x + 1] == operation["exponentiation"]:
+                            # assumes no power expression
+                            term2_data.append({"var": term2[x], "pow": term2[x + 2]})
+                        else:
+                            # no power
+                            term2_data.append({"var": term2[x], "pow": 1})
+                
+                # make comparison using term data
+                alike = True
+                if term_data_len == len(term2_data):
+                    for x in range(term_data_len):
+                        if term_data[x]["var"] != term2_data[x]["var"] or term_data[x]["pow"] != term2_data[x]["pow"]:
+                            alike = False
+                            break
+                else:
+                    alike = False
+
+                if alike == True:
+                    like_indexes.append(i)
+
+            # remove i in like_indexes from reference
+            like = []
+            for i in like_indexes:
+                # collect like terms
+                like.append(degree_order[i])
+                # remove reference index
+                for j in range(len(indexes)):
+                    if i == indexes[j]:
+                        indexes.pop(j)
+                        break
+            
+            # combine like terms
+            if len(like) > 0:
+                # use term and like to combine
+                coef_sum = 0
+                for t in like:
+                    if t[0] == subtract_key:
+                        if len(t) > 1 and not var_test(t[1]):
+                            coef_sum -= t[1]
+                        else:
+                            coef_sum -= 1
+                            
+                    elif not var_test(t[0]):
+                        coef_sum += t[0]
+                    else:
+                        coef_sum += 1
+                
+                # handle coefficient in first term
+                main = degree_order[main_index]
+
+                if not var_test(main[0]):
+                    coef_sum += main[0]
+                    main[0] = coef_sum
+                else:
+                    # no coefficient in first term
+                    if main[0] == subtract_key:
+                        main = [coef_sum - 1] + [operation["multiplication"]] + main
+                    elif coef_sum != 0:
+                        main = [coef_sum + 1] + [operation["multiplication"]] + main
+                
+                # restructure with combined term
+                if main_index < len(degree_order) - 1:
+                    if main_index == 0:
+                        degree_order = [main] + degree_order[main_index + 1:]
+                    else:
+                        degree_order = degree_order[:main_index] + [main] + degree_order[main_index + 1:]
+                else:
+                    if main_index == 0:
+                        degree_order = [main]
+                    else:
+                        degree_order = degree_order[:main_index] + [main]
+
+                # print(degree_order)
+                
+                # remove terms that are alike
+                like_indexes_len = len(like_indexes)
+                if like_indexes_len > 1:
+                    for i in range(len(like_indexes) - 1, -1, -1):
+                        degree_order.pop(like_indexes[i])
+                elif like_indexes_len == 1:
+                    degree_order.pop(like_indexes[0])
+
+                # print(degree_order)
 
         # concatenate terms into formatted expression
         degree_order_len = len(degree_order)
@@ -1210,6 +1334,7 @@ def evaluator(input):
         nonlocal simp_limit
 
         # simplifies algebraic expressions
+        destandardized = False
         arrVar = standardize_form(arr)
         
         # log process label
@@ -1251,6 +1376,8 @@ def evaluator(input):
                             # case: a * x * b * x => (a*b) * x ^ 2, where a and b are particular values
                             if c - 2 > -1 and c + 4 < length and testTermEnds(c - 2, c + 4, arrVar):
                                 if arrVar[c + 4] == var and arrVar[c - 1] == operation["multiplication"] and arrVar[c + 3] == operation["multiplication"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
+                                    # switch post-standardization to on
+                                    destandardized = True
 
                                     # get term data
                                     coefficient1 = arrVar[c - 2]
@@ -1265,6 +1392,8 @@ def evaluator(input):
                             # case: x * a * x => a * x ^ 2, where a is a particular value
                             elif c + 4 < length and testTermEnds(c, c + 4, arrVar):
                                 if arrVar[c + 4] == var and not var_test(arrVar[c + 2]):
+                                    # switch post-standardization to on
+                                    destandardized = True
 
                                     # get term data
                                     coefficient = arrVar[c + 2]
@@ -1278,6 +1407,9 @@ def evaluator(input):
                             # SIMP2: multiply a variable by itself
 
                             if arrVar[c + 2] == var:
+
+                                # switch post-standardization to on
+                                destandardized = True
                             
                                 # any number multiplied by itself is that number to the power of the number of times it is multiplied by itself
                                 multiplying = True
@@ -1615,7 +1747,7 @@ def evaluator(input):
                             
                             if c - 2 > -1 and testTermEnds(c - 2, c + 2, arrVar):
 
-                            # SIMP15: a + x - b => (a-b) + x
+                            # SIMP15: a + x - b => x+(a-b)
 
                                 if arrVar[c - 1] == operation["addition"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
@@ -1624,21 +1756,22 @@ def evaluator(input):
                                     val2 = arrVar[c + 2]
 
                                     # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % subtract(val1, val2), operation["addition"], var], c - 2, c + 2, arrVar)
+                                    arrVar = restructure([var, operation["addition"], '%s' % subtract(val1, val2)], c - 2, c + 2, arrVar)
 
                                     # end current simplification
                                     break
                             
-                            # SIMP16: a - x - b => (a-b) - x
+                            # SIMP16: a - x - b => (-x)+(a-b)
 
                                 if arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                         
                                         # get term data
                                         val1 = arrVar[c - 2]
                                         val2 = arrVar[c + 2]
+                                        var = operation["negation"]
 
                                         # apply simplification to problem structure
-                                        arrVar = restructure(['%s' % subtract(val1, val2), operation["subtraction"], var], c - 2, c + 2, arrVar)
+                                        arrVar = restructure([var, operation["addition"], '%s' % subtract(val1, val2)], c - 2, c + 2, arrVar)
 
                                         # end current simplification
                                         break
@@ -1652,7 +1785,9 @@ def evaluator(input):
         log_process("Simplification Complete")
 
         # standardize simplified expression
-        arrVar = standardize_form(arrVar)
+        if destandardized == True:
+            log_process("Standards Broken by Simplification")
+            arrVar = standardize_form(arrVar)
 
         # return simplified expression
         return arrVar
@@ -3929,14 +4064,13 @@ def evaluator(input):
 # input = {
 #     # next case to develop
 #     # "problem": "(4*x)/(2*x)", # note: 
-#     # "problem": "(4*x)/(2*x)", # note: 
-#     "problem": "x*x+x*x*x", # note: enure standards are enforced after simplification
+#     "problem": "a-a-a-a", # note: 
 #     # "problem": "", # note: 
 #     "use_logs": "1", # 1 = yes, else = no
 # }
 # evaluator(input)
 
-# comprehensive testing
+# # comprehensive testing
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -4167,16 +4301,21 @@ def evaluator(input):
 #     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2/a*b-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
 #     {"problem": "3+3*x-7-3*x^3", "answer": "-3*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
 #     {"problem": "3*x^2-1+2*x^3", "answer": "2*x^3+3*x^2-1"}, # orders terms in decrimental order of term degree + prevent arithemetic on values operated on by higher precedence operators
-#     {"problem": "a*x^3+a*x^2*y+a*x*y^2+a*y^3", "answer": "a*x^3+a*y^3+a*x^2*y+a*x*y^2"}, # (term indexes for coeficients) pascal's traingle expression format = 0, 1, 2, 3 => standard expression format = 0, 3, 1, 2; alternate from ends to center term
+#     {"problem": "a*x^3+a*x^2*y+a*x*y^2+a*y^3", "answer": "a*x^3+a*y^3+a*x^2*y+a*x*y^2"}, # (term indexes for coeficients) pascal's traingle expression format = 0, 1, 2, 3 => standard expression format = 0, 3, 1, 2; alternate from ends to center term assuming all term degrees from greatest to least are present
 #     {"problem": "x*x+x*x*x", "answer": "x^3+x^2"}, # note: enure standards are enforced after simplification 
-#     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # x / ( a * x ) => 1 / ( (a-1) * x )
+
+#     # COMBINATION OF LIKE TERMS
+#     {"problem": "x*x+x*x*x+x*y+3*x*x*x", "answer": "4*x^3+x^2+x*y"}, # note: 
+
+#     # {"problem": "x=2*x", "answer": ""}, # 
+#     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # 
 #     # {"problem": "", "answer": ""}, # 
 # ]
 # def diagnostic():
 #     global tests
 #     print('Total number of tests: %s' % len(tests))
 #     for i, obj in enumerate(tests):
-#         print(obj["problem"])
+#         # print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
