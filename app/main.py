@@ -194,7 +194,7 @@ def evaluator(input):
     }
 
     # Operator Precedence is from highest to least in this structure
-    operator_precedence = [operation["subtraction"], operation["addition"], operation["division"], operation["multiplication"], operation["radication"], operation["exponentiation"]]
+    operator_precedence = [[operation["subtraction"], operation["addition"]], [operation["division"], operation["multiplication"]], [operation["radication"], operation["exponentiation"]]]
     
     # variable characters
     variables = ""
@@ -469,6 +469,74 @@ def evaluator(input):
     # STRUCTURE END
 
     # ARITHMETIC OPERATIONS START
+
+    def precedence(op1, op2):
+        # returns true if op1 has higher operator precedence than op2
+        # larger op value indicates larger operator precedence
+        nonlocal operator_precedence
+        if op_test(op1) and op_test(op2):
+            op1_precedence = 0
+            op2_precedence = 0
+            for o in range(len(operator_precedence)):
+                for i in range(len(operator_precedence[o])):
+                    if op1 == operator_precedence[o][i]:
+                        op1_precedence = o
+                    if op2 == operator_precedence[o][i]:
+                        op2_precedence = o
+            
+            if op1_precedence >= op2_precedence:
+                return True
+            else:
+                return False
+        else:
+            return None
+
+    def operate(i, arr):
+        # returns True if operation at index i in structure arr is operating in operator precedence
+        arrVar = arr
+        # larger op value indicates larger operator precedence
+        op1 = arrVar[i] # operation on current index
+        op2 = "" # operation before index
+        op3 = "" # operation after index
+
+        if i - 2 > -1 and op_test(arrVar[i - 2]):
+            op2 = arr[i  -2]
+        if i + 2 < len(arrVar) and op_test(arrVar[i + 2]):
+            op3 = arr[i + 2]
+
+        if op2 != "" and op3 != "":
+            # test both op2 and op3
+            x = precedence(op1, op2)
+            y = precedence(op1, op3)
+            if x == True and y == True:
+                # op1 has higher precedence than op2 and op3
+                return True
+            else:
+                # op1 has lower precedence than either op2 or op3
+                return None
+        
+        elif op2 != "" and op3 == "":
+            # only test op2
+            x = precedence(op1, op2)
+            if x == True:
+                # op1 has higher precedence than op2
+                return True
+            else:
+                # op1 has lower precedence than op2
+                return None
+
+        elif op2 == "" and op3 != "":
+            # only test op3
+            y = precedence(op1, op3)
+            if y == True:
+                # op1 has higher precedence than op3
+                return True
+            else:
+                # op1 has lower precedence than op3
+                return None
+        
+        else: # op2 == "" and op3 == ""
+            return True
 
     def exponentiate(base, exponent):
         base = float(base)
@@ -1164,32 +1232,31 @@ def evaluator(input):
         #  - same exponenets for each variable in both terms
 
         indexes = list(range(len(degree_order)))
-        while len(indexes) > 1:
 
+        main_index = 0
+        while len(indexes) > 1:
             # get a main term to make comparisons
-            index = 0
-            term = degree_order[indexes[index]]
-            term_length = len(term)
-            term_data = []
+            main_term = degree_order[main_index]
+            main_term_length = len(main_term)
+            main_term_data = []
 
             # remove index of main term from reference
-            main_index = indexes[index]
-            indexes.pop(index)
+            indexes.pop(main_index)
 
-            for x in range(term_length):
-                if var_test(term[x]):
-                    if x + 2 < term_length and term[x + 1] == operation["exponentiation"]:
+            for x in range(main_term_length):
+                if var_test(main_term[x]):
+                    if x + 2 < main_term_length and main_term[x + 1] == operation["exponentiation"]:
                         # assumes no power expression
-                        term_data.append({"var": term[x], "pow": term[x + 2]})
+                        main_term_data.append({"var": main_term[x], "pow": main_term[x + 2]})
                     else:
                         # no power
-                        term_data.append({"var": term[x], "pow": 1})
+                        main_term_data.append({"var": main_term[x], "pow": 1})
             
-            term_data_len = len(term_data)
+            main_term_data_len = len(main_term_data)
             
             # compare against other terms
             like_indexes = [] # stores indexes of degree_order for terms that are like main term
-            for i in indexes:
+            for i in range(main_index + 1, len(degree_order)):
                 term2 = degree_order[i]
                 term_len = len(term2)
                 term2_data = []
@@ -1204,17 +1271,26 @@ def evaluator(input):
                             # no power
                             term2_data.append({"var": term2[x], "pow": 1})
                 
+                # print(main_term)
+                # print(term2)
+                # print(main_term_data)
+                # print(term2_data)
+                
                 # make comparison using term data
                 alike = True
-                if term_data_len == len(term2_data):
-                    for x in range(term_data_len):
-                        if term_data[x]["var"] != term2_data[x]["var"] or term_data[x]["pow"] != term2_data[x]["pow"]:
+                term2_data_len = len(term2_data)
+                if main_term_data_len == term2_data_len:
+                    # compare term data
+                    for x in range(main_term_data_len):
+                        if main_term_data[x]["var"] != term2_data[x]["var"] or main_term_data[x]["pow"] != term2_data[x]["pow"]:
                             alike = False
                             break
                 else:
+                    # dissimilar length of main term and term 2
                     alike = False
 
                 if alike == True:
+                    # add like term index in degree_order to like_indexes structure
                     like_indexes.append(i)
 
             # remove i in like_indexes from reference
@@ -1230,6 +1306,7 @@ def evaluator(input):
             
             # combine like terms
             if len(like) > 0:
+
                 # use term and like to combine
                 coef_sum = 0
                 for t in like:
@@ -1244,29 +1321,44 @@ def evaluator(input):
                     else:
                         coef_sum += 1
                 
-                # handle coefficient in first term
+                # handle coefficient in main term
                 main = degree_order[main_index]
 
-                if not var_test(main[0]):
+                if main[0] == subtract_key:
+                    if len(main) > 1 and not var_test(main[1]):
+                        coef_sum -= main[1]
+                        main[1] = coef_sum
+                        main.pop(0) # remove subtract key
+                    else:
+                        main.pop(0) # remove subtract key
+                        main = [coef_sum - 1, operation["multiplication"]] + main
+                        
+                elif not var_test(main[0]):
                     coef_sum += main[0]
                     main[0] = coef_sum
                 else:
-                    # no coefficient in first term
-                    if main[0] == subtract_key:
-                        main = [coef_sum - 1] + [operation["multiplication"]] + main
-                    elif coef_sum != 0:
-                        main = [coef_sum + 1] + [operation["multiplication"]] + main
+                    main = [coef_sum + 1, operation["multiplication"]] + main
                 
-                # restructure with combined term
+                # test coefficient for 1
+                if main[0] == 1:
+                    # remove coefficient
+                    main.pop(0) # coefficient
+                    main.pop(0) # multiplication symbol
+                
+                # restructure degree_order with combined term stored in main
                 if main_index < len(degree_order) - 1:
                     if main_index == 0:
+                        # only after
                         degree_order = [main] + degree_order[main_index + 1:]
                     else:
+                        # both before and after
                         degree_order = degree_order[:main_index] + [main] + degree_order[main_index + 1:]
                 else:
                     if main_index == 0:
+                        # neither before nor after
                         degree_order = [main]
                     else:
+                        # only after
                         degree_order = degree_order[:main_index] + [main]
 
                 # print(degree_order)
@@ -1280,6 +1372,9 @@ def evaluator(input):
                     degree_order.pop(like_indexes[0])
 
                 # print(degree_order)
+
+                # update modified main term to prevent re-runs
+                main_index += 1
 
         # concatenate terms into formatted expression
         degree_order_len = len(degree_order)
@@ -1339,6 +1434,7 @@ def evaluator(input):
         
         # log process label
         log_process("Simplification of Algebraic Expression")
+        print(arrVar)
 
         # define process of simplification
         # 1.) Format expression and terms into standard forms
@@ -1370,6 +1466,7 @@ def evaluator(input):
 
                         # MULTIPLICATION
                         if arrVar[c + 1] == operation["multiplication"]:
+                            print("multiplication")
 
                             # SIMP1: multiplication of variables with coefficients
 
@@ -1405,8 +1502,7 @@ def evaluator(input):
                                     break
 
                             # SIMP2: multiply a variable by itself
-
-                            if arrVar[c + 2] == var:
+                            if arrVar[c + 2] == var and operate(c + 1, arrVar) == True:
 
                                 # switch post-standardization to on
                                 destandardized = True
@@ -1466,6 +1562,7 @@ def evaluator(input):
                             
                         # DIVISION
                         elif arrVar[c + 1] == operation["division"]:
+                            print("division")
 
                             # SIMP5: division of variables with coefficients
 
@@ -1489,11 +1586,12 @@ def evaluator(input):
                                     break
                             
                             # SIMP6: divide a variable by itself
-
-                            if arrVar[c + 2] == var:
+                            if arrVar[c + 2] == var and operate(c + 1, arrVar) == True:
 
                                 # test if next operation after dividing by itself is another division by itself
                                 if c + 4 < length and arrVar[c + 3] == operation["division"] and arrVar[c + 4] == var:
+                                    # prevent running operation if one of the variables has an operation with higher operator precedence
+
                                     # any number divided by itself is that number divided by that number to the power of the number of times it is divided by itself
                                     dividing = True
                                     power = 1
@@ -1519,7 +1617,6 @@ def evaluator(input):
                                 elif c - 2 > -1:
                                     # test if operation before cancels out the value 1
                                     if arrVar[c - 1] == operation["multiplication"]:
-
                                         # any number multiplied by 1 is itself
                                         arrVar = restructure("delete", c - 1, c + 2, arrVar)
                                         # end current simplification
@@ -1575,6 +1672,7 @@ def evaluator(input):
                             
                         # ADDITION
                         elif arrVar[c + 1] == operation["addition"]:
+                            print("addition")
 
                             # SIMP9: add coefficients between terms with no exponents
                             
@@ -1620,7 +1718,7 @@ def evaluator(input):
                                 
                             # SIMP10: add a variable to itself
                             
-                            if arrVar[c + 2] == var:
+                            if arrVar[c + 2] == var and operate(c + 1, arrVar) == True:
                                 
                                 # any number added to itself is that number multiplied by the number of times it is added to itself
                                 adding = True
@@ -1676,6 +1774,7 @@ def evaluator(input):
                             
                         # SUBTRACTION
                         elif arrVar[c + 1] == operation["subtraction"]:
+                            print("subtraction")
 
                             # SIMP13: subtract coefficients between terms with no exponents
 
@@ -1721,7 +1820,7 @@ def evaluator(input):
 
                             # SIMP14: subtracted from itself
 
-                            if arrVar[c + 2] == var:
+                            if arrVar[c + 2] == var and operate(c + 1, arrVar) == True:
                             
                                 # any number subtracted from itself is that number subtracted by the number of times it is subtracted from itself multiplied by itself
                                 subtracting = True
@@ -1823,64 +1922,16 @@ def evaluator(input):
                                 if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
                                     # test for operation on exponent with algebraic base
                                     if i - 2 <= -1 or arr[i - 2] != operation["exponentiation"]:
-                                        # test for operation on numbers operating on variables with operators with higher operator precedence
+                                        # operator precedence on variables
                                         if i - 3 > -1 and var_test(arr[i - 3]) or i + 3 < length and var_test(arr[i + 3]):
-                                            # larger op value indicates larger operator precedence
-                                            op1 = arr[i] # operation on current index
-                                            op2 = "" # operation before index
-                                            op3 = "" # operation after index
-                                            op2_len = 0
-                                            op3_len = 0
-
-                                            if i - 2 > -1 and op_test(arr[i - 2]):
-                                                op2 = arr[i  -2]
-                                                op2_len = len(op2)
-                                            if i + 2 < length and op_test(arr[i + 2]):
-                                                op3 = arr[i + 2]
-                                                op3_len = len(op3)
-
-                                            for o in range(0, len(operator_precedence)):
-                                                if op1 == operator_precedence[o]:
-                                                    op1 = o
-                                                    break
-                                            if op2_len > 0:
-                                                for o in range(0, len(operator_precedence)):
-                                                    if op2 == operator_precedence[o]:
-                                                        op2 = o
-                                                        break
-                                            if op3_len > 0:
-                                                for o in range(0, len(operator_precedence)):
-                                                    if op3 == operator_precedence[o]:
-                                                        op3 = o
-                                                        break
-
-                                            # determine what to test
-                                            if op2_len > 0 and op3_len > 0:
-                                                # test op1 by op2 and op1 by op3
-                                                if op1 > op2 and op1 > op3:
-                                                    # arithmetic operation approved
-                                                    val = i
-                                                    return val
-
-                                            elif op2_len > 0 and op3_len == 0:
-                                                # test op1 by op2
-                                                if op1 > op2:
-                                                    # arithmetic operation approved
-                                                    val = i
-                                                    return val
-                                                
-                                            elif op2_len == 0 and op3_len > 0:
-                                                # test op1 by op3
-                                                if op1 > op3:
-                                                    # arithmetic operation approved
-                                                    val = i
-                                                    return val
+                                            if operate(i, arr) == True:
+                                                val = i
+                                                return val
                                                 
                                         else:
                                             # arithmetic operation approved
                                             val = i
                                             return val
-
 
                 # no operation from string not on variable
                 return val
@@ -4062,11 +4113,11 @@ def evaluator(input):
 
 # # test case
 # input = {
-#     # next case to develop
+#     # next case to develop 
 #     # "problem": "(4*x)/(2*x)", # note: 
-#     "problem": "a-a-a-a", # note: 
+#     "problem": "", # note: 
 #     # "problem": "", # note: 
-#     "use_logs": "1", # 1 = yes, else = no
+#     "use_logs": "1", # 1 = yes, else = no 
 # }
 # evaluator(input)
 
@@ -4306,6 +4357,8 @@ def evaluator(input):
 
 #     # COMBINATION OF LIKE TERMS
 #     {"problem": "x*x+x*x*x+x*y+3*x*x*x", "answer": "4*x^3+x^2+x*y"}, # note: 
+#     {"problem": "4*x^2+a^4*y-3*x^2+a^4*y", "answer": "2*a^4*y+x^2"}, # removes 1 coefficients + handles multiple lists of like terms
+#     {"problem": "c*a^2/a*2+a*c*a/2*a", "answer": "2*a^2*c/2*a"}, # combines like terms with multiple divisional sections
 
 #     # {"problem": "x=2*x", "answer": ""}, # 
 #     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # 
