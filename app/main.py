@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import copy
 
 # Environment variables
 load_dotenv()
@@ -149,7 +150,7 @@ info = {
         [
             {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[x+1],[1+1]] = (x+1)*(x+1)"},
             
-            # {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x+y][a+b]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
+            {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
         # add:
         #  - complete Polynomial Expansion by finishing required cases of simplification
@@ -165,7 +166,7 @@ def evaluator(input):
     global info
 
     # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
-    paren_limit = 1000
+    paren_limit = 10
 
     # the const_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
     const_limit = 1000
@@ -192,6 +193,9 @@ def evaluator(input):
         "open_bracket": info["operations"][9]["syntax"],
         "close_bracket": info["operations"][10]["syntax"]
     }
+
+    # key placeholder for subtraction of algebraic terms
+    subtract_key = "sub"
 
     # Operator Precedence is from highest to least in this structure
     operator_precedence = [[operation["subtraction"], operation["addition"]], [operation["division"], operation["multiplication"]], [operation["radication"], operation["exponentiation"]]]
@@ -268,8 +272,11 @@ def evaluator(input):
     def log_process(log = ""):
         if use_logs == "1":
             new_key = int(list(process_log.keys())[-1]) + 1
-            process_log["%s" % new_key] = log
-  
+            if isinstance(log, list) == True:
+                process_log["%s" % new_key] = copy.deepcopy(log)
+            else:
+                process_log["%s" % new_key] = log
+    
     # STRUCTURE START
 
     def num_cast(str):
@@ -678,6 +685,203 @@ def evaluator(input):
     # ARITHMETIC OPERATIONS END
 
     # ALGEBRAIC OPERATIONS START
+    def negate_alg_exp(exp):
+        # negates an algebraic expression
+        for i in range(len(exp)):
+            if exp[i] == operation["addition"]:
+                exp.pop(i)
+                exp.insert(i, operation["subtraction"])
+            elif exp[i] == operation["subtraction"]:
+                exp.pop(i)
+                exp.insert(i, operation["addition"])
+        return exp
+
+    def negate_alg_terms(terms):
+        # negates terms in an algebraic expression
+        nonlocal subtract_key
+        for i in range(len(terms)):
+            if terms[i][0] == subtract_key:
+                terms[i].pop(0)
+            else:
+                terms[i].insert(0, subtract_key)
+        return terms
+
+    def get_terms(arr):
+        nonlocal subtract_key
+        terms = []
+        buffer = []
+        for i in range(len(arr)):
+            if arr[i] == operation["addition"]:
+                # end of term
+                terms.append(buffer)
+                buffer = []
+            elif arr[i] == operation["subtraction"]:
+                # prevent end of term on negation
+                if arr[i - 1] != operation["open_parenthesis"]:
+                    # non-negative value
+                    # end of term
+                    terms.append(buffer)
+                    buffer = []
+                    buffer = [subtract_key]
+            else:
+                # compile term
+                buffer.append(arr[i])
+        
+        # add last term
+        terms.append(buffer)
+        
+        return terms
+
+    def like_terms(t1, t2):
+        # returns True if given terms are like
+        # terms are like if:
+        #  - same variables
+        #  - same exponent for each variable
+        t1_len = len(t1)
+        t2_len = len(t2)
+        t1_dat = []
+        t2_dat = []
+
+        # get data for term 1
+        for x in range(t1_len):
+            if var_test(t1[x]):
+                if x + 2 < t1_len and t1[x + 1] == operation["exponentiation"]:
+                    # assumes no power expression
+                    t1_dat.append({"var": t1[x], "pow": t1[x + 2]})
+                else:
+                    # no power
+                    t1_dat.append({"var": t1[x], "pow": 1})
+        
+        # get data for term 2
+        for x in range(t2_len):
+            if var_test(t2[x]):
+                if x + 2 < t2_len and t2[x + 1] == operation["exponentiation"]:
+                    # assumes no power expression
+                    t2_dat.append({"var": t2[x], "pow": t2[x + 2]})
+                else:
+                    # no power
+                    t2_dat.append({"var": t2[x], "pow": 1})
+        
+        # make comparison using term data
+        t1_dat_len = len(t1_dat)
+        t2_dat_len = len(t2_dat)
+        if t1_dat_len == t2_dat_len:
+            # compare term data
+            for x in range(t1_dat_len):
+                if t1_dat[x]["var"] != t2_dat[x]["var"] or t1_dat[x]["pow"] != t2_dat[x]["pow"]:
+                    return False
+        else:
+            # dissimilar length of main term and term 2
+            return False
+
+        # no conditions met for falsification
+        return True
+
+    def combine_terms(t1, t2):
+        # returns terms combined by addition or subtraction
+        # note: for use on terms returning true from like_terms(t1, t2)
+        nonlocal subtract_key
+        coef_sum = 0
+        term = []
+        t1_len = len(t1)
+        t2_len = len(t2)
+
+        # add coefficient of first term
+        if t1_len > 0:
+
+            if t1[0] == subtract_key:
+                if len(t1) > 1 and not var_test(t1[1]):
+                    coef_sum -= t1[1]
+                    term = t1[3:]
+                else:
+                    coef_sum -= 1
+                    term = t1[1:]
+                    
+            elif not var_test(t1[0]):
+                coef_sum += t1[0]
+                term = t1[2:]
+            else:
+                coef_sum += 1
+                term = t1
+            
+        # add coefficient of second term
+        if t2_len > 0:
+
+            if t2[0] == subtract_key:
+                if len(t2) > 1 and not var_test(t2[1]):
+                    coef_sum -= t2[1]
+                    if t1_len == 0:
+                        term = t2[3:]
+                else:
+                    coef_sum -= 1
+                    if t1_len == 0:
+                        term = t2[1:]
+                    
+            elif not var_test(t2[0]):
+                coef_sum += t2[0]
+                if t1_len == 0:
+                    term = t2[2:]
+            else:
+                coef_sum += 1
+                if t1_len == 0:
+                    term = t2
+
+        if t1_len == 0 and t2_len == 0:
+            return []
+
+        # test coefficient for special cases
+        if coef_sum == 0:
+            return [0]
+        elif coef_sum == 1:
+            return term
+        else:
+            return [coef_sum, operation["multiplication"]] + term
+    
+    def product_term(t1, t2):
+        # returns the product of t1 and t2
+        # note: terms do not have to be like terms to create product term
+        nonlocal subtract_key
+        t1_len = len(t1)
+        t2_len = len(t2)
+        # handle empty terms
+        if t1_len == 0:
+            if t2_len == 0:
+                # both terms are empty
+                return []
+            else:
+                # t1 is empty
+                return t2
+        elif t2_len == 0:
+            # t2 is empty
+            return t1
+
+        if t1_len > 0 and t2_len > 0:
+            # neither terms are empty
+
+            # test for zero product
+            if t1[0] == 0 or t2[0] == 0:
+                return [0]
+            if t1[0] == subtract_key and t1_len > 1 and t1[1] == 0:
+                return [0]
+            if t2[0] == subtract_key and t2_len > 1 and t2[1] == 0:
+                return [0]
+
+            # test for square term product
+            if t1_len == t2_len:
+                identical = True
+                for i in range(t1_len):
+                    if t1[i] != t2[i]:
+                        identical = False
+                        break
+                if identical == True:
+                    # square term
+                    if t1_len == 1:
+                        return t1 + [operation["exponentiation"], 2]
+                    else:
+                        return [operation["open_parenthesis"]] + t1 + [operation["close_parenthesis"], operation["exponentiation"], 2]
+            
+            # create product term
+            return t1 + [operation["multiplication"]] + t2
 
     def testTermEnds(c1, c2, arr):
         # tests ends of term to ensure that the entire term is identified by condition
@@ -733,12 +937,13 @@ def evaluator(input):
         #  - Decremental order of term degree  x^2 + 2*x^3 - 6*x => 2*x^3 + x^2 - 6*x
         #  - arithmetic terms are combined into single constant at end of expression
         #  - like algebraic terms are combined
+        #  - non-leading terms subtract instead of add negative coefficient
         
+        nonlocal subtract_key
         sect_struct = [] # stores terms as sublists
         term = [] # buffer for sect_struct term appending
         expression = [] # stores terms as sublists in original order but with term standards
         formatted = [] # stores terms concatenated into single list with term and expression standards
-        subtract_key = "sub" # key used to track subtraction of a term throughout the standardization process
         
         for i in range(0, len(arr)):
             if arr[i] == operation["addition"]:
@@ -767,6 +972,7 @@ def evaluator(input):
         # iterate over each term
         for t in sect_struct:
             # print(t)
+            log_process("Term Identified")
 
             # decalre variables
             is_subtracted = False
@@ -841,6 +1047,7 @@ def evaluator(input):
 
             # analyze term data
             if var_count > 0:
+                log_process("New Divisional Section")
                 last = 0 # farthest alphabetic index
                 start = 0 # next starting index for alphabetization after division
                 end = length # next ending index for alphabetization before division
@@ -850,7 +1057,7 @@ def evaluator(input):
                     end = divisions[divisions_i]["term_index"]
 
                 # store product of coeffients from each section in term
-                log_process("Determination of Coefficient Product in Divisional Section of Term")
+                log_process(" - Coefficient Product Calculated")
                 coefficiency = []
                 if coef_count > 0:
                     for i in range(0, d_length + 1):
@@ -912,7 +1119,7 @@ def evaluator(input):
                         end = length
 
                 # sectionally alphabetize variables from term, sectioning by division
-                log_process("Alphabetization of Variables in Divisional Section of Term")
+                log_process(" - Variable Alphabetization")
                 for i in range(0, var_count):
 
                     # calculate differences ommitting below previous minimum
@@ -1112,317 +1319,306 @@ def evaluator(input):
                 expression.append(t)
                 
         # --- EXPRESSION STANDARDS ---
-        log_process("Imposition of Expression Standards")
-        # print(expression)
+        if len(expression) == 1:
+            # not an expression of terms; single term
+            # return formatted term
+            log_process("Standardization Complete")
+            log_process(expression[0])
+            return expression[0]
+        else:
+            log_process("Imposition of Expression Standards")
+            # print(expression)
 
-        # combine all arithemtic terms into single constant term at end of expression
-        log_process("Combination of Arithmetic Terms into Constant")
-        constant = []
-        indexes_removal = []
-        expression_len = len(expression)
-        for t in range(0, expression_len):
-            is_var = False
-            e = expression[t]
-            for i in range(0, len(e)):
-                ee = e[i]
-                if var_test(ee):
-                    # is algebraic term
-                    is_var = True
-                    break
-                elif isinstance(ee, str) and ee[0] == operation["open_parenthesis"] and len(ee) == 4 and ee[1] == operation["subtraction"] and var_test(ee[2]) and ee[3] == operation["close_parenthesis"]:
-                    # handle negative variables
-                    is_var = True
-                    break
-
-            if is_var == False:
-                # arithmetic term
-                indexes_removal.append(t)
-                # combine arithmetic terms
-                if expression[t][0] == subtract_key:
-                    # remove subtract key
-                    expression[t].pop(0)
-                    # subtract or negate
-                    constant_len = len(constant)
-                    if constant_len == 0:
-                        # negate first value in constant
-                        x = num_cast(operation["subtraction"] + str(expression[t][0]))
-                        if x:
-                            constant = [x]
-                            
-                    elif constant_len > 0:
-                        # replace last addition with subtraction
-                        constant.pop()
-                        constant += [operation["subtraction"]]
-                        constant += expression[t]
-                    
-                    # add arithmetic terms together
-                    constant += [operation["addition"]]
-                else:
-                    constant += expression[t]
-                    constant += [operation["addition"]]
-        
-        # if there are arithmetic terms
-        if len(constant) > 0:
-            # remove last operation symbol
-            constant.pop()
-        
-            # remove arithmetic terms from expression
-            indexes_removal = sorted(indexes_removal, reverse=True)
-            for i in indexes_removal:
-                expression.pop(i)
-
-            # calculate constant from arithmetic terms
-            c = calculate(constant)
-
-            # format constant for handling subtraction
-            if int(c) >= 0:
-                constant = [str(c)]
-            else:
-                constant = [subtract_key, str(-c)]
-            
-            # put constant on end of term
-            expression.append(constant)
-
-        # print(expression)
-
-        # order expression in decremental order of term degree
-        log_process("Polynomials in Decremental Order of Term Degree")
-        degrees = []
-        for i in range(0, len(expression)):
-            # append largest exponent in each term to represent term degree
-            degree = 0
-            trm = expression[i]
-            trm_len = len(trm)
-            for j in range(0, trm_len):
-                if j + 1 < trm_len and trm[j] == operation["exponentiation"]:
-                    # for each exponent in term
-                    x = num_cast(trm[j + 1])
-                    if x and x > degree:
-                        # update as largest
-                        degree = x
-            # append degree of term (zero for linear terms)
-            degrees.append(degree)
-        
-        # print(degrees)
-        
-        # store indexes of terms in expression in order from greatest to least degree
-        degrees_sorted = sorted(degrees, reverse=True)
-        degree_indexes = [] # stores indexes
-        degree_order = [] # stores terms ordered by degree
-        for d in degrees_sorted:
-            for i in range(0, len(degrees)):
-                if d == degrees[i]:
-                    if len(degree_indexes + [i]) == len(set(degree_indexes + [i])):
-                        # index is unique
-                        degree_indexes.append(i)
+            # combine all arithemtic terms into single constant term at end of expression
+            log_process(" - Combination of Arithmetic Terms into Constant")
+            constant = []
+            indexes_removal = []
+            expression_len = len(expression)
+            for t in range(0, expression_len):
+                is_var = False
+                e = expression[t]
+                for i in range(0, len(e)):
+                    ee = e[i]
+                    if var_test(ee):
+                        # is algebraic term
+                        is_var = True
                         break
-        
-        # print(degree_indexes)
-
-        # use indexes to create expression structure ordered by degree
-        for i in degree_indexes:
-            degree_order.append(expression[i])
-
-        log_process("Combination of Like Algebraic Terms")
-        # print(degree_order)
-        
-        # combine like terms:
-        #  - same degree in both terms
-        #  - same variables in both terms
-        #  - same exponenets for each variable in both terms
-
-        indexes = list(range(len(degree_order)))
-
-        main_index = 0
-        while len(indexes) > 1:
-            # get a main term to make comparisons
-            main_term = degree_order[main_index]
-            main_term_length = len(main_term)
-            main_term_data = []
-
-            # remove index of main term from reference
-            indexes.pop(main_index)
-
-            for x in range(main_term_length):
-                if var_test(main_term[x]):
-                    if x + 2 < main_term_length and main_term[x + 1] == operation["exponentiation"]:
-                        # assumes no power expression
-                        main_term_data.append({"var": main_term[x], "pow": main_term[x + 2]})
-                    else:
-                        # no power
-                        main_term_data.append({"var": main_term[x], "pow": 1})
-            
-            main_term_data_len = len(main_term_data)
-            
-            # compare against other terms
-            like_indexes = [] # stores indexes of degree_order for terms that are like main term
-            for i in range(main_index + 1, len(degree_order)):
-                term2 = degree_order[i]
-                term_len = len(term2)
-                term2_data = []
-
-                # get data for a term to compare with main term
-                for x in range(term_len):
-                    if var_test(term2[x]):
-                        if x + 2 < term_len and term2[x + 1] == operation["exponentiation"]:
-                            # assumes no power expression
-                            term2_data.append({"var": term2[x], "pow": term2[x + 2]})
-                        else:
-                            # no power
-                            term2_data.append({"var": term2[x], "pow": 1})
-                
-                # print(main_term)
-                # print(term2)
-                # print(main_term_data)
-                # print(term2_data)
-                
-                # make comparison using term data
-                alike = True
-                term2_data_len = len(term2_data)
-                if main_term_data_len == term2_data_len:
-                    # compare term data
-                    for x in range(main_term_data_len):
-                        if main_term_data[x]["var"] != term2_data[x]["var"] or main_term_data[x]["pow"] != term2_data[x]["pow"]:
-                            alike = False
-                            break
-                else:
-                    # dissimilar length of main term and term 2
-                    alike = False
-
-                if alike == True:
-                    # add like term index in degree_order to like_indexes structure
-                    like_indexes.append(i)
-
-            # remove i in like_indexes from reference
-            like = []
-            for i in like_indexes:
-                # collect like terms
-                like.append(degree_order[i])
-                # remove reference index
-                for j in range(len(indexes)):
-                    if i == indexes[j]:
-                        indexes.pop(j)
+                    elif isinstance(ee, str) and ee[0] == operation["open_parenthesis"] and len(ee) == 4 and ee[1] == operation["subtraction"] and var_test(ee[2]) and ee[3] == operation["close_parenthesis"]:
+                        # handle negative variables
+                        is_var = True
                         break
-            
-            # combine like terms
-            if len(like) > 0:
 
-                # use term and like to combine
-                coef_sum = 0
-                for t in like:
-                    if t[0] == subtract_key:
-                        if len(t) > 1 and not var_test(t[1]):
-                            coef_sum -= t[1]
-                        else:
-                            coef_sum -= 1
-                            
-                    elif not var_test(t[0]):
-                        coef_sum += t[0]
-                    else:
-                        coef_sum += 1
-                
-                # handle coefficient in main term
-                main = degree_order[main_index]
-
-                if main[0] == subtract_key:
-                    if len(main) > 1 and not var_test(main[1]):
-                        coef_sum -= main[1]
-                        main[1] = coef_sum
-                        main.pop(0) # remove subtract key
-                    else:
-                        main.pop(0) # remove subtract key
-                        main = [coef_sum - 1, operation["multiplication"]] + main
+                if is_var == False:
+                    # arithmetic term
+                    indexes_removal.append(t)
+                    # combine arithmetic terms
+                    if expression[t][0] == subtract_key:
+                        # remove subtract key
+                        expression[t].pop(0)
+                        # subtract or negate
+                        constant_len = len(constant)
+                        if constant_len == 0:
+                            # negate first value in constant
+                            x = num_cast(operation["subtraction"] + str(expression[t][0]))
+                            if x:
+                                constant = [x]
+                                
+                        elif constant_len > 0:
+                            # replace last addition with subtraction
+                            constant.pop()
+                            constant += [operation["subtraction"]]
+                            constant += expression[t]
                         
-                elif not var_test(main[0]):
-                    coef_sum += main[0]
-                    main[0] = coef_sum
-                else:
-                    main = [coef_sum + 1, operation["multiplication"]] + main
-                
-                # test coefficient for 1
-                if main[0] == 1:
-                    # remove coefficient
-                    main.pop(0) # coefficient
-                    main.pop(0) # multiplication symbol
-                
-                # restructure degree_order with combined term stored in main
-                if main_index < len(degree_order) - 1:
-                    if main_index == 0:
-                        # only after
-                        degree_order = [main] + degree_order[main_index + 1:]
+                        # add arithmetic terms together
+                        constant += [operation["addition"]]
                     else:
-                        # both before and after
-                        degree_order = degree_order[:main_index] + [main] + degree_order[main_index + 1:]
+                        constant += expression[t]
+                        constant += [operation["addition"]]
+            
+            # if there are arithmetic terms
+            if len(constant) > 0:
+                # remove last operation symbol
+                constant.pop()
+            
+                # remove arithmetic terms from expression
+                indexes_removal = sorted(indexes_removal, reverse=True)
+                for i in indexes_removal:
+                    expression.pop(i)
+
+                # calculate constant from arithmetic terms
+                c = calculate(constant)
+
+                # format constant for handling subtraction
+                if int(c) >= 0:
+                    constant = [c]
                 else:
-                    if main_index == 0:
-                        # neither before nor after
-                        degree_order = [main]
-                    else:
-                        # only after
-                        degree_order = degree_order[:main_index] + [main]
-
-                # print(degree_order)
+                    constant = [subtract_key, -c]
                 
-                # remove terms that are alike
-                like_indexes_len = len(like_indexes)
-                if like_indexes_len > 1:
-                    for i in range(len(like_indexes) - 1, -1, -1):
-                        degree_order.pop(like_indexes[i])
-                elif like_indexes_len == 1:
-                    degree_order.pop(like_indexes[0])
+                # put constant on end of term
+                expression.append(constant)
 
-                # print(degree_order)
+            # print(expression)
+
+            # order expression in decremental order of term degree
+            log_process(" - Polynomials in Decremental Order of Term Degree")
+            degrees = []
+            for i in range(0, len(expression)):
+                # append largest exponent in each term to represent term degree
+                degree = 0
+                trm = expression[i]
+                trm_len = len(trm)
+                for j in range(0, trm_len):
+                    if j + 1 < trm_len and trm[j] == operation["exponentiation"]:
+                        # for each exponent in term
+                        x = num_cast(trm[j + 1])
+                        if x and x > degree:
+                            # update as largest
+                            degree = x
+                # append degree of term (zero for linear terms)
+                degrees.append(degree)
+            
+            # print(degrees)
+            
+            # store indexes of terms in expression in order from greatest to least degree
+            degrees_sorted = sorted(degrees, reverse=True)
+            degree_indexes = [] # stores indexes
+            degree_order = [] # stores terms ordered by degree
+            for d in degrees_sorted:
+                for i in range(0, len(degrees)):
+                    if d == degrees[i]:
+                        if len(degree_indexes + [i]) == len(set(degree_indexes + [i])):
+                            # index is unique
+                            degree_indexes.append(i)
+                            break
+            
+            # print(degree_indexes)
+
+            # use indexes to create expression structure ordered by degree
+            for i in degree_indexes:
+                degree_order.append(expression[i])
+
+            log_process(" - Combination of Like Algebraic Terms")
+            # print(degree_order)
+            
+            # combine like terms:
+            #  - same degree in both terms
+            #  - same variables in both terms
+            #  - same exponenets for each variable in both terms
+
+            indexes = list(range(len(degree_order)))
+
+            main_index = 0
+            while len(indexes) > 1:
+
+                # print("ran")
+                # print(len(indexes))
+
+                # get a main term to make comparisons
+                main_term = degree_order[main_index]
+
+                # remove index of main term from reference
+                for i in range(len(indexes)):
+                    if main_index == indexes[i]:
+                        indexes.pop(i)
+                        break
+                
+                like_indexes = []
+                for i in range(main_index + 1, len(degree_order)):
+                    compare_term = degree_order[i]
+                    if like_terms(main_term, compare_term) == True:
+                        like_indexes.append(i)
+
+                # print(like_indexes)
+
+                # remove i in like_indexes from reference
+                like = []
+                for i in like_indexes:
+                    # collect like terms
+                    like.append(degree_order[i])
+                
+                # combine like terms
+                if len(like) > 0:
+
+                    # use term and like to combine
+                    main = []
+
+                    # combine all terms like main 
+                    for t in like:
+                        main = combine_terms(main, t)
+
+                    # combine with main term
+                    main = combine_terms(main, main_term)
+                    
+                    # restructure degree_order with combined term stored in main
+                    if main_index < len(degree_order) - 1:
+                        if main_index == 0:
+                            # only after
+                            degree_order = [main] + degree_order[main_index + 1:]
+                        else:
+                            # both before and after
+                            degree_order = degree_order[:main_index] + [main] + degree_order[main_index + 1:]
+                    else:
+                        if main_index == 0:
+                            # neither before nor after
+                            degree_order = [main]
+                        else:
+                            # only after
+                            degree_order = degree_order[:main_index] + [main]
+
+                    # print(degree_order)
+                    
+                    # remove terms that are alike
+                    like_indexes_len = len(like_indexes)
+                    if like_indexes_len > 1:
+                        for i in range(len(like_indexes) - 1, -1, -1):
+                            degree_order.pop(like_indexes[i])
+                    elif like_indexes_len == 1:
+                        degree_order.pop(like_indexes[0])
+                    
+                    # remove indexes of like terms from indexes
+                    for i in like_indexes:
+                        for idx in range(len(indexes)):
+                            if i == indexes[idx]:
+                                indexes.pop(idx)
+                                break
+
+                    # print(degree_order)
 
                 # update modified main term to prevent re-runs
                 main_index += 1
 
-        # concatenate terms into formatted expression
-        degree_order_len = len(degree_order)
+            # print(degree_order)
 
-        # first iteration
-        if degree_order[0][0] == subtract_key:
-            # remove subtract key
-            degree_order[0].pop(0)
-            # negate term of first divisional section
-            a = degree_order[0][0]
-            x = num_cast(a)
-            if x:
-                # negate coefficient
-                x = -x
-                degree_order[0][0] = x
-
-            elif var_test(a):
-                # negate variable
-                degree_order[0][0] = operation["negation"]
+            # remove terms with 0 coefficient
+            zero_coef_indexes = []
+            for i in range(len(degree_order)):
+                first = degree_order[i][0]
+                if first == subtract_key:
+                    first = degree_order[i][1]
+                if not var_test(first):
+                    x = num_cast(first)
+                    if not isinstance(x, bool) and x == 0:
+                        zero_coef_indexes.append(i)
         
-        # extend with next term 
-        formatted.extend(degree_order[0])
-        
-        # append addition symbol 
-        formatted.append(operation["addition"])
+            # print(zero_coef_indexes)
 
-        # rest of the iterations
-        if degree_order_len > 1:
-            for i in range(1, degree_order_len):
-                if degree_order[i][0] == subtract_key:
-                    # remove subtract key
-                    degree_order[i].pop(0)
-                    # replace previous addition symbol with subtraction symbol
-                    formatted[len(formatted) - 1] = operation["subtraction"]
-                
-                # extend with next term 
-                formatted.extend(degree_order[i])
-                
-                # append addition symbol 
-                formatted.append(operation["addition"])
+            for i in range(len(zero_coef_indexes) - 1, -1, -1):
+                degree_order.pop(zero_coef_indexes[i])
 
-        # remove extra addition symbol at end
-        formatted.pop()
+            # print(degree_order)
 
-        # return formatted algebraic expression
-        log_process("Standardization Complete")
-        log_process(formatted)
-        return formatted
+            # concatenate terms into formatted expression
+            degree_order_len = len(degree_order)
+
+            # leading term
+            if degree_order[0][0] == subtract_key:
+                # remove subtract key
+                degree_order[0].pop(0)
+                # negate term of first divisional section
+                a = degree_order[0][0]
+                x = num_cast(a)
+                if not isinstance(x, bool):
+                    # negate coefficient
+                    x = -x
+                    degree_order[0][0] = x
+
+                elif var_test(a) == True:
+                    # negate variable
+                    degree_order[0][0] = operation["negation"]
+            
+            # extend with leading term 
+            formatted.extend(degree_order[0])
+            
+            # append addition symbol 
+            formatted.append(operation["addition"])
+
+            # rest of the iterations
+            if degree_order_len > 1:
+                for i in range(1, degree_order_len):
+                    # store coefficient
+                    coef = num_cast(degree_order[i][0])
+                    # subtract key
+                    if degree_order[i][0] == subtract_key:
+                        # remove subtract key
+                        degree_order[i].pop(0)
+                        # remove previous addition
+                        formatted.pop()
+                        # replace it with subtraction
+                        formatted.append(operation["subtraction"])
+                    
+                    # negative coefficient => subtraction with positive coefficient
+                    elif not isinstance(coef, bool) and coef < 0:
+                        # handle coefficient
+                        if coef == -1:
+                            # remove coefficient
+                            degree_order[i].pop(0)
+                            # remove multiplication symbol
+                            degree_order[i].pop(0)
+                        else:
+                            degree_order[i].pop(0)
+                            degree_order[i].insert(0, -coef)
+                        
+                        # update operation
+
+                        # remove previous addition
+                        formatted.pop()
+                        # replace it with subtraction
+                        formatted.append(operation["subtraction"])
+
+                    
+                    # extend with next term 
+                    formatted.extend(degree_order[i])
+                    
+                    # append addition symbol 
+                    formatted.append(operation["addition"])
+
+            # remove extra addition symbol at end
+            formatted.pop()
+
+            # return formatted algebraic expression
+            log_process("Standardization Complete")
+            log_process(formatted)
+            return formatted
     
     def simplify(arr):
         nonlocal global_bypass
@@ -1430,11 +1626,12 @@ def evaluator(input):
 
         # simplifies algebraic expressions
         destandardized = False
+        
         arrVar = standardize_form(arr)
         
         # log process label
         log_process("Simplification of Algebraic Expression")
-        print(arrVar)
+        # print(arrVar)
 
         # define process of simplification
         # 1.) Format expression and terms into standard forms
@@ -1466,7 +1663,6 @@ def evaluator(input):
 
                         # MULTIPLICATION
                         if arrVar[c + 1] == operation["multiplication"]:
-                            print("multiplication")
 
                             # SIMP1: multiplication of variables with coefficients
 
@@ -1562,7 +1758,6 @@ def evaluator(input):
                             
                         # DIVISION
                         elif arrVar[c + 1] == operation["division"]:
-                            print("division")
 
                             # SIMP5: division of variables with coefficients
 
@@ -1672,7 +1867,6 @@ def evaluator(input):
                             
                         # ADDITION
                         elif arrVar[c + 1] == operation["addition"]:
-                            print("addition")
 
                             # SIMP9: add coefficients between terms with no exponents
                             
@@ -1774,7 +1968,6 @@ def evaluator(input):
                             
                         # SUBTRACTION
                         elif arrVar[c + 1] == operation["subtraction"]:
-                            print("subtraction")
 
                             # SIMP13: subtract coefficients between terms with no exponents
 
@@ -1955,6 +2148,7 @@ def evaluator(input):
         nonlocal global_bypass
 
         if key_modules[0]["use"] == True and global_bypass == False:
+            log_process("Trigonomic Key Module")
 
             # fundamental functions
 
@@ -2297,6 +2491,7 @@ def evaluator(input):
         nonlocal global_bypass
 
         if key_modules[1]["use"] == True and global_bypass == False:
+            log_process("Geometric Key Module")
 
             # perform all right triangle hypotenuse functions
             ref = getIdx("hypot", arrVar)
@@ -2386,6 +2581,7 @@ def evaluator(input):
         nonlocal global_bypass
 
         if key_modules[2]["use"] == True and global_bypass == False:
+            log_process("Combinatoric Key Module")
 
             # perform all Factorial functions
             ref = getIdx("fact", arrVar)
@@ -2489,6 +2685,7 @@ def evaluator(input):
         nonlocal global_bypass
 
         if key_modules[3]["use"] == True and global_bypass == False:
+            log_process("Statistical Key Module")
             
             # perform all Standard Deviation functions
             ref = getIdx("sd", arrVar)
@@ -2582,7 +2779,7 @@ def evaluator(input):
                             return "no zero argument"
                     else:
                         x = num_cast(section(i))
-                        if x != 0:
+                        if x != False and x != 0:
                             set_2.append(1/x)
                         else:
                             # invalid argument
@@ -2937,8 +3134,10 @@ def evaluator(input):
         # rather than solving for single value
         arrVar = arr
         nonlocal global_bypass
+        nonlocal subtract_key
 
         if key_modules[4]["use"] == True and global_bypass == False:
+            log_process("Algebraic Key Module")
 
             # performs all algebraic exponentiation
             ref = getIdx("algexp", arrVar)
@@ -3007,256 +3206,112 @@ def evaluator(input):
                     ref = getIdx("algexp", arrVar)
 
             # # performs all polynomial expansions
-            # ref = getIdx("expand", arrVar)
-            # itr = 0
-            # while itr < key_limit and ref is not None:
-            #     itr = itr + 1
+            ref = getIdx("expand", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
 
-            #     # get arguments
-            #     nomials = arrVar[ref + 1]
+                # get arguments
+                nomials = arrVar[ref + 1]
 
-            #     # print(nomials)
-            #     if len(nomials) == 1 or len(nomials) == 0:
-            #         # cannot expand a single nomial or no nomial
+                # Log keyword
+                log_process(arrVar[ref])
+                log_process(nomials)
 
-            #         # Log keyword
-            #         log_process(arrVar[ref])
-            #         # restructure with product expression
-            #         arrVar = restructure(nomials, ref, ref + 1, arrVar)
-            #         # identify further cases of polynomial expansion
-            #         ref = getIdx("expand", arrVar)
+                if len(nomials) == 1 or len(nomials) == 0:
+                    # cannot expand a single nomial or no nomial
 
-            #     else:
-            #         # multiple nomials can be expanded
+                    # Log keyword
+                    log_process(arrVar[ref])
+                    # restructure with product expression
+                    arrVar = restructure(nomials, ref, ref + 1, arrVar)
+                    # identify further cases of polynomial expansion
+                    ref = getIdx("expand", arrVar)
 
-            #         # reference structure for section with distribution
-            #         sect_struct = []
+                else:
+                    # multiple nomials can be expanded
 
-            #         # Use nomials to create sect_struct
-            #         for nomial in nomials:
-            #             sect_struct.append(getTerms(nomial))
+                    # reference structure for section with distribution
+                    sect_struct = []
 
-            #         print(sect_struct)
+                    # Use nomials to create sect_struct
+                    for nomial in nomials:
+                        x = get_terms(nomial)
+                        # standardize terms
+                        for t in range(len(x)):
+                            x[t] = standardize_form(x[t])
+                        sect_struct += get_terms(x)
 
-            #         # initialize sect_product with the first nomial in sect_struct
-            #         sect_product = sect_struct[0]
+                    # print(sect_struct)
 
-            #         # multiply each nomial with the data in the sect_product variable
-            #         for i in range(1,len(sect_struct)):
-            #             product = []
-            #             for term1 in sect_product:
-            #                 # each term in sect_product
-            #                 for term2 in sect_struct[i]:
-            #                     # each term in nomial multiplying with product
+                    # initialize sect_product with the first nomial in sect_struct
+                    sect_product = sect_struct[0]
 
-            #                     # append 1st term
-            #                     for x in term1:
-            #                         product.append(x)
-            #                     # append a multiplication symbol
-            #                     product.append(operation["multiplication"])
-            #                     # append 2nd term
-            #                     for x in term2:
-            #                         product.append(x)
-            #                     # append an addtion symbol
-            #                     product.append(operation["addition"])
+                    # multiply each nomial with the data in the sect_product variable
+                    for i in range(1, len(sect_struct)):
+                        # each expansion of nomials
+                        product = []
+                        for x in sect_product:
+                            # x = each term in sect_product
+                            if x[0] == subtract_key:
+                                x.pop(0) # remove subtract key
+                                n = num_cast(x[0])
+                                if not isinstance(n, bool):
+                                    # negate coefficient
+                                    x[0] = -n
+                                else:
+                                    # -1 coefficient
+                                    x.insert(0, operation["multiplication"])
+                                    x.insert(0, "%s1" % (operation["subtraction"]))
+
+                            for y in sect_struct[i]:
+                                # y = each term in the next nomial
+                                if y[0] == subtract_key:
+                                    y.pop(0) # remove subtract key
+                                    n = num_cast(y[0])
+                                    if not isinstance(n, bool):
+                                        # negate coefficient
+                                        y[0] = -n
+                                    else:
+                                        # -1 coefficient
+                                        y.insert(0, operation["multiplication"])
+                                        y.insert(0, "%s1" % (operation["subtraction"]))
+
+                                # get product term
+                                # print("this")
+                                # print(x)
+                                # print(y)
+                                # print(product_term(x, y))
+                                product += product_term(x, y)
+                                product.append(operation["addition"])
                         
-            #             # remove extra addition symbol from end
-            #             product.pop()
-
-            #             # simplify terms
-            #             prod_simp = []
-            #             for term in product:
-            #                 prod_simp.append(simplify(term))
-
-            #             # combine like terms
-            #             prod_simp = combineLikeTerms(prod_simp)
-
-            #             # assign product to sect_simp
-            #             sect_product = prod_simp
-
-            #         # print(sect_product)
-
-            #     return arrVar
-
-
-
-            #     # # Use nomials to create sect_struct
-            #     # for i in range(0, len(nomials)):
-            #     #     # identify terms for each nomial
-            #     #     length = len(nomials[i])
-            #     #     if length == 1:
-            #     #         # monomial
-            #     #         sect_struct.append([nomials[i]])
-            #     #     else:
-            #     #         # polynomial
-            #     #         terms = []
-            #     #         for j in range(0, len(nomials[i])):
-            #     #             # test each character in nomial for terms
-            #     #             char = nomials[i][j]
-            #     #             try:
-            #     #                 # char is a number
-            #     #                 float(char)
-            #     #                 if nomials[i][j - 1] == operation["subtraction"]:
-            #     #                     # negative
-            #     #                     terms.append(["%s %s" % operation["subtraction"], char])
-            #     #                 else:
-            #     #                     # positive
-            #     #                     terms.append([char])
-            #     #             except:
-            #     #                 if var_test(char):
-            #     #                     # char is a variable
-            #     #                     if nomials[i][j - 1] == operation["subtraction"]:
-            #     #                         # negative
-            #     #                         terms.append(["%s %s" % operation["subtraction"], char])
-            #     #                     else:
-            #     #                         # positive
-            #     #                         terms.append([char])
-            #     #                 else:
-            #     #                     # char is not a term
-            #     #                     continue
-
-            #     #         # after terms are identified for that nomial
-            #     #         sect_struct.append(terms)
-
-            #     # print(sect_struct)
-
-            #     # # total number of nomials
-            #     # nomials_total = len(sect_struct)
-
-            #     # # total number of terms
-            #     # terms_total = 0
-            #     # for i in range(0, len(sect_struct)):
-            #     #     terms_total += len(sect_struct[i])
-                
-            #     # # total number of terms in product of distribution
-            #     # # calculates the number of terms in the product expression of a nomial multiplication
-            #     # # using the nested summation method
-            #     # # where it works for:
-            #     # #  - any number of nomials
-            #     # #  - any number of terms in nomial
-            #     # #  - variable number of terms in different nomials
-
-            #     # product_terms_total = 0
-            #     # for i in range(0, len(sect_struct)):
-            #     #     # get terms of current nomial
-            #     #     k = len(sect_struct[i])
-            #     #     # sum previous terms
-            #     #     s = 0
-            #     #     for l in range(0, i):
-            #     #         s += len(sect_struct[l])
-            #     #     s += k
-            #     #     product_terms_total += k * (terms_total - s)
-                
-            #     # # print(nomials_total)
-            #     # # print(terms_total)
-            #     # # print(product_terms_total)
-
-            #     # # construct product expression
-
-            #     # # now that the number of terms in the product expression is known, the number of multiplications is also known,
-            #     # # because one multiplication creates one term, so the number of terms and multiplcations are the same number.
-
-            #     # # the design of product expression construction is thus:
-            #     # #  - to access two terms in the reference structure of unique combination, 
-            #     # #  - build a list which includes those terms separated by a multication symbol,
-            #     # #  - compile that list into the product structure, demarcating each concatenation to the product structure with an addition symbol,
-            #     # #  - and repeating this process for the number of multiplications,
-            #     # #  - except for the last multiplication, which should have no addition symbol following it.
-
-            #     # # multiplier indexes
-            #     # term1 = 0
-            #     # nomial1 = 0
-
-            #     # # multiplicand indexes
-            #     # term2 = 0
-            #     # nomial2 = 0
-
-            #     # # structures
-            #     # multiplier = []
-            #     # multiplicand = []
-            #     # product = []
-
-            #     # for i in range(0, product_terms_total - 1):
-            #     #     # initialize
-            #     #     if nomial2 == 0:
-            #     #         # first term in product expression
-            #     #         multiplier = sect_struct[nomial1][term1]
-            #     #         nomial2 += 1
-            #     #         multiplicand = sect_struct[nomial2][term2]
+                            # update sect product with last product for next expansion
+                            product.pop() #remove extra addition symbol
+                            # print(product)
+                            sect_product = get_terms(product)
+                            # print(sect_product)
+                            product.append(operation["addition"])
                     
-            #     #     # update indexes
-            #     #     # multiplicand term
-            #     #         # multiplicand nomial
-            #     #             # multiplier term
-            #     #                 # multiplier nomial
+                        # print(sect_product)
+                    # print(sect_product)
+                    log_process(sect_product)
 
-            #     #     # multiplicand term
-            #     #     elif term2 + 1 != len(sect_struct[nomial2]):
-            #     #         # mid term in nomial for the multiplicand
-            #     #         term2 += 1
-            #     #     else:
-            #     #         # last term of nomial for the multiplicand
-            #     #         term2 = 0 # first term of next nomial
+                    expansion = []
+                    for i in sect_product:
+                        expansion += i
+                        expansion += operation["addition"]
+                    expansion.pop()
 
-                        
-            #     #         # multiplicand nomial
-            #     #         if nomial2 + 1 != nomials_total:
-            #     #             # mid nomial for multiplicand
-            #     #             nomial2 += 1
-            #     #         else:
-            #     #             # last nomial for multiplicand
-            #     #             nomial2 = nomial1 + 1
+                    # print(expansion)
 
+                    expansion = simplify(expansion)
 
-            #     #             # multiplier term
-            #     #             if term1 + 1 != len(sect_struct[nomial1]):
-            #     #                 # mid term of nomial for multiplier
-            #     #                 term1 += 1
-            #     #             else:
-            #     #                 # last term of nomial for multiplier
-            #     #                 term1 = 0 # first term of next nomial
-                                
-                                
-            #     #                 # multiplier nomial
-            #     #                 if nomial1 + 1 != nomials_total - 1: # -1 : multiplier never the last nomial
-            #     #                     # mid nomial for multiplier
-            #     #                     nomial1 += 1
-            #     #                     nomial2 = nomial1 + 1
-            #     #                     term2 = 0
-            #     #                 else:
-            #     #                     # last nomial for multiplier
-            #     #                     break
+                    # print(expansion)
 
-            #     #     # update multiplier
-            #     #     multiplier = sect_struct[nomial1][term1]
-            #     #     # update multiplicand
-            #     #     multiplicand = sect_struct[nomial2][term2]
-
-            #     #     # print("nomial: %s" % str(int(nomial2) + 1))
-            #     #     # print("term: %s" % str(int(term2) + 1))
-            #     #     # print(multiplier)
-            #     #     # print(multiplicand)
-
-            #     #     # concatenate multiplier and multiplicand with product
-            #     #     product = product + multiplier + ["*"] + multiplicand + ["+"]
-
-            #     # # last term
-            #     # if len(sect_struct[len(sect_struct) - 1]) > 1:
-            #     #     # for ending monomial
-            #     #     term2 += 1
-            #     #     multiplicand = sect_struct[nomial2][term2]
-            #     #     product = product + multiplier + ["*"] + multiplicand
-            #     # else:
-            #     #     term1 += 1
-            #     #     multiplier = sect_struct[nomial1][term1]
-            #     #     product = product + multiplier + ["*"] + multiplicand
-
-            #     # # Log keyword
-            #     # log_process(arrVar[ref])
-            #     # # restructure with product expression
-            #     # arrVar = restructure(product, ref, ref + 1, arrVar)
-            #     # # identify further cases of polynomial expansion
-            #     # ref = getIdx("expand", arrVar)
+                    # restructure with product expression
+                    arrVar = restructure(expansion, ref, ref + 1, arrVar)
+                    # identify further cases of polynomial expansion
+                    ref = getIdx("expand", arrVar)
 
         return arrVar
 
@@ -3281,6 +3336,7 @@ def evaluator(input):
             # STATISTICAL MODULE
             arrVar = statistical(arrVar)
 
+        log_process("Key Functions Complete")
         return arrVar
     
     # KEY FUNCTIONS END
@@ -3489,7 +3545,9 @@ def evaluator(input):
                     return arrVar[0]
 
     def section(arr):
-        # performs calculations in order from most to least parenthesis nesting
+        # identifies next section of problem structure to process
+        # runs calculation on section
+        # if algebraic, runs simplification on section
         nonlocal global_bypass
         nonlocal is_paren
         arrVar = arr
@@ -3514,7 +3572,7 @@ def evaluator(input):
                 is_paren = False
                 break
             else:
-                log_process("Parenthesis")
+                log_process("Parenthetical Section")
             
             # get section to be solved
             osme = []
@@ -3536,32 +3594,322 @@ def evaluator(input):
 
                 if len(section) > 1:
 
-                    # calculate on section
+                    # calculate and simplify section
                     section = calculate(section)
 
                     if global_bypass == False:
 
                         # test for variables in section
-                        is_variables = False
-                        for i in range(0, len(arrVar)):
-                            if var_test(arrVar[i]) == True:
-                                is_variables = True
-                                break
-                        
-                        # terminate program on global_bypass or if variables in section after simplification
-                        if is_variables == True:
-                            if start - 1 > 0 and arrVar[start - 1] == operation["division"]:
-                                # division by algebraic expression
-                                log_process("division by algebraic expression")
+                        # if there are no variables, section should be the single value result of the arithmetic operations of the pre-calculated section
+                        # handle parenthetical algebraic expressions
+                        if isinstance(section, list):
+
+                            # identify expression operation (distributable operations)
+                            # any case which does not remove the parenthesis should be excluded from expression operations
+                            terms = get_terms(section)
+                            terms_len = len(terms)
+                            parens_removed = False
+
+                            if terms_len == 1: # single term expression
+
+                                # exponentation (distributes accross multiplication; only single term expressions)
+                                # case 1: ( x * y ) ^ a => x ^ a * y ^ a, where "a" is a value
+                                # case 2: ( x * y ) ^ z => x ^ z * y ^ z, where "z" is a variable
+                                # case 3: ( x * y ) ^ (a + b) => x ^ c * y ^ c, where "a" and "b" are values whose sum is "c"
+                                # case 4 [EXCLUDE]: ( x * y ) ^ (a + z) => x ^ (a + z) * y ^ (a + z), where "a + z" is an algebraic expression
+
+                                if end < len(arrVar) - 1 - 2 and arrVar[end + 1] == operation["exponentiation"]:
+                                    if arrVar[end + 2] == operation["open_parenthesis"]:
+                                        # power expression
+                                        nest = 0
+                                        exp = []
+                                        for i in range(end + 2, len(arrVar)):
+                                            exp.append(arrVar[i])
+                                            if var_test(arrVar[i]) == True:
+                                                # case 4
+                                                return arrVar
+                                            if arrVar[i] == operation["open_parenthesis"]:
+                                                nest += 1
+                                            elif arrVar[i] == operation["close_parenthesis"]:
+                                                nest -= 1
+                                                if nest == 0:
+                                                    # extend the end of setion to reach end of power expression
+                                                    end = i
+                                                    break
+                                        
+                                        # case 3: calculate power expression by parenthetical section
+                                        exp = section(exp)
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["exponentiation"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+                                        
+                                    elif var_test(arrVar[end + 2]) == True:
+                                        # variable power
+                                        # case 2
+                                        end += 2
+                                        exp = arrVar[end + 2]
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["exponentiation"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+
+                                    else:
+                                        # power value
+                                        # case 1
+                                        end += 2
+                                        exp = arrVar[end + 2]
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["exponentiation"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+
+                                # radication (distributes across multiplication; only single term expressions)
+                                # case 1: √ ( x * y ) => √ x * √ y
+                                # case 2: a √ ( x * y ) => a √ x * a √ y, where "a" is a value
+                                # case 3: z √ ( x * y ) => z √ x * z √ y, where "z" is a variable
+                                # case 4 [EXCLUDE]: (a + b) √ ( x * y ) => (a + b) √ x * (a + b) √ y
+                                
+                                elif end < len(arrVar) - 1 - 2 and arrVar[end + 1] == operation["radication"]:
+                                
+                                    if arrVar[end + 2] == operation["open_parenthesis"]:
+                                        # power expression
+                                        nest = 0
+                                        exp = []
+                                        for i in range(end + 2, len(arrVar)):
+                                            exp.append(arrVar[i])
+                                            if var_test(arrVar[i]) == True:
+                                                # case 4
+                                                return arrVar
+                                            if arrVar[i] == operation["open_parenthesis"]:
+                                                nest += 1
+                                            elif arrVar[i] == operation["close_parenthesis"]:
+                                                nest -= 1
+                                                if nest == 0:
+                                                    # extend the end of setion to reach end of power expression
+                                                    end = i
+                                                    break
+                                        
+                                        # case 3: calculate power expression by parenthetical section
+                                        exp = section(exp)
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["radication"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+
+                                        parens_removed = True
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+                                        
+                                    elif var_test(arrVar[end + 2]) == True:
+                                        # variable power
+                                        # case 2
+                                        end += 2
+                                        exp = arrVar[end + 2]
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["radication"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+
+                                        parens_removed = True
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+
+                                    else:
+                                        # power value
+                                        # case 1
+                                        end += 2
+                                        exp = arrVar[end + 2]
+                                        buffer = []
+                                        result = []
+                                        delimiter = operation["multiplication"]
+                                        for i in section:
+                                            buffer.append(i)
+                                            if i == delimiter:
+                                                result.append(buffer)
+                                                buffer = []
+                                        if len(buffer) > 0:
+                                            result.append(buffer)
+
+                                        x = []
+                                        op = operation["radication"]
+                                        for i in result:
+                                            x += i
+                                            x.append(op)
+                                            x.append(exp)
+                                            x.append(delimiter)
+                                        x.pop()
+                                        
+                                        parens_removed = True
+                                        arrVar = restructure(x, start, end - 1, arrVar)
+
+                            elif terms_len > 1: # multiple term expression
+                                
+                                # multiplication (distributes across addition and subtraction; single and multiple term expressions)
+                                
+                                # case 1: a * ( x + y ) => a * x + a * y 
+                                if start - 2 > -1 and arrVar[start - 1] == operation["multiplication"]:
+                                    x = []
+                                    multiplier = arrVar[start - 2]
+                                    op1 = operation["addition"]
+                                    op2 = operation["subtraction"]
+                                    op3 = operation["multiplication"]
+                                    for t in terms:
+                                        if t[0] == subtract_key:
+                                            x.append(op2)
+                                        else:
+                                            x.append(op1)
+                                        x += t
+                                        x.append(op3)
+                                        x.append(multiplier)
+                                    
+                                    if x[0] == op1:
+                                        # remove extra addition at start
+                                        x.pop(0)
+                                    elif x[0] == op2:
+                                        # handle negation of first term
+                                        x.pop(0) # remove subtraction sign
+                                        if var_test(x[0]) == True:
+                                            # add coefficient to term
+                                            x.insert(0, op3)
+                                            x.insert(0, '%s1' % (op2))
+                                        else:
+                                            # negate term coefficient
+                                            coef = -x[0]
+                                            x.pop(0)
+                                            x.insert(0, coef)
+
+                                    parens_removed = True
+                                    start -= 2
+                                    arrVar = restructure(x, start, end - 1, arrVar)
+
+                                # case 2: ( x + y ) * a => a * x + a * y 
+                                elif end + 1 < len(arrVar) and arrVar[end] == operation["multiplication"]:
+                                    x = []
+                                    multiplier = arrVar[end + 1]
+                                    op1 = operation["addition"]
+                                    op2 = operation["subtraction"]
+                                    op3 = operation["multiplication"]
+                                    for t in terms:
+                                        if t[0] == subtract_key:
+                                            x.append(op2)
+                                        else:
+                                            x.append(op1)
+                                        x += t
+                                        x.append(op3)
+                                        x.append(multiplier)
+                                    
+                                    if x[0] == op1:
+                                        # remove extra addition at start
+                                        x.pop(0)
+                                    elif x[0] == op2:
+                                        # handle negation of first term
+                                        x.pop(0) # remove subtraction sign
+                                        if var_test(x[0]) == True:
+                                            # add coefficient to term
+                                            x.insert(0, op3)
+                                            x.insert(0, '%s1' % (op2))
+                                        else:
+                                            # negate term coefficient
+                                            coef = -x[0]
+                                            x.pop(0)
+                                            x.insert(0, coef)
+
+                                    parens_removed = True
+                                    end += 1
+                                    arrVar = restructure(x, start, end - 1, arrVar)
+                            
+                            # if parenthetical algebraic expression cannot be simplified and has no expression operations to remove parenthesis
+                            # then return current problem structure as solution
+                            # because the expressions in less nested parenthesis cannot be solved beyond that level of nesting
+                            if parens_removed == False:
+                                # handle unresolvable algebraic parenthetical sections
+                                x = [operation["open_parenthesis"]] + section + [operation["close_parenthesis"]]
+                                arrVar = restructure(x, start, end - 1, arrVar)
                                 global_bypass = True
                                 return arrVar
-                            else:
-                                # unresolvable algebraic expression in parenthesis
-                                global_bypass = True
-                                log_process("unresolvable algebraic expression in parenthesis")
-                                return arrVar
+
                         else:
-                            # update arrVar with calculations and simplifications
+                            # update arrVar with non-algebraic solution
                             arrVar = restructure(section, start, end - 1, arrVar)
 
                     else:
@@ -3889,7 +4237,6 @@ def evaluator(input):
 
                                                         # test for no argument
                                                         if len(arguments) == 0:
-                                                            print("pass")
                                                             test4 = False
                                                             key_error = '%s key requires an argument' % key
 
@@ -4115,9 +4462,11 @@ def evaluator(input):
 # input = {
 #     # next case to develop 
 #     # "problem": "(4*x)/(2*x)", # note: 
-#     "problem": "", # note: 
+#     # "problem": "expand[[x/b*a+y],[x/a*b-y]]", # note: 
+#     # "problem": "2*((4+8)+x)", # note: prevents calulation beyond the level of parenthetical nesting of an unresolvable algebraic expression
+#     "problem": "2*((x*y)^2)", # note: expression operation exponentiation case 1
 #     # "problem": "", # note: 
-#     "use_logs": "1", # 1 = yes, else = no 
+#     "use_logs": "", # 1 = yes, else = no 
 # }
 # evaluator(input)
 
@@ -4292,9 +4641,6 @@ def evaluator(input):
 #     {"problem": "log[10,10]", "answer": "1.0"}, # pass = 1.0
 #     {"problem": "ln(1)", "answer": "0.0"}, # pass = 0.0
 
-#     # ALGEBRAIC 
-#     {"problem": "algexp[[x+y],[2*1/1+1-1]]", "answer": "(x+y)*(x+y)"}, # pass = (x+y)*(x+y)
-
 #     # KEY FUNCTION COMPOSITION TEST
 #     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
     
@@ -4341,10 +4687,6 @@ def evaluator(input):
 #     {"problem": "3*x-x", "answer": "2*x"}, # a * x - x => (a - 1) * x
 #     {"problem": "x-3*x", "answer": "-2*x"}, # x - a * x => (1 - a) * x
 
-#     {"problem": "(x-1*6/2)+2", "answer": "(x-1*6/2)+2"}, # should get (x-1*6/2)+2; performs calculations and simplifications within parenthesis to get (x-3), then terminates progrm and returns input
-#     {"problem": "(x+1)+2", "answer": "(x+1)+2"}, # prevents calculation on unresolvable algebraic expressions
-#     {"problem": "(x)+2", "answer": "x+2"}, # should get "x+2"; removes parenthesis on variables wrapped with no operations
-
 #     # ALGEBRAIC EXPRESSION FORMAT STANDARDIZATION
 
 #     {"problem": "2-3*x", "answer": "-3*x+2"}, # prevents operation out of precedence in algebraic expressions using getidx function
@@ -4360,6 +4702,20 @@ def evaluator(input):
 #     {"problem": "4*x^2+a^4*y-3*x^2+a^4*y", "answer": "2*a^4*y+x^2"}, # removes 1 coefficients + handles multiple lists of like terms
 #     {"problem": "c*a^2/a*2+a*c*a/2*a", "answer": "2*a^2*c/2*a"}, # combines like terms with multiple divisional sections
 
+#     # Expression Operations (distributable operations on algebraic expressions)
+#     {"problem": "2*((4+8)+x)", "answer": "2*x+24"}, # able to remove last parenthesis by distributing 2 from before section
+#     {"problem": "((4+8)+x)*2", "answer": "2*x+24"}, # able to remove last parenthesis by distributing 2 from after section
+
+#     {"problem": "(x+1)+2", "answer": "(x+1)+2"}, # prevents calculation on unresolvable algebraic expressions
+#     {"problem": "(x)+2", "answer": "x+2"}, # should get "x+2"; removes parenthesis on variables wrapped with no operations
+#     {"problem": "(x-1*6/2)+2", "answer": "(x-3)+2"}, # solves up until unresolvable algebraic parenthetical section
+    
+#     # ALGEBRAIC KEY FUNCTIONS
+#     {"problem": "algexp[[x+y],[2*1/1+1-1]]", "answer": "(x+y)*(x+y)"}, # algebraic exponentiation
+#     {"problem": "expand[[a],[b-c],[d+e+f]]", "answer": "a*b*d+a*b*e+a*b*f-a*c*d-a*c*e-a*c*f"}, # polynomial expansion
+#     {"problem": "expand[[x+y],[x-y]]", "answer": "x^2-y^2"}, # removes terms with zero coefficient; leaves constants be; catches coefficients after subtract key
+#     {"problem": "expand[[x],[x]]", "answer": "x^2"}, # 
+
 #     # {"problem": "x=2*x", "answer": ""}, # 
 #     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # 
 #     # {"problem": "", "answer": ""}, # 
@@ -4368,7 +4724,7 @@ def evaluator(input):
 #     global tests
 #     print('Total number of tests: %s' % len(tests))
 #     for i, obj in enumerate(tests):
-#         # print(obj["problem"])
+#         print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
