@@ -4,7 +4,6 @@ import numpy as np
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
 import copy
 
 # Environment variables
@@ -54,7 +53,7 @@ info = {
 
     # the whole lowercase alphabet may be used as variables (keys are also composed of lowercase letters)
     # "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
-    "variables": ["x", "y", "z", "a", "b", "c", "n", "i"], # 8 variables is plenty
+    "variables": ["x", "y", "z", "a", "b", "c", "n", "i"], # 8 variables is plenty, i is planned to represent imaginary numbers
 
     "key_functions": [
         # Trigonomic Module
@@ -106,19 +105,71 @@ info = {
             {"name":"Right Triangle Hypotenuse", "key":"hypot", "syntax": "hypot[a,b]", "about": "Gets the hypotenuse length of a right triangle given leg lengths a and b, where a and b are a value or an expression that evaluates to a value wrapped within square brackets, e.g. hypot[a,[b+x]]."},
             
             {"name":"Heron's Formula", "key":"heron", "syntax": "heron[a,b,c]", "about": "Gets the area of a scalene triangle given side lengths a, b, and c, where a, b, and c are a value or an expression that evaluates to a value wrapped within square brackets, e.g. heron[a,b,[c+x]]."},
+            
+            # Regular n-gons
+            {"name":"n-Gon Area by Side Length", "key":"ngonas", "syntax": "ngonas[n,s]", "about": "Gets the area of a regular n-gon given number of sides n and side length s, where n and s are a value or an expression that evaluates to a value wrapped within square brackets, e.g. ngonas[n,[s+x]]."},
+            
+            {"name":"n-Gon Area by Radius (Circumradius)", "key":"ngonar", "syntax": "ngonar[n,r]", "about": "Gets the area of a regular n-gon given number of sides n and radius length r, where n and r are a value or an expression that evaluates to a value wrapped within square brackets, e.g. ngonar[n,[r+x]]."},
+            
+            {"name":"n-Gon Area by Apothem (Inradius)", "key":"ngonaa", "syntax": "ngonaa[n,a]", "about": "Gets the area of a regular n-gon given number of sides n and apothem length a, where n and a are a value or an expression that evaluates to a value wrapped within square brackets, e.g. ngonaa[n,[a+x]]."},
+            
+            {"name":"n-Gon Perimeter", "key":"ngonperim", "syntax": "ngonperim[n,s]", "about": "Gets the perimeter of a regular n-gon given number of sides n and side length s, where n and s are a value or an expression that evaluates to a value wrapped within square brackets, e.g. ngonperim[n,[s+x]]."},
+
+            # Platonic Solids
+
+            # Tetrahedron
+            # faces: 4
+            # edges: 8
+            # vertices: 4
+            {"name":"Tetrahedron Volume", "key":"tetrahedronv", "syntax": "tetrahedronv[s]", "about": "Gets the volume of a tetrahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. tetrahedronv[[s+x]]."},
+            {"name":"Tetrahedron Surface Area", "key":"tetrahedronsa", "syntax": "tetrahedronsa[s]", "about": "Gets the surface area of a tetrahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. tetrahedronsa[[s+x]]."},
+            
+            # Hexahedron
+            # faces: 6
+            # edges: 12
+            # vertices: 8
+            {"name":"Hexahedron Volume", "key":"hexahedronv", "syntax": "hexahedronv[s]", "about": "Gets the volume of a hexahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. hexahedronv[[s+x]]."},
+            {"name":"Hexahedron Surface Area", "key":"hexahedronsa", "syntax": "hexahedronsa[s]", "about": "Gets the surface area of a hexahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. hexahedronsa[[s+x]]."},
+            
+            # Octahedron
+            # faces: 8
+            # edges: 12
+            # vertices: 6
+            {"name":"Octahedron Volume", "key":"octahedronv", "syntax": "octahedronv[s]", "about": "Gets the volume of an octahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. octahedronv[[s+x]]."},
+            {"name":"Octahedron Surface Area", "key":"octahedronsa", "syntax": "octahedronsa[s]", "about": "Gets the surface area of an octahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. octahedronsa[[s+x]]."},
+            
+            # Dodecahedron
+            # faces: 12
+            # edges: 30
+            # vertices: 20
+            {"name":"Dodecahedron Volume", "key":"dodecahedronv", "syntax": "dodecahedronv[s]", "about": "Gets the volume of a dodecahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. dodecahedronv[[s+x]]."},
+            {"name":"Dodecahedron Surface Area", "key":"dodecahedronsa", "syntax": "dodecahedronsa[s]", "about": "Gets the surface area of a dodecahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. dodecahedronsa[[s+x]]."},
+            
+            # Icosahedron
+            # faces: 20
+            # edges: 30
+            # vertices: 12
+            {"name":"Icosahedron Volume", "key":"icosahedronv", "syntax": "icosahedronv[s]", "about": "Gets the volume of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronv[[s+x]]."},
+            {"name":"Icosahedron Surface Area", "key":"icosahedronsa", "syntax": "icosahedronsa[s]", "about": "Gets the surface area of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronsa[[s+x]]."},
+
         ],
 
         # Combinatoric Module
         [
             {"name":"Factorial", "key":"fact", "syntax": "fact(x)", "about": "Gets the factorial of x, where x is a value or an expression that evaluates to a value."},
 
-            {"name":"Permutation", "key":"perm", "syntax": "perm[n,r]", "about": "Gets a permutation given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. perm[n,[r+x]]."},
+            {"name":"Permutation", "key":"perm", "syntax": "perm[n,r]", "about": "Replacement + Ordered. Gets a permutation given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. perm[n,[r+x]]."},
+            
+            {"name":"Permutation with Repetition", "key":"permr", "syntax": "permr[n,r]", "about": "No Replacement + Ordered. Gets a permutation with repetition given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. permr[n,[r+x]]."},
 
-            {"name":"Combination", "key":"comb", "syntax": "comb[n,r]", "about": "Gets a combination given n number of objects with r number of objects per combination, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. comb[n,[r+x]]."},
+            {"name":"Combination", "key":"comb", "syntax": "comb[n,r]", "about": "No Replacement + Unordered. Gets a combination given n number of objects with r number of objects per combination, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. comb[n,[r+x]]."},
+            
+            {"name":"Combination with Repetition", "key":"combr", "syntax": "combr[n,r]", "about": "A.K.A. Multiset. Replacement + Unordered. Gets a combination with repetition given n number of objects with r number of objects per combination, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. combr[n,[r+x]]."},
+            
+            {"name":"Composition", "key":"comp", "syntax": "comp(n)", "about": "Gets the total number of compositions of value n, where n is a value or an expression that evaulates to a value, e.g. comp(n+1)."},
             
         # add
-        #  - composition
-        #  - partition
+        #  - partition: no known closed general formula for partition
 
         ],
 
@@ -152,12 +203,11 @@ info = {
         # Algebraic
         # note: algebraic module must be at end index of key_functions
         [
-            {"name":"Algebraic Exponentiation", "key":"algexp", "syntax":"algexp[[a],x]", "about":"Gets an algebraic exponentiation given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expand[[x+1],[1+1]] = (x+1)*(x+1)"},
+            {"name":"Polynomial Exponentiation", "key":"expon", "syntax":"expon[[a],x]", "about":"Gets the exponentiation of a polynomial expression given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expon[[x+1],[1+2]] = (x+1)*(x+1)*(x+1)"},
             
             {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
         # add:
-        #  - complete Polynomial Expansion by finishing required cases of simplification
         #  - Polynomial Factorization
         #  - complex conjugate
         ],
@@ -324,22 +374,48 @@ def evaluator(input):
 
     def get_word(word, arr):
         # finds a given keyword within the structure
-        wordLen = len(word)
+        word_len = len(word)
+        arr_len = len(arr)
         ref = None
-        for i in range(0, len(arr)):
-            if (i > len(arr) - wordLen):
+        for i in range(0, arr_len):
+            if (i > arr_len - word_len):
                 # stop search if remaining indexes of arr is less than length of word
                 break
             # test for first and last letter of word
-            if arr[i] == word[0] and arr[i + wordLen - 1] == word[wordLen - 1]:
+            if arr[i] == word[0] and arr[i + word_len - 1] == word[word_len - 1]:
                 # get string between first and last letter index
                 str = ""
-                for l in range(0, wordLen):
+                for l in range(0, word_len):
                     str = str + arr[i + l]
                 # compare string with word
                 if str == word:
-                    ref = {"first": i, "last": i + wordLen}
-                    break
+                    if i - 1 > -1:
+                        if i + word_len < arr_len - 1:
+                            # both
+                            if not arr[i - 1].isalpha() and not arr[i + word_len].isalpha():
+                                ref = {"first": i, "last": i + word_len}
+                                break
+                            else:
+                                continue
+                        else:
+                            # first
+                            if not arr[i - 1].isalpha():
+                                ref = {"first": i, "last": i + word_len}
+                                break
+                            else:
+                                continue
+                    else:
+                        if i + word_len < arr_len - 1:
+                            # second
+                            if not arr[i + word_len].isalpha():
+                                ref = {"first": i, "last": i + word_len}
+                                break
+                            else:
+                                continue
+                        else:
+                            # neither
+                            ref = {"first": i, "last": i + word_len}
+                            break
         return ref
 
     def word_struct(word, arr, module = None):
@@ -677,6 +753,10 @@ def evaluator(input):
         # returns the mean of a list of values
         return sum(arr) / len(arr)
 
+    def ngon_area(n,s):
+        # returns area of a regular n-gon with n number of sides where eac side has length s
+        return round(s**2*n*(1/np.tan(np.pi/n))/4, 12)
+    
     # ARITHMETIC OPERATIONS END
 
     # ALGEBRAIC OPERATIONS START
@@ -716,7 +796,14 @@ def evaluator(input):
             return True
         else:
             return False
-            
+
+    def has_var(arr):
+        # test for variables in section
+        for i in range(0, len(arr)):
+            if var_test(arr[i]) == True:
+                return True
+        return False
+
     def get_terms(arr):
         nonlocal subtract_key
         terms = []
@@ -933,12 +1020,12 @@ def evaluator(input):
         # identifies terms in algebraic expression,
         # standardizes term forms, combines like terms,
         # standardizes expression form, returns result
+        # called before simplification + after when destandardized from simplification 
         log_process("Standardizing Format of Algebraic Terms and Expressions")
         log_process(arr)
-        # print(arr)
 
         # return empty argument
-        if len(arr) == 0:
+        if not isinstance(arr, list) or len(arr) == 0:
             log_process("Standardization Aborted")
             return arr
 
@@ -2220,6 +2307,11 @@ def evaluator(input):
             return formatted
     
     def simplify(arr):
+        # prevent running on non-algebraic expressions
+        if not has_var(arr):
+            return arr
+        
+        # get nonlocal vars
         nonlocal global_bypass
         nonlocal simp_limit
 
@@ -3411,6 +3503,8 @@ def evaluator(input):
         if key_modules[1]["use"] == True and global_bypass == False:
             log_process("Geometric Key Module")
 
+            # TRIANGLE
+
             # perform all right triangle hypotenuse functions
             ref = getIdx("hypot", arrVar)
             itr = 0
@@ -3491,6 +3585,518 @@ def evaluator(input):
                     global_bypass = True
                     return "invalid argument = x, x <= 0"
 
+            # REGULAR n-GON
+
+            # perform all ngon area by side length functions
+            ref = getIdx("ngonas", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of sides
+                s = set_2[1] # side length
+                
+                if n > 0 and s > 0:
+                    Area = ngon_area(n, s)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Area, ref, ref + 1, arrVar)
+                    ref = getIdx("ngonas", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all ngon area by radius length functions
+            ref = getIdx("ngonar", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of sides
+                r = set_2[1] # radius length
+                
+                if n > 0 and r > 0:
+                    Area = round(r**2*n*np.sin(2*np.pi/n)/2, 12)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Area, ref, ref + 1, arrVar)
+                    ref = getIdx("ngonar", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all ngon area by apothem length functions
+            ref = getIdx("ngonaa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of sides
+                a = set_2[1] # apothem length
+                
+                if n > 0 and a > 0:
+                    Area = round(a**2*np.tan(np.pi/n), 12)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Area, ref, ref + 1, arrVar)
+                    ref = getIdx("ngonaa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+        
+            # perform all ngon perimeter functions
+            ref = getIdx("ngonperim", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of sides
+                s = set_2[1] # side length
+                
+                if n > 0 and s > 0:
+                    Perimeter = n*s # the perimeter of regular n-gons is a single multiplication
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Perimeter, ref, ref + 1, arrVar)
+                    ref = getIdx("ngonperim", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # PLATONIC SOLIDS
+
+            # perform all tetrahedron volume functions
+            ref = getIdx("tetrahedronv", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = s**3/(2**.5*6)
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("tetrahedronv", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+                
+            # perform all tetrahedron surface area functions
+            ref = getIdx("tetrahedronsa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = 3**.5*s**2
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("tetrahedronsa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all hexahedron volume functions
+            ref = getIdx("hexahedronv", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = s**3
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("hexahedronv", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+                
+            # perform all hexahedron surface area functions
+            ref = getIdx("hexahedronsa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # sides length
+                
+                if s > 0:
+                    Surface_Area = s**2*6
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
+                    ref = getIdx("hexahedronsa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all octahedron volume functions
+            ref = getIdx("octahedronv", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = 2**.5*s**3/3
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("octahedronv", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+                
+            # perform all octahedron surface area functions
+            ref = getIdx("octahedronsa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # sides length
+                
+                if s > 0:
+                    Surface_Area = 3**.5*2*s**2
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
+                    ref = getIdx("octahedronsa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all dodecahedron volume functions
+            ref = getIdx("dodecahedronv", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = s**3*(5**.5*7+15)/4
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("dodecahedronv", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+                
+            # perform all dodecahedronsa surface area functions
+            ref = getIdx("dodecahedronsa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # sides length
+                
+                if s > 0:
+                    Surface_Area = (5**.5*10+25)**.5*3*s**2
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
+                    ref = getIdx("dodecahedronsa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+            
+            # perform all icosahedron volume functions
+            ref = getIdx("icosahedronv", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # side length
+                
+                if s > 0:
+                    Volume = s**3*(5**.5+3)*5/12
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
+                    ref = getIdx("icosahedronv", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+        
+            # perform all icosahedron surface area functions
+            ref = getIdx("icosahedronsa", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                s = set_2[0] # sides length
+                
+                if s > 0:
+                    Surface_Area = 3**.5*5*s**2
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
+                    ref = getIdx("icosahedronsa", arrVar)
+                else:
+                    # invalid argument
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+
         return arrVar
 
     def combinatoric(arr):
@@ -3510,6 +4116,10 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
+                if x <= 0:
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+                
                 y = factorial(x)
 
                 # apply answer and search for new problem
@@ -3558,6 +4168,43 @@ def evaluator(input):
                     # n cannot be less than r
                     global_bypass = True
                     return "invalid arguments: n <= 0 or r <= 0 or n < r"
+            
+            # perform all Permutation with Repetition functions
+            ref = getIdx("permr", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = float(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0] # number of objects
+                r = set_2[1] # number of objects per permutation
+                if n > 0 and r > 0 and n >= r:
+                    perm = n**r
+                    
+                    # apply answer and search for new problem
+                    arrVar = restructure(perm, ref, ref + 1, arrVar)
+                    ref = getIdx("permr", arrVar)
+
+                else:
+                    # n cannot be less than r
+                    global_bypass = True
+                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
 
             # perform all Combination functions
             ref = getIdx("comb", arrVar)
@@ -3594,7 +4241,63 @@ def evaluator(input):
                     # n cannot be greater than r
                     global_bypass = True
                     return "invalid arguments: n <= 0 or r <= 0 or n <= r"
+            
+            # perform all Combination with Repetition functions
+            ref = getIdx("combr", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # log keyword
+                log_process(arrVar[ref])
 
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = float(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n = set_2[0]
+                r = set_2[1]
+
+                if n > 0 and r > 0 and n >= r:
+                    comb = factorial(n + r - 1) / (r * factorial(n - 1))
+                    # apply answer and search for new problem
+                    arrVar = restructure(comb, ref, ref + 1, arrVar)
+                    ref = getIdx("combr", arrVar)
+                else:
+                    # n cannot be greater than r
+                    global_bypass = True
+                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
+
+            # perform all Composition functions
+            ref = getIdx("comp", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # log keyword
+                log_process(arrVar[ref])
+
+                x = num_cast(arrVar[ref + 1])
+
+                if x > 0:
+                    comp = 2**(x-1)
+                    # apply answer and search for new problem
+                    arrVar = restructure(comp, ref, ref + 1, arrVar)
+                    ref = getIdx("comp", arrVar)
+                else:
+                    # n cannot be greater than r
+                    global_bypass = True
+                    return "invalid argument = x, x <= 0"
+        
         return arrVar
 
     def statistical(arr):
@@ -4055,8 +4758,8 @@ def evaluator(input):
         if key_modules[4]["use"] == True and global_bypass == False:
             log_process("Algebraic Key Module")
 
-            # performs all algebraic exponentiation
-            ref = getIdx("algexp", arrVar)
+            # performs all polynomial exponentiation
+            ref = getIdx("expon", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
                 itr = itr + 1
@@ -4067,9 +4770,12 @@ def evaluator(input):
                 args = arrVar[ref + 1]
 
                 # handle power
-                if isinstance(args[1], str):
+                if not isinstance(args[1], list):
                     # convert then append power value
-                    x = float(args[1])
+                    x = num_cast(args[1])
+                    if x == False:
+                        global_bypass = True
+                        return "invalid exponent argument: no variables"
                     args[1] = x
                 else:
                     # simplify power expression then append power value
@@ -4077,8 +4783,13 @@ def evaluator(input):
                     # convert power expression product to integer
                     args[1] = int(x)
 
+                # handle base
+                if not isinstance(args[0], list) and has_var(args[0]):
+                    global_bypass = True
+                    return "invalid base argument: must be algebraic expression"
+
                 # perform algebraic operation using numeral set
-                base = args[0] # base expression
+                base = simplify(args[0]) # base expression
                 power = args[1] # power value
 
                 # log values
@@ -4092,7 +4803,7 @@ def evaluator(input):
                     # restructure with section
                     arrVar = restructure(["1"], ref, ref + 1, arrVar)
                     # get next instance
-                    ref = getIdx("algexp", arrVar)
+                    ref = getIdx("expon", arrVar)
 
                 elif power < 0:
                     # x^-y = 1/(x^y)
@@ -4106,7 +4817,7 @@ def evaluator(input):
                     # restructure with section
                     arrVar = restructure(sect, ref, ref + 1, arrVar)
                     # get next instance
-                    ref = getIdx("algexp", arrVar)
+                    ref = getIdx("expon", arrVar)
 
                 else:
                     # general
@@ -4119,7 +4830,7 @@ def evaluator(input):
                     # restructure with section
                     arrVar = restructure(sect, ref, ref + 1, arrVar)
                     # get next instance
-                    ref = getIdx("algexp", arrVar)
+                    ref = getIdx("expon", arrVar)
 
             # performs all polynomial expansions
             ref = getIdx("expand", arrVar)
@@ -4454,13 +5165,7 @@ def evaluator(input):
                 log_process("Calculation Complete")
                 
                 # test for variables in section
-                is_variables = False
-                for i in range(0, len(arrVar)):
-                    if var_test(arrVar[i]) == True:
-                        is_variables = True
-                        break
-                
-                if is_variables == True:
+                if has_var(arrVar):
                     # run algebraic simplifications
                     arrVar = simplify(arrVar)
                     
@@ -5170,7 +5875,7 @@ def evaluator(input):
                                     break
                             if x != 0:
                                 test2 = False
-            
+                
             # TEST3: consecutive variables
             if test6 == True and test5 == True and test1 == True and test2 == True:
                 for i in range(0, structure_length):
@@ -5199,12 +5904,13 @@ def evaluator(input):
                             elif i + 1 < structure_length:
                                 after_key = structure[i + 1]
 
+                                # no parens or bracks
                                 if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
-                                    # no parens or bracks
                                     test4 = False
-                                    key_error = '%s key requires an argument' % key
+                                    key_error = '%s key requires argument to be wrapped in parenthesis or brackets' % key
                                     break
-
+                                
+                                # key uses correct parens or bracks
                                 else:
                                     # scan for key in info structure (ommitting algebraic module)
                                     for module in range(0, len(info["key_functions"]) - 1):
@@ -5342,7 +6048,25 @@ def evaluator(input):
 
                                         if test4 == False:
                                             break
-                            
+
+                            # search for empty expression argument
+                            if test4 == True and after_key == operation["open_bracket"]:
+                                nest = 0
+                                for j in range(i, structure_length):
+                                    x = structure[j]
+                                    if x == operation["open_bracket"]:
+                                        nest += 1
+                                    elif x == operation["close_bracket"]:
+                                        nest -= 1
+                                        if j - 1 > -1 and structure[j - 1] == operation["open_bracket"]:
+                                            # found error
+                                            test4 = False
+                                            key_error = '%s key has missing expression argument' % key
+                                            break
+                                        elif nest == 0:
+                                            # reached end with no error
+                                            break
+           
             if test1 == False:
                 # invalid parenthesis => terminate program
                 return "invalid parenthesis"
@@ -5407,6 +6131,8 @@ def evaluator(input):
                 # mark end of structuring pocess
                 log_process("Problem Structure Generation Complete")
 
+                print(structure)
+
                 if is_paren == True:
                     # parenthetically section and solve
                     return section(structure)
@@ -5441,7 +6167,7 @@ def evaluator(input):
                 answer = "single type of character"
 
     # convert answer expressions to answer string
-    if isinstance(answer, list):
+    if isinstance(answer, list) or var_test(answer) == True:
         string = ""
         for i in answer:
             string = string + str(i)
@@ -5476,17 +6202,28 @@ def evaluator(input):
 #     print(output["answer"])
 #     print(logs)
 
-# # test case
+# test case
+# n = 4
+# side = 10
+# theta = np.deg2rad(360/(2*n))
+# radius = (side/2)/np.sin(theta)
+# apothem = (side/2)/np.tan(theta)
 # input = {
-#     # next case to develop 
+#     # "problem": "ngonas[4,%s]" % side, # note: number of sides, side length (square of side length 10)
+#     # "problem": "ngonar[4,%s]" % radius, # note: number of sides, radius length (radius of same sqaure)
+#     # "problem": "ngonaa[4,%s]" % apothem, # note: number of sides, apothem length (apothem of same square)
+#     # "problem": "ngonperim[4,%s]" % side, # note: 
+
 #     # "problem": "(4*x)/(2*x)", # note: 
 #     # "problem": "expand[[x/b*a+y],[x/a*b-y]]", # note: 
 #     # "problem": "2*((4+8)+x)", # note: prevents calulation beyond the level of parenthetical nesting of an unresolvable algebraic expression
 #     # "problem": "2*((x*y)^2)", # note: expression operation exponentiation case 1
-#     # "problem": "", # note: 
-#     "use_logs": "1", # 1 = yes, else = no 
-#     "problem": "√4", # note: 
 #     # "problem": "n√b*3√a", # note: 
+#     # "problem": "", # note: 
+
+#     "use_logs": "", # 1 = yes, else = no 
+#     "problem": "", # note: 
+
 # }
 # evaluator(input)
 
@@ -5538,7 +6275,7 @@ def evaluator(input):
 #     {"problem": "sin", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
 #     {"problem": "7-sin+1", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
 #     {"problem": "(1+2)*3-sin", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
-#     {"problem": "sin+1*(2-3)", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
+#     {"problem": "sin+1*(2-3)", "answer": "sin key requires argument to be wrapped in parenthesis or brackets"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
 #     {"problem": "sin([9-8],2)", "answer": "sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
 
 #     {"problem": "sin[0]", "answer": "sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
@@ -5560,6 +6297,7 @@ def evaluator(input):
 #     {"problem": "meanw[[10,0.5]]", "answer": "meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
     
 #     {"problem": "sin(1,[2*8/4-2])", "answer": "sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
+#     {"problem": "expand[[]]", "answer": "expand key has missing expression argument"}, # no empty expression arguments
     
 #     # CONSTANTS
 
@@ -5626,14 +6364,58 @@ def evaluator(input):
 #     {"problem": "heron[0,1,1]", "answer": "invalid argument = x, x <= 0"},
 #     {"problem": "heron[(-1),1,1]", "answer": "invalid argument = x, x <= 0"},
 
+#     {"problem": "ngonas[(-4),10]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonas[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "ngonar[(-4),10]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonar[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "ngonaa[(-4),10]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonaa[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "ngonperim[(-4),10]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonperim[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "tetrahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "tetrahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "hexahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "hexahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "octahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "octahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "dodecahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "dodecahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "icosahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
+#     {"problem": "icosahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+
 #     # COMBINATORIC
+#     {"problem": "fact((-6))", "answer": "invalid argument = x, x <= 0"},
+
 #     {"problem": "perm[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
 #     {"problem": "perm[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
 #     {"problem": "perm[2,3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+    
+#     {"problem": "permr[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "permr[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "permr[2,3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
 
 #     {"problem": "comb[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
 #     {"problem": "comb[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
 #     {"problem": "comb[2,5]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
+
+#     {"problem": "combr[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "combr[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "combr[2,5]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+
+#     {"problem": "comp((-5))", "answer": "invalid argument = x, x <= 0"},
 
 #     # STATISTICAL
 #     {"problem": "meanh[1,0,2]", "answer": "no zero argument"},
@@ -5645,6 +6427,11 @@ def evaluator(input):
 #     {"problem": "log[(-1),10]", "answer": "invalid argument = x, x <= 0"},
 
 #     {"problem": "ln((-3))", "answer": "invalid argument = x, x <= 0"},
+
+#     # ALGEBRAIC
+#     {"problem": "expon[[x+1],y]", "answer": "invalid exponent argument: no variables"},
+#     {"problem": "expon[x,2]", "answer": "invalid base argument: must be algebraic expression"},
+#     {"problem": "expand[[x+1]]", "answer": "x+1"},
 
     
 #     # KEY FUNCTION LOGIC TESTS
@@ -5666,10 +6453,33 @@ def evaluator(input):
 #     {"problem": "hypot[3,4]", "answer": "5"}, # pass = 5
 #     {"problem": "heron[3,4,5]", "answer": "6"}, # pass = 6
 
+#     {"problem": "ngonas[4,10]", "answer": "100"}, # 
+#     {"problem": "ngonar[4,10]", "answer": "200"}, # 
+#     {"problem": "ngonaa[4,10]", "answer": "100"}, # 
+#     {"problem": "ngonperim[4,10]", "answer": "40"}, # 
+
+#     {"problem": "tetrahedronv[10]", "answer": "117.85113019775791"}, # 
+#     {"problem": "tetrahedronsa[10]", "answer": "173.20508075688772"}, # 
+
+#     {"problem": "hexahedronv[10]", "answer": "1000"}, # 
+#     {"problem": "hexahedronsa[10]", "answer": "600"}, # 
+    
+#     {"problem": "octahedronv[10]", "answer": "471.4045207910317"}, # 
+#     {"problem": "octahedronsa[10]", "answer": "346.41016151377545"}, # 
+    
+#     {"problem": "dodecahedronv[10]", "answer": "7663.118960624633"}, # 
+#     {"problem": "dodecahedronsa[10]", "answer": "2064.5728807067603"}, # 
+    
+#     {"problem": "icosahedronv[10]", "answer": "2181.6949906249124"}, # 
+#     {"problem": "icosahedronsa[10]", "answer": "866.0254037844386"}, # 
+
 #     # COMBINATORIC
 #     {"problem": "fact(5)", "answer": "120"}, # pass = 120
 #     {"problem": "perm[3,2]", "answer": "6"}, # pass = 6
+#     {"problem": "permr[3,2]", "answer": "9"}, # pass = 9
 #     {"problem": "comb[3,2]", "answer": "3"}, # pass = 3
+#     {"problem": "combr[3,2]", "answer": "6"}, # pass = 6
+#     {"problem": "comp(6)", "answer": "32"}, # pass = 32
 
 #     # STATISTICAL
 #     {"problem": "sd[0,2]", "answer": "1"}, # pass = 1
@@ -5861,7 +6671,7 @@ def evaluator(input):
 #     # ALGEBRAIC KEY FUNCTION ARGUMENT DOMAIN VALIDATION
 
 #     # ALGEBRAIC KEY FUNCTIONS
-#     {"problem": "algexp[[x+y],[2*1/1+1]]", "answer": "(x+y)*(x+y)*(x+y)"}, # algebraic exponentiation
+#     {"problem": "expon[[x+y],[2*1/1+1]]", "answer": "(x+y)*(x+y)*(x+y)"}, # algebraic exponentiation
 
 #     {"problem": "expand[[x],[x]]", "answer": "x^2"}, # 
 #     {"problem": "expand[[x],[x],[x]]", "answer": "x^3"}, # 
