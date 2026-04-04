@@ -9,33 +9,36 @@ import copy
 # Environment variables
 load_dotenv()
 
-# PROGRAMIC PROCESS
-
-# Phase I: Pre-Structural Validation
-# Description: Performs validation on string and each character to prevent structuring of inputs whose invalidity is easily determinable from a string of characters.
-
-# Phase II: Entity Structuring and Analysis
-# Description: Analyzes problem string to create problem structure from problem string data storing relevant problem data as it goes. The problem string is structured into entities including and limited to multi-digit numbers, negative numbers, decimal numbers, operations, parenthesis, sets, variables and keywords.
-
-# Phase III: Post-structural Validation
-# Description: This is the phase in which rules for problem structure syntax are enforced by running various tests to catch inputs that fail to adhere to the rules of problem construction and produce a relevant error.
-
-# Phase IV: Structural Manipulation
-# Description: After determining a valid input, the program analyzes the structure to identify remaining program entities and Sets are structured to allow multiple arguments into a single key functon. From the data stored throughout the process of structuring and validation, the program determines the best course of action for how to begin processing the problem structure into a solution. That may be as simple as calulating arithmetic into a single value solution or as complex as indentifyig the first parenthetical section to handle in an algebraic expression.
-
-# Phase V: Calculation
-# Description: However the program determines its course for where to begin, the calculate function will ultimately be called, and that function breaks down into three processes which occur in the following order: 1) Key Functions, 2) Arithmetic Operations, and 3) Algebraic Expression Formatting and Simplification. Key functions permit special functions to be called by a key and argument(s), so long as correct syntax is followed. Arithmetic operations are performed in operator precedence one at a time until none are remaining. If an algebraic expression is indentified, its form will be standardized at the level of a term and the level of an expression before being comprehensively tested for cases of simplification until none are remaining.
+# Program Parameters
+parameters = {
+    
+    # limit parameters
+    # limits exist as program parameters to prevent the possibility of infinite computation
+    "paren_limit": 10**2, # controls the number of nested pairs of parenthesis in any given problem
+    "const_limit": 10**3, # controls the number of any one kind of constant in any given problem
+    "key_limit": 10**2, # controls the number of any one kind of key function call in any given problem
+    "simp_limit": 10**3, # controls the number of cases of simplification in any given problem
+    
+    # operator parameters
+    # operation syntax is made parametric to work with any available charset
+    "addition": "+",
+    "subtraction": "-",
+    "multiplication": "*",
+    "division": "/",
+    "exponentiation": "^",
+    "radication": "√", # alt code 251
+}
 
 # Program Information
 info = {
     
     "operations": [
-        {"name":"Addition", "syntax":"+"},
-        {"name":"Subtraction", "syntax":"-"},
-        {"name":"Multiplication", "syntax":"*"},
-        {"name":"Division", "syntax":"/"},
-        {"name":"Exponentiation", "syntax":"^"},
-        {"name":"radication", "syntax":"√"}, # alt code 251
+        {"name":"Addition", "syntax": parameters["addition"]},
+        {"name":"Subtraction", "syntax": parameters["subtraction"]},
+        {"name":"Multiplication", "syntax": parameters["multiplication"]},
+        {"name":"Division", "syntax": parameters["division"]},
+        {"name":"Exponentiation", "syntax": parameters["exponentiation"]},
+        {"name":"radication", "syntax": parameters["radication"]}, 
         {"name":"negation", "syntax":"(-x)"},
         {"name":"open_parenthesis", "syntax":"("},
         {"name":"close_parenthesis", "syntax":")"},
@@ -168,6 +171,12 @@ info = {
             
             {"name":"Composition", "key":"comp", "syntax": "comp(n)", "about": "Gets the total number of compositions of value n, where n is a value or an expression that evaulates to a value, e.g. comp(n+1)."},
             
+            {"name":"Multiples in Interval", "key":"multiples", "syntax": "multiples[n1,n2,x]", "about": "Gets the number of multiples of the value x in an interval from n1 to n2, where n1, n2 and x are a value or an expression that evaulates to a value wrapped in square brackets, e.g. multiples[n1,n2,[x+1]]."},
+            
+            {"name":"Greatest Common Factor", "key":"gcf", "syntax": "gcf[a,b]", "about": "Gets the greatest common factor of a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. gcf[a,[b+x]]."},
+
+            {"name":"Least Common Multiple", "key":"lcm", "syntax": "lcm[a,b]", "about": "Gets the least common multiple of values a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. lcm[a,[b+x]]."},
+             
         # add
         #  - partition: no known closed general formula for partition
 
@@ -191,10 +200,6 @@ info = {
             {"name":"Root Mean Square", "key":"rms", "syntax": "rms[a,b]", "about": "Gets the geometeric mean of the the set of items within square brackets, where that set has at least two comma-demarcated items, and each item is a value or an expression that evaulates to a value wrapped within square brackets, e.g. rms[10,[2+3]]."},
                 
             # Et Cetera
-            {"name":"Greatest Common Factor", "key":"gcf", "syntax": "gcf[a,b]", "about": "Gets the greatest common factor of a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. gcf[a,[b+x]]."},
-
-            {"name":"Least Common Multiple", "key":"lcm", "syntax": "lcm[a,b]", "about": "Gets the least common multiple of values a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. lcm[a,[b+x]]."},
-            
             {"name":"Logarithm", "key":"log", "syntax": "log[x,b]", "about": "Gets the logarithm of x with base b, where x and b are values or expressions wrapped in square brackets that evaluate to a value, e.g. log[x,[b+2]]."},
 
             {"name":"Natural Log", "key":"ln", "syntax": "ln(x)", "about": "Gets the natural log of x with base e, where x is a value or an expression that evaluates to a value, e.g. ln(2-1*0)."},
@@ -206,42 +211,357 @@ info = {
             {"name":"Polynomial Exponentiation", "key":"expon", "syntax":"expon[[a],x]", "about":"Gets the exponentiation of a polynomial expression given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expon[[x+1],[1+2]] = (x+1)*(x+1)*(x+1)"},
             
             {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
+            
+            # {"name":"Polynomial Factorization", "key":"factor", "syntax":"factor[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
         # add:
-        #  - Polynomial Factorization
+        #  - Polynomial Factorization: deterinistic algorithm for worst-case complexity polynomial is an open problem in mathematics
         #  - complex conjugate
         ],
     ],
+    
+    "limits": {
+        "paren_limit": parameters["paren_limit"],
+        "const_limit": parameters["const_limit"],
+        "key_limit": parameters["key_limit"],
+        "simp_limit": parameters["simp_limit"],
+    },
+    
+    "error": {
+        
+        # -------------------------------- #
+        #       Error Code Reference       #
+        # -------------------------------- #
+        # Code Range    | Error Category   #
+        # -------------------------------- #
+        # 001 - 099     | parameter        #
+        # -------------------------------- #
+        # 101 - 199     | prestructure     #
+        # -------------------------------- #
+        # 201 - 299     | poststructure    #
+        # -------------------------------- #
+        # 501 - 999     | key function     #
+        # -------------------------------- #
+
+        # default code format: ERROR_XXX_'index of error in list'
+        # e.g. ERROR_527_0 @ zeroth index, ERROR_527_1 @ first index
+        
+        "parameter": {
+            
+            # limit parameters
+            "limit": {
+                "paren_limit": [
+                    {"code": "ERROR_001_0", "description": "parameter error: parenthesis limit. Problems are not to exceed %s pairs of parenthesis." % parameters["const_limit"] }
+                ],
+                "const_limit": [
+                    {"code": "ERROR_002_0", "description": "parameter error: constant limit. Problems are not to exceed %s instances of any one constant." % parameters["const_limit"]}
+                ],
+                "key_limit": [
+                    {"code": "ERROR_003_0", "description": "parameter error: key function limit. Problems are not to exceed %s calls for any one key function." % parameters["key_limit"]}
+                ],
+                "simp_limit": [
+                    {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]}
+                ],
+            },
+
+            # operator parameters
+            "operator" : {
+                "addition": [
+                    {"code": "ERROR_002_0", "description": "parameter error: addition character cannot be identical to other operator character."}
+                ],
+                "subtraction": [
+                    {"code": "ERROR_002_0", "description": "parameter error: subtraction character cannot be identical to other operator character."}
+                ],
+                "multiplication": [
+                    {"code": "ERROR_002_0", "description": "parameter error: multiplication character cannot be identical to other operator character."}
+                ],
+                "division": [
+                    {"code": "ERROR_002_0", "description": "parameter error: division character cannot be identical to other operator character."}
+                ],
+                "exponentiation": [
+                    {"code": "ERROR_002_0", "description": "parameter error: exponentiation character cannot be identical to other operator character."}
+                ],
+                "radication": [
+                    {"code": "ERROR_002_0", "description": "parameter error: radication character cannot be identical to other operator character."}
+                ],
+            },
+        },
+
+        "prestructure": [
+            {"code": "ERROR_101_0", "description": "prestructure error: empty string"},
+            {"code": "ERROR_102_1", "description": "prestructure error: single type of non-numeral character"},
+            {"code": "ERROR_103_2", "description": "prestructure error: invalid character in problem string"},
+        ],
+
+        "poststructure": [
+            {"code": "ERROR_201_0", "description": "poststructure error: non-entity detected"},
+            {"code": "ERROR_202_1", "description": "poststructure error: invalid parenthesis"},
+            {"code": "ERROR_203_2", "description": "poststructure error: invalid brackets"},
+            {"code": "ERROR_204_3", "description": "poststructure error: no consecutive variables"},
+            {"code": "ERROR_205_4", "description": "poststructure error: invalid key function syntax"},
+            {"code": "ERROR_206_5", "description": "poststructure error: no consecutive operations"},
+            {"code": "ERROR_207_6", "description": "poststructure error: no division by zero"},
+            {"code": "ERROR_208_7", "description": "poststructure error: operations require operands"},
+        ],
+
+        "key_function": {
+
+            # Trigonomic Module
+            "trigonomic": {
+
+                # Reciprocal
+                "acsc": [
+                    {"code": "ERROR_504_0", "description": "acsc key function error: invalid argument = x, -1 < x < 1"},
+                ],
+                "csc": [
+                    {"code": "ERROR_502_0", "description": "csc key function error: invalid argument = x, x = 0"},
+                ],
+                "asec": [
+                    {"code": "ERROR_506_0", "description": "asec key argument error: invalid argument = x, -1 < x < 1"},
+                ],
+                "sec": [
+                    {"code": "ERROR_505_0", "description": "sec key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_505_1", "description": "sec key function error: invalid argument = x, x >= π"},
+                ],
+                "acot": [
+                    {"code": "ERROR_508_0", "description": "acot key function error: invalid argument = x, x = 0"},
+                ],
+                "cot": [
+                    {"code": "ERROR_507_0", "description": "cot key function error: invalid argument = x, x = 0"},
+                    {"code": "ERROR_507_1", "description": "cot key function error: invalid argument = x, x mod π = 0, x mod π is rounded to nearest 13th decimal"},
+                ],
+
+                # Hyperbolic
+                # "asinh": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "sinh": [
+                #     {"code": "", "description": ""},
+                # ],
+                "acosh": [
+                    {"code": "ERROR_509_0", "description": "acosh key function error: invalid argument = x, x < 1"},
+                ],
+                # "cosh": [
+                #     {"code": "", "description": ""},
+                # ],
+                "atanh": [
+                    {"code": "ERROR_510_0", "description": "atanh key function error: invalid argument = x, -1 < x < 1"},
+                ],
+                # "tanh": [
+                #     {"code": "", "description": ""},
+                # ],
+
+                # Fundamental
+                "asin": [
+                    {"code": "ERROR_501", "description": "asin key function error: invalid argument = x, x < -1"},
+                    {"code": "ERROR_501_1", "description": "asin key function error: invalid argument = x, x > 1"},
+                ],
+                # "sin": [
+                #     {"code": "", "description": ""},
+                # ],
+                "acos": [
+                    {"code": "ERROR_502", "description": "acos key function error: invalid argument = x, x < -1"},
+                    {"code": "ERROR_502_1", "description": "acos key function error: invalid argument = x, x > 1"},
+                ],
+                # "cos": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "atan": [
+                #     {"code": "", "description": ""},
+                # ],
+                "tan": [
+                    {"code": "ERROR_503_0", "description": "tan key function error: invalid argument = x, x mod (π/2) = 0 and x/(π/2) mod 2 ≠ 0, where x mod (π/2) is rounded to nearest 13th decimal place. The tangent function cannot accept odd multiples of (π/2), because those values lie on a vertical asymptote."},
+                ],
+
+            },
+
+            # Geometeric Module
+            "geometric": {
+
+                # Triangles
+                "hypot": [
+                    {"code": "ERROR_511_0", "description": "hypot key function error: invalid argument = x, x <= 0"},
+                ],
+                "heron": [
+                    {"code": "ERROR_512_0", "description": "heron key function error: invalid argument = x, x <= 0"},
+                ],
+                
+                # Regular n-gons
+                "ngonas": [
+                    {"code": "ERROR_513_0", "description": "ngonas key function error: invalid argument = x, x <= 0"},
+                ],
+                "ngonar": [
+                    {"code": "ERROR_514_0", "description": "ngonar key function error: invalid argument = x, x <= 0"},
+                ],
+                "ngonaa": [
+                    {"code": "ERROR_515_0", "description": "ngonaa key function error: invalid argument = x, x <= 0"},
+                ],
+                "ngonperim": [
+                    {"code": "ERROR_516_0", "description": "ngonperim key function error: invalid argument = x, x <= 0"},
+                ],
+                
+                # Platonic Solids
+                "tetrahedronv": [
+                    {"code": "ERROR_517_0", "description": "tetrahedronv key function error: invalid argument = x, x <= 0"},
+                ],
+                "tetrahedronsa": [
+                    {"code": "ERROR_518_0", "description": "tetrahedronsa key function error: invalid argument = x, x <= 0"},
+                ],
+                "hexahedronv": [
+                    {"code": "ERROR_519_0", "description": "hexahedronv key function error: invalid argument = x, x <= 0"},
+                ],
+                "hexahedronsa": [
+                    {"code": "ERROR_520_0", "description": "hexahedronsa key function error: invalid argument = x, x <= 0"},
+                ],
+                "octahedronv": [
+                    {"code": "ERROR_521_0", "description": "ocrahedronv key function error: invalid argument = x, x <= 0"},
+                ],
+                "octahedronsa": [
+                    {"code": "ERROR_522_0", "description": "ocrahedronsa key function error: invalid argument = x, x <= 0"},
+                ],
+                "dodecahedronv": [
+                    {"code": "ERROR_523_0", "description": "dodecahedronv key function error: invalid argument = x, x <= 0"},
+                ],
+                "dodecahedronsa": [
+                    {"code": "ERROR_524_0", "description": "dodecahedronsa key function error: invalid argument = x, x <= 0"},
+                ],
+                "icosahedronv": [
+                    {"code": "ERROR_525_0", "description": "icosahedronv key function error: invalid argument = x, x <= 0"},
+                ],
+                "icosahedronsa": [
+                    {"code": "ERROR_526_0", "description": "icosahedronsa key function error: invalid argument = x, x <= 0"},
+                ],
+            },
+
+            # Combinatoric Module
+            "combinatoric": {
+                "fact": [
+                    {"code": "ERROR_527_0", "description": "fact key function error: invalid argument = x, x <= 0"},
+                ],
+                "perm": [
+                    {"code": "ERROR_528_0", "description": "perm key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_528_1", "description": "perm key function error: invalid arguments: n < r"},
+                ],
+                "permr": [
+                    {"code": "ERROR_529_0", "description": "permr key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_529_1", "description": "permr key function error: invalid arguments: n < r"},
+                ],
+                "comb": [
+                    {"code": "ERROR_530_0", "description": "comb key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_530_1", "description": "comb key function error: invalid arguments: n < r"},
+                ],
+                "combr": [
+                    {"code": "ERROR_531_0", "description": "combr key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_531_1", "description": "combr key function error: invalid arguments: n < r"},
+                ],
+                "comp": [
+                    {"code": "ERROR_532_0", "description": "comp key function error: invalid argument = x, x <= 0"},
+                ],
+                "multiples": [
+                    {"code": "ERROR_533_0", "description": "multiples key function error: invalid arguments: zero interval"},
+                    {"code": "ERROR_533_1", "description": "multiples key function error: invalid argument: x <= 1"},
+                    {"code": "ERROR_533_2", "description": "multiples key function error: invalid argument: maximum value in interval cannot be less than or equal to x"},
+                ],
+                "gcf": [
+                    {"code": "ERROR_534_0", "description": "gcf key function error: invalid argument = x, x <= 0"},
+                ],
+                "lcm": [
+                    {"code": "ERROR_535_0", "description": "lcm key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_535_1", "description": "lcm key function error: no common multiple found within 100 multiples of given arguments"},
+                ],
+            },
+
+            # Statistical Module
+            "statistical": {
+                # "sd": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "var": [
+                #     {"code": "", "description": ""},
+                # ],
+
+                # means
+                "meanh": [
+                    {"code": "ERROR_536_0", "description": "meanh key function error: no zero argument"},
+                ],
+                # "meang": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "meanw": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "mean": [
+                #     {"code": "", "description": ""},
+                # ],
+                # "rms": [
+                #     {"code": "", "description": ""},
+                # ],
+
+                # et cetera
+                "log": [
+                    {"code": "ERROR_537_0", "description": "log key function error: invalid argument = x, x <= 0. when x = 0, the result is negative infinity or undefined, and when x is negative, the result is complex."},
+                ],
+                "ln": [
+                    {"code": "ERROR_538_0", "description": "ln key function error: invalid argument = x, x <= 0. when x = 0, the result is negative infinity or undefined, and when x is negative, the result is complex."},
+                ],
+            },
+
+            # Algebraic
+            "algebraic": {
+
+                # polynomial
+                "expon": [
+                    {"code": "ERROR_539_0", "description": "expon key function error: invalid exponent argument: no variables and must evaluate to a single value"},
+                    {"code": "ERROR_539_1", "description": "expon key function error: invalid base argument: must be an algebraic expression and conatain at least one variable"},
+                ],
+                "expand": [
+                    {"code": "ERROR_540_0", "description": "exapnd key function error: requires at least 1 argument"},
+                ]
+            }
+        }
+    }
 }
+
+# clear parameters after init of info
+parameters = {}
 
 def evaluator(input):
 
-    # PROGRAM PARAMETERS
+    # I. data structures
+    # II. functionality
+    # III. evaluate problem to produce answer
+
+    # import global data
     global info
 
-    # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
-    paren_limit = 1000
+    # parameteric constraints on evaluation process
 
-    # the const_limit parameter controls the maximum number of instances of any one constant allowed in any one evaluation
-    const_limit = 1000
+    # the paren_limit parameter controls the maximum number of levels of parenthesis nesting in any one evaluation
+    paren_limit = info["limits"]["paren_limit"]
+
+    # the const_limit parameter controls the maximum number of instances of any particular constant allowed in any one evaluation
+    const_limit = info["limits"]["const_limit"]
 
     # the key_limit parameter controls the maximum number of the same key function allowed in any one evaluation
-    key_limit = 1000
+    key_limit = info["limits"]["key_limit"]
 
     # the simp_limit parameter constrols the maximum number of simplifications in any one evaluation
-    simp_limit = 1000
+    simp_limit = info["limits"]["simp_limit"]
 
     # PROGRAM ENTITY REFERENCE
 
     # operator characters
     operation = {
+        
+        # parametric operations
         "addition": info["operations"][0]["syntax"],
         "subtraction": info["operations"][1]["syntax"],
         "multiplication": info["operations"][2]["syntax"],
         "division": info["operations"][3]["syntax"],
         "exponentiation": info["operations"][4]["syntax"],
         "radication": info["operations"][5]["syntax"],
-        "negation": info["operations"][6]["syntax"],
+
+        # non-parametric operations
         "open_parenthesis": info["operations"][7]["syntax"],
         "close_parenthesis": info["operations"][8]["syntax"],
         "open_bracket": info["operations"][9]["syntax"],
@@ -539,11 +859,11 @@ def evaluator(input):
 
             # serve error for non-entity
             elif i != " " and i != "." and i != ",":
-                return "non-entity detected: %s" % i
+                return " | non-entity: %s" % i
         
         # return empty string on no error
         return ""
-        
+
     # STRUCTURE END
 
     # ARITHMETIC OPERATIONS START
@@ -672,7 +992,7 @@ def evaluator(input):
             return quotient
         else:
             global_bypass = True
-            return "no division by zero"
+            return info["error"]["poststructure"][6]["code"]
 
     def add(augend, addend):
         augend = float(augend)
@@ -699,6 +1019,10 @@ def evaluator(input):
         difference = minuend - subtrahend
 
         return difference
+
+    # ARITHMETIC OPERATIONS END
+
+    # SPECIAL OPERATIONS START
 
     def monus(a, b):
         # monus; truncated minus; doz (difference or zero)
@@ -749,6 +1073,33 @@ def evaluator(input):
             # return error
             return 0
 
+    def factor(x):
+        if x == 0:
+            return 0
+        elif x > 0: # positive x 
+            factors = []
+            # add positives
+            for i in range(x, 0, -1):
+                if x / i % 1 == 0:
+                    factors.append(i)
+            # add negatives
+            for i in range(len(factors) - 1, -1, -1):
+                factors.append(-factors[i])
+        
+            return factors
+        
+        else: # negative x
+            factors = []
+            # add positives
+            for i in range(-x, 0, -1):
+                if x / i % 1 == 0:
+                    factors.append(i)
+            # add negatives
+            for i in range(len(factors) - 1, -1, -1):
+                factors.append(-factors[i])
+            
+            return factors
+
     def get_mean(arr):
         # returns the mean of a list of values
         return sum(arr) / len(arr)
@@ -757,9 +1108,10 @@ def evaluator(input):
         # returns area of a regular n-gon with n number of sides where eac side has length s
         return round(s**2*n*(1/np.tan(np.pi/n))/4, 12)
     
-    # ARITHMETIC OPERATIONS END
+    # SPECIAL OPERATIONS END
 
     # ALGEBRAIC OPERATIONS START
+
     def neg_var(v1, v2):
         # handles negativity for multiplication and division of variables v1 and v2
         s = operation["subtraction"]
@@ -3024,7 +3376,7 @@ def evaluator(input):
                                 # get term data
                                 val1 = arrVar[c - 2]
                                 val2 = arrVar[c + 2]
-                                var = operation["negation"]
+                                var = -var
 
                                 # apply simplification to problem structure
                                 arrVar = restructure([var, operation["addition"], '%s' % subtract(val1, val2)], c - 2, c + 2, arrVar)
@@ -3187,16 +3539,20 @@ def evaluator(input):
                 
                 x = num_cast(arrVar[ref + 1])
 
-                if x >= -1 and x <= 1:
+                if x < -1:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["asin"][0]["code"]
+                elif x > 1:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["asin"][1]["code"]
+                else:
                     y = np.arcsin(x)
 
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("asin", arrVar)
-                else:
-                    # invalid arguments
-                    global_bypass = True
-                    return "invalid argument = x, x < -1 or x > 1"
                 
             # perform all cosine functions
             ref = getIdx("cos", arrVar)
@@ -3222,16 +3578,20 @@ def evaluator(input):
                 log_process(arrVar[ref])
                 
                 x = num_cast(arrVar[ref + 1])
-                if x >= -1 and x <= 1:
+                if x < -1:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["acos"][0]["code"]
+                elif x > 1:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["acos"][1]["code"]
+                else:
                     y = np.arccos(x)
 
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("acos", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x < -1 or x > 1"
 
             # perform all tangent functions
             ref = getIdx("tan", arrVar)
@@ -3242,17 +3602,19 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                
-                if x % np.pi != 0 and x <= - 1 or x % np.pi != 0 and x >= 1:
+
+                if round(x % (np.pi/2), 13) == 0 and math.floor(x/(np.pi/2))%2 != 0:
+                    # no odd multiples of pi/2: is multiple and number of multiples is not even
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["tan"][0]["code"]
+
+                else:
                     y = np.tan(x)
 
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("tan", arrVar)
-                else:
-                    # invalid arguments
-                    global_bypass = True
-                    return "invalid argument = x, -1 < x < 1 or x mod π = 0"
                 
             # perform all arcus tangent functions
             ref = getIdx("atan", arrVar)
@@ -3280,16 +3642,15 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x != 0:
+                if x == 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["csc"][0]["code"]
+                else:
                     y = 1 / np.sin(x)
-
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("csc", arrVar)
-                else:
-                    # x = 0
-                    global_bypass = True
-                    return 'no zero argument'
                 
             # perform all arc cosecant functions
             ref = getIdx("acsc", arrVar)
@@ -3300,16 +3661,17 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x <= -1 or x >= 1:
-                    y = np.arcsin(1/x)
 
+                if x > -1 and x < 1:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["acsc"][0]["code"]
+
+                else:
+                    y = np.arcsin(1/x)
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("acsc", arrVar)
-                else:
-                    # -1 < x < 1
-                    global_bypass = True
-                    return "invalid argument = x, -1 < x < 1"
 
             # perform all secant functions
             ref = getIdx("sec", arrVar)
@@ -3320,16 +3682,20 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x > 0 and x < np.pi:
+                if x <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["sec"][0]["code"]
+                elif x >= np.pi:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["sec"][1]["code"]
+                
+                else:
                     y = 1 / np.cos(x)
-
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("sec", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0 or x >= π"
                 
             # perform all arc secant functions
             ref = getIdx("asec", arrVar)
@@ -3340,16 +3706,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x <= -1 or x >= 1:
+                if x > -1 and x < 1:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["asec"][0]["code"]
+                
+                else:
                     y = np.arccos(1/x)
-
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("asec", arrVar)
-                else:
-                    # -1 < x < 1
-                    global_bypass = True
-                    return 'invalid argument = x, -1 < x < 1'
 
             # perform all cotangent functions
             ref = getIdx("cot", arrVar)
@@ -3360,18 +3726,23 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x != 0 and x % np.pi != 0:
+                if x == 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["cot"][0]["code"]
+                elif round(x % np.pi, 13) == 0:
+                    # no integer multiples of pi
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["cot"][1]["code"]
+                
+                else:
                     y = 1 / np.tan(x)
-
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("cot", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x = 0 or x mod π = 0"
             
-            # perform all cotangent functions
+            # perform all arc cotangent functions
             ref = getIdx("acot", arrVar)
             itr = 0
             while itr < key_limit and ref is not None:
@@ -3380,16 +3751,15 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x != 0:
+                if x == 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["acot"][0]["code"]
+                else:
                     y = np.arctan(1/x)
-
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("acot", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return 'no zero argument'
 
             # hyperbolic functions
 
@@ -3447,16 +3817,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x >= 1:
-                    y = np.asinh(x)
+                if x < 1:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["acosh"][0]["code"]
 
+                else:
+                    y = np.asinh(x)
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("acosh", arrVar)
-                else:
-                    # invalid arguments
-                    global_bypass = True
-                    return "invalid argument = x, x < 1"
         
             # perform all hyperbolic tangent functions
             ref = getIdx("tanh", arrVar)
@@ -3482,16 +3852,16 @@ def evaluator(input):
                 log_process(arrVar[ref])
 
                 x = num_cast(arrVar[ref + 1])
-                if x <= -1 or x >= 1:
-                    y = np.asinh(x)
+                if x > -1 and x < 1:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["trigonomic"]["atanh"][0]["code"]
 
+                else:
+                    y = np.asinh(x)
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("atanh", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, -1 < x < 1"
 
         return arrVar
 
@@ -3531,16 +3901,16 @@ def evaluator(input):
                 leg1 = set_2[0]
                 leg2 = set_2[1]
                 
-                if leg1 > 0 and leg2 > 0:
-                    y = np.hypot(leg1, leg2)
+                if leg1 <= 0 or leg2 <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["hypot"][0]["code"]
                     
+                else:
+                    y = np.hypot(leg1, leg2)
                     # apply answer and search for new problem
                     arrVar = restructure(y, ref, ref + 1, arrVar)
                     ref = getIdx("hypot", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
 
             # perform all Heron's Formula functions
             ref = getIdx("heron", arrVar)
@@ -3570,7 +3940,12 @@ def evaluator(input):
                 b = set_2[1]
                 c = set_2[2]
                 
-                if a > 0 and b > 0 and c > 0:
+                if a <= 0 or b <= 0 or c <= 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["heron"][0]["code"]
+                    
+                else:
                     # semiperimeter
                     s = (a + b + c) / 2
                     
@@ -3580,10 +3955,6 @@ def evaluator(input):
                     # apply answer and search for new problem
                     arrVar = restructure(area, ref, ref + 1, arrVar)
                     ref = getIdx("heron", arrVar)
-                else:
-                    # invalid arguments
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
 
             # REGULAR n-GON
 
@@ -3613,16 +3984,16 @@ def evaluator(input):
                 n = set_2[0] # number of sides
                 s = set_2[1] # side length
                 
-                if n > 0 and s > 0:
+                if n <= 0 or s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["ngonas"][0]["code"]
+
+                else:
                     Area = ngon_area(n, s)
-                    
                     # apply answer and search for new problem
                     arrVar = restructure(Area, ref, ref + 1, arrVar)
                     ref = getIdx("ngonas", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all ngon area by radius length functions
             ref = getIdx("ngonar", arrVar)
@@ -3650,16 +4021,16 @@ def evaluator(input):
                 n = set_2[0] # number of sides
                 r = set_2[1] # radius length
                 
-                if n > 0 and r > 0:
-                    Area = round(r**2*n*np.sin(2*np.pi/n)/2, 12)
+                if n <= 0 or r <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["ngonar"][0]["code"]
                     
+                else:
+                    Area = round(r**2*n*np.sin(2*np.pi/n)/2, 12)
                     # apply answer and search for new problem
                     arrVar = restructure(Area, ref, ref + 1, arrVar)
                     ref = getIdx("ngonar", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all ngon area by apothem length functions
             ref = getIdx("ngonaa", arrVar)
@@ -3687,16 +4058,16 @@ def evaluator(input):
                 n = set_2[0] # number of sides
                 a = set_2[1] # apothem length
                 
-                if n > 0 and a > 0:
-                    Area = round(a**2*np.tan(np.pi/n), 12)
+                if n <= 0 or a <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["ngonaa"][0]["code"]
                     
+                else:
+                    Area = round(a**2*np.tan(np.pi/n), 12)
                     # apply answer and search for new problem
                     arrVar = restructure(Area, ref, ref + 1, arrVar)
                     ref = getIdx("ngonaa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
         
             # perform all ngon perimeter functions
             ref = getIdx("ngonperim", arrVar)
@@ -3724,16 +4095,16 @@ def evaluator(input):
                 n = set_2[0] # number of sides
                 s = set_2[1] # side length
                 
-                if n > 0 and s > 0:
-                    Perimeter = n*s # the perimeter of regular n-gons is a single multiplication
+                if n <= 0 or s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["ngonperim"][0]["code"]
                     
+                else:
+                    Perimeter = n*s # the perimeter of regular n-gons is a single multiplication
                     # apply answer and search for new problem
                     arrVar = restructure(Perimeter, ref, ref + 1, arrVar)
                     ref = getIdx("ngonperim", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # PLATONIC SOLIDS
 
@@ -3762,16 +4133,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = s**3/(2**.5*6)
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["tetrahedronv"][0]["code"]
                     
+                else:
+                    Volume = s**3/(2**.5*6)
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("tetrahedronv", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
                 
             # perform all tetrahedron surface area functions
             ref = getIdx("tetrahedronsa", arrVar)
@@ -3798,16 +4169,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = 3**.5*s**2
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["tetrahedronsa"][0]["code"]
                     
+                else:
+                    Volume = 3**.5*s**2
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("tetrahedronsa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all hexahedron volume functions
             ref = getIdx("hexahedronv", arrVar)
@@ -3834,16 +4205,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = s**3
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["hexahedronv"][0]["code"]
                     
+                else:
+                    Volume = s**3
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("hexahedronv", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
                 
             # perform all hexahedron surface area functions
             ref = getIdx("hexahedronsa", arrVar)
@@ -3870,16 +4241,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # sides length
                 
-                if s > 0:
-                    Surface_Area = s**2*6
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["hexahedronsa"][0]["code"]
                     
+                else:
+                    Surface_Area = s**2*6
                     # apply answer and search for new problem
                     arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
                     ref = getIdx("hexahedronsa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all octahedron volume functions
             ref = getIdx("octahedronv", arrVar)
@@ -3906,16 +4277,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = 2**.5*s**3/3
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["octahedronv"][0]["code"]
                     
+                else:
+                    Volume = 2**.5*s**3/3
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("octahedronv", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
                 
             # perform all octahedron surface area functions
             ref = getIdx("octahedronsa", arrVar)
@@ -3942,16 +4313,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # sides length
                 
-                if s > 0:
-                    Surface_Area = 3**.5*2*s**2
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["octahedronsa"][0]["code"]
                     
+                else:
+                    Surface_Area = 3**.5*2*s**2
                     # apply answer and search for new problem
                     arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
                     ref = getIdx("octahedronsa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all dodecahedron volume functions
             ref = getIdx("dodecahedronv", arrVar)
@@ -3978,16 +4349,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = s**3*(5**.5*7+15)/4
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["dodecahedronv"][0]["code"]
                     
+                else:
+                    Volume = s**3*(5**.5*7+15)/4
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("dodecahedronv", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
                 
             # perform all dodecahedronsa surface area functions
             ref = getIdx("dodecahedronsa", arrVar)
@@ -4014,16 +4385,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # sides length
                 
-                if s > 0:
-                    Surface_Area = (5**.5*10+25)**.5*3*s**2
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["dodecahedronsa"][0]["code"]
                     
+                else:
+                    Surface_Area = (5**.5*10+25)**.5*3*s**2
                     # apply answer and search for new problem
                     arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
                     ref = getIdx("dodecahedronsa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
             
             # perform all icosahedron volume functions
             ref = getIdx("icosahedronv", arrVar)
@@ -4050,16 +4421,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # side length
                 
-                if s > 0:
-                    Volume = s**3*(5**.5+3)*5/12
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["icosahedronv"][0]["code"]
                     
+                else:
+                    Volume = s**3*(5**.5+3)*5/12
                     # apply answer and search for new problem
                     arrVar = restructure(Volume, ref, ref + 1, arrVar)
                     ref = getIdx("icosahedronv", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
         
             # perform all icosahedron surface area functions
             ref = getIdx("icosahedronsa", arrVar)
@@ -4086,16 +4457,16 @@ def evaluator(input):
                 # perform calculation using numeral set
                 s = set_2[0] # sides length
                 
-                if s > 0:
-                    Surface_Area = 3**.5*5*s**2
+                if s <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["icosahedronsa"][0]["code"]
                     
+                else:
+                    Surface_Area = 3**.5*5*s**2
                     # apply answer and search for new problem
                     arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
                     ref = getIdx("icosahedronsa", arrVar)
-                else:
-                    # invalid argument
-                    global_bypass = True
-                    return "invalid argument = x, x <= 0"
 
         return arrVar
 
@@ -4117,8 +4488,9 @@ def evaluator(input):
 
                 x = num_cast(arrVar[ref + 1])
                 if x <= 0:
+                    # invalid arguments
                     global_bypass = True
-                    return "invalid argument = x, x <= 0"
+                    return info["error"]["key_function"]["combinatoric"]["fact"][0]["code"]
                 
                 y = factorial(x)
 
@@ -4151,23 +4523,28 @@ def evaluator(input):
                 # perform calculation using numeral set
                 n = set_2[0] # number of objects
                 r = set_2[1] # number of objects per permutation
+
+                if n <= 0 or r <= 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["perm"][0]["code"]
+                elif n < r:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["perm"][1]["code"]
+
                 if n == r:
                     perm  = 1
                     # apply answer and search for new problem
                     arrVar = restructure(perm, ref, ref + 1, arrVar)
                     ref = getIdx("perm", arrVar)
 
-                elif n > 0 and r > 0 and n > r:
+                else:
                     perm = factorial(n) / factorial(n - r)
                     
                     # apply answer and search for new problem
                     arrVar = restructure(perm, ref, ref + 1, arrVar)
                     ref = getIdx("perm", arrVar)
-
-                else:
-                    # n cannot be less than r
-                    global_bypass = True
-                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
             
             # perform all Permutation with Repetition functions
             ref = getIdx("permr", arrVar)
@@ -4194,17 +4571,21 @@ def evaluator(input):
                 # perform calculation using numeral set
                 n = set_2[0] # number of objects
                 r = set_2[1] # number of objects per permutation
-                if n > 0 and r > 0 and n >= r:
+
+                if n <= 0 or r <= 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["permr"][0]["code"]
+                elif n < r:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["permr"][1]["code"]
+                
+                else:
                     perm = n**r
-                    
                     # apply answer and search for new problem
                     arrVar = restructure(perm, ref, ref + 1, arrVar)
                     ref = getIdx("permr", arrVar)
-
-                else:
-                    # n cannot be less than r
-                    global_bypass = True
-                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
 
             # perform all Combination functions
             ref = getIdx("comb", arrVar)
@@ -4232,15 +4613,20 @@ def evaluator(input):
                 n = set_2[0]
                 r = set_2[1]
 
-                if n > 0 and r > 0 and n > r:
+                if n <= 0 or r <= 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["comb"][0]["code"]
+                elif n < r:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["comb"][1]["code"]
+                
+                else:
                     comb = factorial(n) / (factorial(r) * factorial(n - r))
                     # apply answer and search for new problem
                     arrVar = restructure(comb, ref, ref + 1, arrVar)
                     ref = getIdx("comb", arrVar)
-                else:
-                    # n cannot be greater than r
-                    global_bypass = True
-                    return "invalid arguments: n <= 0 or r <= 0 or n <= r"
             
             # perform all Combination with Repetition functions
             ref = getIdx("combr", arrVar)
@@ -4268,15 +4654,20 @@ def evaluator(input):
                 n = set_2[0]
                 r = set_2[1]
 
-                if n > 0 and r > 0 and n >= r:
+                if n <= 0 or r <= 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["combr"][0]["code"]
+                elif n < r:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["combr"][1]["code"]
+                
+                else:
                     comb = factorial(n + r - 1) / (r * factorial(n - 1))
                     # apply answer and search for new problem
                     arrVar = restructure(comb, ref, ref + 1, arrVar)
                     ref = getIdx("combr", arrVar)
-                else:
-                    # n cannot be greater than r
-                    global_bypass = True
-                    return "invalid arguments: n <= 0 or r <= 0 or n < r"
 
             # perform all Composition functions
             ref = getIdx("comp", arrVar)
@@ -4288,16 +4679,208 @@ def evaluator(input):
 
                 x = num_cast(arrVar[ref + 1])
 
-                if x > 0:
+                if x < 0:
+                    # invalid arguments
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["comp"][0]["code"]
+                
+                else:
                     comp = 2**(x-1)
                     # apply answer and search for new problem
                     arrVar = restructure(comp, ref, ref + 1, arrVar)
                     ref = getIdx("comp", arrVar)
-                else:
-                    # n cannot be greater than r
+            
+            # perform all Multiples in Interval functions
+            ref = getIdx("multiples", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = float(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                n1 = set_2[0] # end of interval 1
+                n2 = set_2[1] # end of inerval 2
+                x = set_2[2] # multiples of this number
+
+                if n1 == n2:
+                    # minimum value in interval cannot be less than or equal to x
                     global_bypass = True
-                    return "invalid argument = x, x <= 0"
-        
+                    return info["error"]["key_function"]["combinatoric"]["multiples"][0]["code"]
+                elif x <= 1:
+                    # x cannot be less than or equal to 1
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["multiples"][1]["code"]
+                else:
+                    # determine max an min
+                    minimum = min(n1, n2)
+                    maximum = max(n1, n2)
+
+                    if maximum <= x:
+                        # maximum value in interval cannot be less than or equal to x
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["multiples"][2]["code"]
+                    else:
+                        multiples = math.floor((maximum-minimum)/x)
+
+                        # apply answer and search for new problem
+                        arrVar = restructure(multiples, ref, ref + 1, arrVar)
+                        ref = getIdx("multiples", arrVar)
+
+            # perform all Greatest Common Factor functions
+            ref = getIdx("gcf", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return info["error"]["key_function"]["combinatoric"]["gcf"][0]["code"]
+                    else:
+                        x = num_cast(section(i))
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return info["error"]["key_function"]["combinatoric"]["gcf"][0]["code"]
+
+                # perform calculation using numeral set
+                gcf = 0
+                val1 = set_2[0]
+                val2 = set_2[1]
+                if val1 != val2:
+                    facts_1 = []
+                    facts_2 = []
+                    
+                    # account for limiting factor
+                    if val1 > val2:
+                        # filter extra factors
+                        facts = factor(val1)
+                        for i in facts:
+                            if i < val2:
+                                facts_1.append(i)
+                        facts_2 = factor(val2)
+                    else:
+                        # filter extra factors
+                        facts = factor(val2)
+                        for i in facts:
+                            if i < val1:
+                                facts_2.append(i)
+                        facts_1 = factor(val1)
+
+                    log_process(facts_1)
+                    log_process(facts_2)
+
+                    # search for common factors
+                    for i in facts_1:
+                        for j in facts_2:
+                            if i == j:
+                                gcf = j
+                                break
+                        if gcf != 0:
+                            break
+                else:
+                    gcf = set_2[0]
+                
+                # apply answer and search for new problem
+                arrVar = restructure(gcf, ref, ref + 1, arrVar)
+                ref = getIdx("gcf", arrVar)
+            
+            # perform all Least Common Multiple functions
+            ref = getIdx("lcm", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return info["error"]["key_function"]["combinatoric"]["lcm"][0]["code"]
+                    else:
+                        x = num_cast(section(i))
+                        if x > 0:
+                            set_2.append(x)
+                        else:
+                            # invalid argument
+                            global_bypass = True
+                            return info["error"]["key_function"]["combinatoric"]["lcm"][0]["code"]
+
+                # perform calculation using numeral set
+                lcm = 0
+                multiples = 100
+                mult_1 = [set_2[0]]
+                mult_2 = [set_2[1]]
+                same = False
+                x = 0
+                while x < multiples and same != True:
+                    x = x + 1
+
+                    # search for common multiples
+                    for i in mult_1:
+                        for j in mult_2:
+                            if i == j:
+                                same = True
+                                lcm = i
+                                break
+                        if same == True:
+                            break
+
+                    # if no multiples were found, add next multiple to each list, and test again
+                    if same != True:
+                        mult_1.append(mult_1[0] * x)
+                        mult_2.append(mult_2[0] * x)
+
+                if x == multiples:
+                    # error no common multiple
+                    global_bypass = True
+                    return info["error"]["key_function"]["combinatoric"]["lcm"][1]["code"]
+
+                # apply answer and search for new problem
+                arrVar = restructure(lcm, ref, ref + 1, arrVar)
+                ref = getIdx("lcm", arrVar)
+            
         return arrVar
 
     def statistical(arr):
@@ -4395,7 +4978,8 @@ def evaluator(input):
                         else:
                             # invalid argument
                             global_bypass = True
-                            return "no zero argument"
+                            return info["error"]["key_function"]["statistical"]["meanh"][0]["code"]
+                        
                     else:
                         x = num_cast(section(i))
                         if x != False and x != 0:
@@ -4403,7 +4987,7 @@ def evaluator(input):
                         else:
                             # invalid argument
                             global_bypass = True
-                            return "no zero argument"
+                            return info["error"]["key_function"]["statistical"]["meanh"][0]["code"]
 
                 # perform calculation using numeral set
                 mean = len(set_2) / sum(set_2)
@@ -4537,147 +5121,6 @@ def evaluator(input):
                 arrVar = restructure(root, ref, ref + 1, arrVar)
                 ref = getIdx("rms", arrVar)
             
-            # perform all Greatest Common Factor functions
-            ref = getIdx("gcf", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return "invalid argument = x, x <= 0"
-                    else:
-                        x = num_cast(section(i))
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return "invalid argument = x, x <= 0"
-
-                # perform calculation using numeral set
-                gcf = 0
-                val1 = set_2[0]
-                val2 = set_2[1]
-                if val1 != val2:
-                    facts_1 = []
-                    facts_2 = []
-
-                    def factor(x):
-                        factors = []
-                        for i in range(x, 0, -1):
-                            if x / i % 1 == 0:
-                                factors.append(i)
-                        return factors
-                    
-                    # account for limiting factor
-                    if val1 > val2:
-                        # filter extra factors
-                        facts = factor(val1)
-                        for i in facts:
-                            if i < val2:
-                                facts_1.append(i)
-                        facts_2 = factor(val2)
-                    else:
-                        # filter extra factors
-                        facts = factor(val2)
-                        for i in facts:
-                            if i < val1:
-                                facts_2.append(i)
-                        facts_1 = factor(val1)
-
-                    log_process(facts_1)
-                    log_process(facts_2)
-
-                    # search for common factors
-                    for i in facts_1:
-                        for j in facts_2:
-                            if i == j:
-                                gcf = j
-                                break
-                        if gcf != 0:
-                            break
-                else:
-                    gcf = set_2[0]
-                
-                # apply answer and search for new problem
-                arrVar = restructure(gcf, ref, ref + 1, arrVar)
-                ref = getIdx("gcf", arrVar)
-            
-            # perform all Least Common Multiple functions
-            ref = getIdx("lcm", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return "invalid argument = x, x <= 0"
-                    else:
-                        x = num_cast(section(i))
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return "invalid argument = x, x <= 0"
-
-                # perform calculation using numeral set
-                lcm = 0
-                mult_1 = [set_2[0]]
-                mult_2 = [set_2[1]]
-                same = False
-                x = 0
-                while x < 100 and same != True:
-                    x = x + 1
-
-                    # search for common multiples
-                    for i in mult_1:
-                        for j in mult_2:
-                            if i == j:
-                                same = True
-                                lcm = i
-                                break
-                        if same == True:
-                            break
-
-                    # if no multiples were found, add next multiple to each list, and test again
-                    if same != True:
-                        mult_1.append(mult_1[0] * x)
-                        mult_2.append(mult_2[0] * x)
-
-                # apply answer and search for new problem
-                arrVar = restructure(lcm, ref, ref + 1, arrVar)
-                ref = getIdx("lcm", arrVar)
-            
             # perform all Logarithm functions
             ref = getIdx("log", arrVar)
             itr = 0
@@ -4700,7 +5143,7 @@ def evaluator(input):
                         else:
                             # invalid argument
                             global_bypass = True
-                            return "invalid argument = x, x <= 0"
+                            return info["error"]["key_function"]["statistical"]["log"][0]["code"]
                     else:
                         x = num_cast(section(i))
                         if x > 0:
@@ -4708,17 +5151,11 @@ def evaluator(input):
                         else:
                             # invalid argument
                             global_bypass = True
-                            return "invalid argument = x, x <= 0"
+                            return info["error"]["key_function"]["statistical"]["log"][0]["code"]
                 
                 x = set_2[0]
                 b = set_2[1]
-
-                if x > 0:
-                    y = np.emath.logn(b, x)
-                else:
-                    # complex result
-                    global_bypass = True
-                    y = 0
+                y = np.emath.logn(b, x)
 
                 # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
@@ -4732,14 +5169,20 @@ def evaluator(input):
                 # Log keyword
                 log_process(arrVar[ref])
 
-                x = num_cast(arrVar[ref + 1])
+                arg = arrVar[ref + 1]
+                x = 0
 
-                if x > 0:
-                    y = np.log(x)
-                else:
-                    # complex result
+                if isinstance(arg, list):
+                    x = num_cast(section(arg))
+                elif isinstance(arg, str):
+                    x = num_cast(arg)
+                
+                if x <= 0:
+                    # invalid argument
                     global_bypass = True
-                    return "invalid argument = x, x <= 0"
+                    return info["error"]["key_function"]["statistical"]["ln"][0]["code"]
+                
+                y = np.log(x)
 
                 # apply answer and search for new problem
                 arrVar = restructure(y, ref, ref + 1, arrVar)
@@ -4770,23 +5213,30 @@ def evaluator(input):
                 args = arrVar[ref + 1]
 
                 # handle power
-                if not isinstance(args[1], list):
+                if isinstance(args[1], str):
                     # convert then append power value
                     x = num_cast(args[1])
                     if x == False:
+                        # invalid arguments
                         global_bypass = True
-                        return "invalid exponent argument: no variables"
-                    args[1] = x
-                else:
+                        return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
+                    else:
+                        args[1] = x
+
+                elif isinstance(args[1], list):
                     # simplify power expression then append power value
-                    x = section(args[1])
-                    # convert power expression product to integer
-                    args[1] = int(x)
+                    x = num_cast(section(args[1]))
+                    if x == False:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
+                    else:
+                        args[1] = x
 
                 # handle base
                 if not isinstance(args[0], list) and has_var(args[0]):
                     global_bypass = True
-                    return "invalid base argument: must be algebraic expression"
+                    return info["error"]["key_function"]["algebraic"]["expon"][1]["code"]
 
                 # perform algebraic operation using numeral set
                 base = simplify(args[0]) # base expression
@@ -4848,7 +5298,7 @@ def evaluator(input):
 
                 if nomials_len == 0:
                     global_bypass == True
-                    return "expand key function requires at least 1 argument"
+                    return info["error"]["key_function"]["algebraic"]["expand"][0]["code"]
 
                 elif nomials_len == 1:
                     # cannot expand a single nomial or no nomial
@@ -4976,7 +5426,7 @@ def evaluator(input):
         return arrVar
     
     # KEY FUNCTIONS END
-
+    
     def calculate(arr):
         nonlocal global_bypass
         arrVar = arr
@@ -5603,568 +6053,616 @@ def evaluator(input):
                     # update arrVar with calculations and simplifications
                     arrVar = restructure(sect, start, end - 1, arrVar)
             
-        
-        # if paren_limit was not reached and nested expressions are solved
-        if global_bypass == False and thresh < paren_limit:
+        if thresh == paren_limit:
+            # paren lmit reached
+            return "limit reached: parenthesis"
+        else:
+            # if nested expressions are solved
+            if global_bypass == False:
 
-            # perform remaining calculations on un-nested expression
-            arrVar = calculate(arrVar)
+                # perform remaining calculations on un-nested expression
+                arrVar = calculate(arrVar)
         
         # return result
         return arrVar
-
-    def evaluate(str):
-        # top level function runs high level functions
-        # evaluate > section > calculate > key_functions + arithmetic + simplify
-        nonlocal valid_chars
-
-        # TEST0: character validation
-        valid = True
-        character = ""
-        for char in str:
-            try:
-                int(char)
-            except:
-                # not a number
-                o = False
-                for c in valid_chars:
-                    if char == c:
-                        o = True
-                        break
-                if o == False:
-                    # not a non-numeral character
-                    valid = False
-                    character = char
-                    break
-        
-        if valid == False:
-            # invalid character => terminate program
-            return 'Invalid character: %s' % character
-        else:
-            # change first log
-            if use_logs == "1":
-                process_log["0"] = "Process Log Start"
-
-            # valid characters => proceed to structuring
-            log_process("Generating Problem Structure from Problem String")
-            log_process("Structuring multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets")
-            # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
-            structure = []
-            digits = ""
-            negative = False
-            for i in range(0, len(str)):
-                if str[i] == " ":
-                    continue
-                else:
-                    try:
-                        #  decimals or variables while negative is true or numeral strings
-                        str[i] == "." or negative == True and var_test(str[i]) == True or int(str[i])
-                    except:
-                        # handle negatives
-                        if str[i] == "-" and str[i - 1] == "(":
-                            structure.pop()
-                            digits = "%s" % str[i]
-                            negative = True
-                        elif str[i] == ")" and negative == True:
-                            if len(digits) > 0:
-                                structure.append(digits)
-                                digits = ""
-                            negative = False
-                        else:
-                            if len(digits) > 0:
-                                structure.append(digits)
-                            digits = ""
-                            structure.append(str[i])
-                    else:
-                        # add to buffer if try block is true
-                        digits = digits + "%s" % str[i]
-                    finally:
-                        # test after everything in each iteration
-                        if (i == len(str) - 1 and len(digits) > 0):
+    
+    def structure_problem(str):
+        # I. structure problem string into problem structure
+        # II. Identify program entities
+        # III. run post structure validation on problem structure
+        nonlocal global_bypass
+        log_process("Generating Problem Structure from Problem String")
+        log_process("Structuring multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets")
+        # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
+        structure = []
+        digits = ""
+        negative = False
+        for i in range(0, len(str)):
+            if str[i] == " ":
+                continue
+            else:
+                try:
+                    #  decimals or variables while negative is true or numeral strings
+                    str[i] == "." or negative == True and var_test(str[i]) == True or int(str[i])
+                except:
+                    # handle negatives
+                    if str[i] == "-" and str[i - 1] == "(":
+                        structure.pop()
+                        digits = "%s" % str[i]
+                        negative = True
+                    elif str[i] == ")" and negative == True:
+                        if len(digits) > 0:
                             structure.append(digits)
-            
-            log_process(structure)
-            log_process("Structuring Constants")
+                            digits = ""
+                        negative = False
+                    else:
+                        if len(digits) > 0:
+                            structure.append(digits)
+                        digits = ""
+                        structure.append(str[i])
+                else:
+                    # add to buffer if try block is true
+                    digits = digits + "%s" % str[i]
+                finally:
+                    # test after everything in each iteration
+                    if (i == len(str) - 1 and len(digits) > 0):
+                        structure.append(digits)
+        
+        log_process(structure)
+        log_process("Structuring Constants")
 
-            # structure pi
+        # structure pi
+        ref = get_word("pi", structure)
+        itr = 0
+        while itr < const_limit and ref is not None:
+            itr = itr + 1
+            structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
             ref = get_word("pi", structure)
-            itr = 0
-            while itr < const_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("pi", structure)
-            
-            # structure tau
+        
+        # structure tau
+        ref = get_word("tau", structure)
+        itr = 0
+        while itr < const_limit and ref is not None:
+            itr = itr + 1
+            structure = restructure(np.pi/2, ref["first"], ref["last"] - 1, structure)
             ref = get_word("tau", structure)
-            itr = 0
-            while itr < const_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.pi/2, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("tau", structure)
-            
-            # structure phi
+        
+        # structure phi
+        ref = get_word("phi", structure)
+        itr = 0
+        while itr < const_limit and ref is not None:
+            itr = itr + 1
+            structure = restructure(1.61803398874989484820, ref["first"], ref["last"] - 1, structure)
             ref = get_word("phi", structure)
-            itr = 0
-            while itr < const_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(1.61803398874989484820, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("phi", structure)
-            
-            # structure euler's number
+        
+        # structure euler's number
+        ref = get_word("euler", structure)
+        itr = 0
+        while itr < const_limit and ref is not None:
+            itr = itr + 1
+            structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
             ref = get_word("euler", structure)
-            itr = 0
-            while itr < const_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("euler", structure)
-            
-            # structure euler's constant (gamma)
+        
+        # structure euler's constant (gamma)
+        ref = get_word("gamma", structure)
+        itr = 0
+        while itr < const_limit and ref is not None:
+            itr = itr + 1
+            structure = restructure(np.euler_gamma, ref["first"], ref["last"] - 1, structure)
             ref = get_word("gamma", structure)
-            itr = 0
-            while itr < const_limit and ref is not None:
-                itr = itr + 1
-                structure = restructure(np.euler_gamma, ref["first"], ref["last"] - 1, structure)
-                ref = get_word("gamma", structure)
 
-            # structure keywords
-            log_process("Structuring Keywords")
-            
-            # structure key functions
-            for module in range(0, len(info["key_functions"])):
-                for i in range(0, len(info["key_functions"][module])):
-                    structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
+        # structure keywords
+        log_process("Structuring Keywords")
+        
+        # structure key functions
+        for module in range(0, len(info["key_functions"])):
+            for i in range(0, len(info["key_functions"][module])):
+                structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
 
-            log_process(key_modules)
+        log_process(key_modules)
 
-            # Identify program entities in problem structure
-            err = identify_entities(structure)
-            if len(err) > 0:
-                return err
+        # Identify program entities in problem structure
+        err = identify_entities(structure)
+        if len(err) > 0:
+            global_bypass = True
+            return info["error"]["poststructure"][0]["code"] + err
+        
+        # POST STRUCTURE VALIDATION
+        nonlocal is_key
+        nonlocal is_brack
+        nonlocal is_paren
 
-            # validate problem structure
-            nonlocal is_key
-            nonlocal is_brack
-            nonlocal is_paren
+        # validation variables
+        test1 = True
+        test2 = True
+        test3 = True
+        test4 = True
+        test5 = True
+        test6 = True
+        test7 = True
+        key_error = ""
+        structure_length = len(structure)
 
-            # validation variables
-            test1 = True
-            test2 = True
-            test3 = True
-            test4 = True
-            test5 = True
-            test6 = True
-            test7 = True
-            key_error = ""
-            structure_length = len(structure)
+        # TEST6: Zero Division
 
-            # TEST6: Zero Division
+        for i in range(0, structure_length):
+            if i + 1 < structure_length and structure[i] == operation["division"] and structure[i + 1] == "0":
+                test6 = False
+                break
+
+        # TEST5: consecutive operations / TEST7: no operands (number, variable, expression, set) for operation
+
+        if test6 == True:
+
+            # test ends of structure for operation
+            s_start = structure[0]
+            s_end = structure[structure_length - 1]
+            if op_test(s_end) and s_end != operation["close_parenthesis"] and s_end != operation["close_bracket"]:
+                # operation at end of structure
+                test7 = False
+            elif op_test(s_start) and s_start != operation["radication"] and s_start != operation["open_parenthesis"] and s_start != operation["open_bracket"]:
+                # operation at start of structure
+                test7 = False
+            if test7 == True:
+                for i in range(0, structure_length):
+                    # each index in problem structure
+                    if i + 1 < structure_length:
+                        s1 = structure[i]
+                        s2 = structure[i + 1]
+                        first = op_test(s1) and s1 != operation["open_parenthesis"] and s1 != operation["close_parenthesis"] and s1 != operation["open_bracket"] and s1 != operation["close_bracket"]
+                        second = op_test(s2) and s2 != operation["open_parenthesis"] and s2 != operation["close_parenthesis"] and s2 != operation["open_bracket"] and s2 != operation["close_bracket"]
+                        
+                        if s2 != operation["radication"]:
+                            if first == True and second == True:
+                                # consecutive operations
+                                test5 = False
+                                break
+                            elif first == True and s1 != operation["radication"] and i - 1 > -1:
+                                s0 = structure[i - 1]
+                                if isinstance(num_cast(s0), bool) and var_test(s0) == False and s0 != operation["close_parenthesis"] and s0 != operation["close_bracket"] or isinstance(num_cast(s2), bool) and var_test(s2) == False and s2 != operation["open_parenthesis"] and s2 != operation["open_bracket"]:
+                                    # missing operands (number, variable, expression, set) for operation
+                                    test7 = False
+                                    break
+        
+        # TEST1: valid parenthesis
+        
+        if is_paren == True and test6 == True and test5 == True:
+
+            nest_lvl = 0
+            parens = []
 
             for i in range(0, structure_length):
-                if i + 1 < structure_length and structure[i] == operation["division"] and structure[i + 1] == "0":
-                    test6 = False
-                    break
+                if structure[i] == operation["open_parenthesis"]:
+                    nest_lvl += 1
+                    parens.append(structure[i])
+                elif structure[i] == operation["close_parenthesis"]:
+                    nest_lvl -= 1
+                    parens.append(structure[i])
 
-            # TEST5: consecutive operations / TEST7: no operands (number, variable, expression, set) for operation
-
-            if test6 == True:
-
-                # test ends of structure for operation
-                s_start = structure[0]
-                s_end = structure[structure_length - 1]
-                if op_test(s_end) and s_end != operation["close_parenthesis"] and s_end != operation["close_bracket"]:
-                    # operation at end of structure
-                    test7 = False
-                elif op_test(s_start) and s_start != operation["radication"] and s_start != operation["open_parenthesis"] and s_start != operation["open_bracket"]:
-                    # operation at start of structure
-                    test7 = False
-                if test7 == True:
-                    for i in range(0, structure_length):
-                        # each index in problem structure
-                        if i + 1 < structure_length:
-                            s1 = structure[i]
-                            s2 = structure[i + 1]
-                            first = op_test(s1) and s1 != operation["open_parenthesis"] and s1 != operation["close_parenthesis"] and s1 != operation["open_bracket"] and s1 != operation["close_bracket"]
-                            second = op_test(s2) and s2 != operation["open_parenthesis"] and s2 != operation["close_parenthesis"] and s2 != operation["open_bracket"] and s2 != operation["close_bracket"]
-                            
-                            if s2 != operation["radication"]:
-                                if first == True and second == True:
-                                    # consecutive operations
-                                    test5 = False
-                                    break
-                                elif first == True and s1 != operation["radication"] and i - 1 > -1:
-                                    s0 = structure[i - 1]
-                                    if isinstance(num_cast(s0), bool) and var_test(s0) == False and s0 != operation["close_parenthesis"] and s0 != operation["close_bracket"] or isinstance(num_cast(s2), bool) and var_test(s2) == False and s2 != operation["open_parenthesis"] and s2 != operation["open_bracket"]:
-                                        # missing operands (number, variable, expression, set) for operation
-                                        test7 = False
-                                        break
-            
-            # TEST1: valid parenthesis
-            
-            if is_paren == True and test6 == True and test5 == True:
-
-                nest_lvl = 0
-                parens = []
-
+            if nest_lvl != 0:
+                # unequal number of open and closing characters
+                test1 = False
+            elif parens[len(parens) - 1] == operation["open_parenthesis"]:
+                # no opening character on end
+                test1 = False
+            elif parens[0] == operation["close_parenthesis"]:
+                # no closing character on start
+                test1 = False
+            else:
+                # test for pairs (account for nesting)
                 for i in range(0, structure_length):
                     if structure[i] == operation["open_parenthesis"]:
-                        nest_lvl += 1
-                        parens.append(structure[i])
-                    elif structure[i] == operation["close_parenthesis"]:
-                        nest_lvl -= 1
-                        parens.append(structure[i])
+                        x = 0
+                        for j in range(i, structure_length):
+                            if structure[j] == operation["close_parenthesis"]:
+                                x -= 1
+                            elif structure[j] == operation["open_parenthesis"]:
+                                x += 1
+                            if x == 0:
+                                break
+                        if x != 0:
+                            test1 = False
+        
+        # TEST2: valid brackets
 
-                if nest_lvl != 0:
-                    # unequal number of open and closing characters
-                    test1 = False
-                elif parens[len(parens) - 1] == operation["open_parenthesis"]:
-                    # no opening character on end
-                    test1 = False
-                elif parens[0] == operation["close_parenthesis"]:
-                    # no closing character on start
-                    test1 = False
-                else:
-                    # test for pairs (account for nesting)
-                    for i in range(0, structure_length):
-                        if structure[i] == operation["open_parenthesis"]:
-                            x = 0
-                            for j in range(i, structure_length):
-                                if structure[j] == operation["close_parenthesis"]:
-                                    x -= 1
-                                elif structure[j] == operation["open_parenthesis"]:
-                                    x += 1
-                                if x == 0:
-                                    break
-                            if x != 0:
-                                test1 = False
-            
-            # TEST2: valid brackets
+        if is_brack == True and test6 == True and test5 == True and test1 == True:
+                
+            nest_lvl = 0
+            bracks = []
 
-            if is_brack == True and test6 == True and test5 == True and test1 == True:
-                    
-                nest_lvl = 0
-                bracks = []
+            for i in range(0, structure_length):
+                if structure[i] == operation["open_bracket"]:
+                    nest_lvl += 1
+                    bracks.append(structure[i])
+                elif structure[i] == operation["close_bracket"]:
+                    nest_lvl -= 1
+                    bracks.append(structure[i])
 
+            if nest_lvl != 0:
+                # unequal number of open and closing characters
+                test2 = False
+            elif bracks[len(bracks) - 1] == operation["open_bracket"]:
+                # no opening character on end
+                test2 = False
+            elif bracks[0] == operation["close_bracket"]:
+                # no closing character on start
+                test2 = False
+            else:
+                # test for pairs (account for nesting)
                 for i in range(0, structure_length):
                     if structure[i] == operation["open_bracket"]:
-                        nest_lvl += 1
-                        bracks.append(structure[i])
-                    elif structure[i] == operation["close_bracket"]:
-                        nest_lvl -= 1
-                        bracks.append(structure[i])
+                        x = 0
+                        for j in range(i, structure_length):
+                            if structure[j] == operation["close_bracket"]:
+                                x -= 1
+                            elif structure[j] == operation["open_bracket"]:
+                                x += 1
+                            if x == 0:
+                                break
+                        if x != 0:
+                            test2 = False
+            
+        # TEST3: consecutive variables
+        if test6 == True and test5 == True and test1 == True and test2 == True:
+            for i in range(0, structure_length):
+                if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
+                    test3 = False
+                    break
+        
+        # TEST4: valid key function syntax
 
-                if nest_lvl != 0:
-                    # unequal number of open and closing characters
-                    test2 = False
-                elif bracks[len(bracks) - 1] == operation["open_bracket"]:
-                    # no opening character on end
-                    test2 = False
-                elif bracks[0] == operation["close_bracket"]:
-                    # no closing character on start
-                    test2 = False
-                else:
-                    # test for pairs (account for nesting)
-                    for i in range(0, structure_length):
-                        if structure[i] == operation["open_bracket"]:
-                            x = 0
-                            for j in range(i, structure_length):
-                                if structure[j] == operation["close_bracket"]:
-                                    x -= 1
-                                elif structure[j] == operation["open_bracket"]:
-                                    x += 1
-                                if x == 0:
-                                    break
-                            if x != 0:
-                                test2 = False
-                
-            # TEST3: consecutive variables
-            if test6 == True and test5 == True and test1 == True and test2 == True:
+        if len(is_key) > 0 and test6 == True and test5 == True and test1 == True and test2 == True and test3 == True:
+            if is_paren == False and is_brack == False:
+                # is key but no parenthesis and no brackets
+                test4 = False
+                key_error = 'key requires arguments wrapped in parenthesis or brackets'
+            else:
+                # is key and parens or is key and brackets => test index
                 for i in range(0, structure_length):
-                    if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
-                        test3 = False
+                    if key_test(structure[i]):
+                        # key at i
+                        key = structure[i]
+                        if i + 3 >= structure_length:
+                            # key passed last valid index to also have arguments
+                            test4 = False
+                            key_error = '%s key requires an argument' % key
+                            break
+                        elif i + 1 < structure_length:
+                            after_key = structure[i + 1]
+
+                            # no parens or bracks
+                            if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
+                                test4 = False
+                                key_error = '%s key requires argument to be wrapped in parenthesis or brackets' % key
+                                break
+                            
+                            # key uses correct parens or bracks
+                            else:
+                                # scan for key in info structure (ommitting algebraic module)
+                                for module in range(0, len(info["key_functions"]) - 1):
+                                    # use key modules to determine which module(s) to scan
+                                    if key_modules[module]["use"] == True:
+                                        # scan module
+                                        for j in range(0, len(info["key_functions"][module])):
+                                            if key == info["key_functions"][module][j]["key"]:
+                                                # key discovered
+                                                syntax = info["key_functions"][module][j]["syntax"]
+                                                open_char = syntax[len(key):][0]
+
+                                                if after_key != open_char:
+                                                    test4 = False
+                                                    key_error = '%s key requires %s not %s' % (key, open_char, after_key)
+                                                    break
+
+                                                elif open_char == operation["open_parenthesis"]:
+
+                                                    # get argument section of problem structure
+                                                    nest_lvl = 0
+                                                    end_idx = structure_length
+
+                                                    for c in range(i + 1, structure_length):
+                                                        if structure[c] == operation["open_parenthesis"]:
+                                                            nest_lvl += 1
+                                                        elif structure[c] == operation["close_parenthesis"]:
+                                                            nest_lvl -= 1
+                                                            if nest_lvl == 0:
+                                                                end_idx = c
+                                                                break
+                                                    
+                                                    arguments = structure[i + 1:end_idx]
+                                                    
+                                                    # remove parenthesis from argument section
+                                                    # arguments.pop(0)
+                                                    # arguments.pop(len(arguments) - 1)
+
+                                                    # test for no argument
+                                                    if len(arguments) == 0:
+                                                        test4 = False
+                                                        key_error = '%s key requires an argument' % key
+
+                                                    # test argument for variable + single argument
+                                                    for c in arguments:
+                                                        if var_test(c):
+                                                            test4 = False
+                                                            key_error = 'variables detected in argument for %s key' % key
+                                                            break
+                                                        elif c == ",":
+                                                            # parenthesis cannot contain multiple arguments
+                                                            test4 = False
+                                                            key_error = '%s key only accepts a single argument' % key
+                                                            break
+
+                                                elif open_char == operation["open_bracket"]:
+
+                                                    # get argument section of problem structure
+                                                    nest_lvl = 0
+                                                    end_idx = structure_length
+
+                                                    for c in range(i + 1, structure_length):
+                                                        if structure[c] == operation["open_bracket"]:
+                                                            nest_lvl += 1
+                                                        elif structure[c] == operation["close_bracket"]:
+                                                            nest_lvl -= 1
+                                                            if nest_lvl == 0:
+                                                                end_idx = c
+                                                                break
+                                                    arguments = structure[i + 1:end_idx]
+                                                    
+                                                    # remove open bracket
+                                                    arguments.pop(0)
+
+                                                    # test for no argument
+                                                    if len(arguments) == 0:
+                                                        test4 = False
+                                                        key_error = '%s requires an argument' % key
+
+                                                    # test argument for variables
+                                                    for c in arguments:
+                                                        if var_test(c):
+                                                            test4 = False
+                                                            key_error = 'variables detected in argument for %s key' % key
+                                                            break
+                                                    
+                                                    # confirm that expression arguments are wrapped in square brackets
+                                                    if test4 != False:
+                                                        # break down arguments list into each argument
+                                                        buffer = []
+                                                        args = []
+                                                        nest = 0
+                                                        for c in arguments:
+                                                            if c == operation["open_bracket"]:
+                                                                nest += 1
+                                                            elif c == operation["close_bracket"]:
+                                                                nest -= 1
+
+                                                            if c == "," and nest == 0:
+                                                                args.append(buffer)
+                                                                buffer = []
+                                                            else:
+                                                                buffer.append(c)
+                                                        args.append(buffer)
+
+                                                        # test number of arguments
+                                                        syntax_arguments = syntax[len(key):]
+                                                        num_args = 0
+                                                        nest = -1
+                                                        for c in syntax_arguments:
+                                                            if c == operation["open_bracket"]:
+                                                                nest += 1
+                                                            elif c == operation["close_bracket"]:
+                                                                nest -= 1
+                                                            
+                                                            if nest == 0 and c == ",":
+                                                                num_args += 1
+
+                                                        # correct fencepost error: no "," after last argument in syntax
+                                                        num_args += 1
+
+                                                        if len(args) < num_args:
+                                                            # incorrect number of arguments
+                                                            test4 = False
+                                                            key_error = '%s key has insufficient arguments' % key
+                                                            break
+
+                                                        # test each argument
+                                                        for c in range(0, len(args)):
+                                                            if len(args[c]) > 1:
+                                                                if args[c][0] != operation["open_bracket"] or args[c][len(args[c]) - 1] != operation["close_bracket"]:
+                                                                    test4 = False
+                                                                    key_error = 'wrap expression arguments in brackets for %s key' % key
+                                                                    break
+
+                                    if test4 == False:
+                                        break
+
+                        # search for empty expression argument
+                        if test4 == True and after_key == operation["open_bracket"]:
+                            nest = 0
+                            for j in range(i, structure_length):
+                                x = structure[j]
+                                if x == operation["open_bracket"]:
+                                    nest += 1
+                                elif x == operation["close_bracket"]:
+                                    nest -= 1
+                                    if j - 1 > -1 and structure[j - 1] == operation["open_bracket"]:
+                                        # found error
+                                        test4 = False
+                                        key_error = '%s key has missing expression argument' % key
+                                        break
+                                    elif nest == 0:
+                                        # reached end with no error
+                                        break
+        
+        if test1 == False:
+            # invalid parenthesis => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][1]["code"]
+        elif test2 == False:
+            # invalid brackets => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][2]["code"]
+        elif test3 == False:
+            # consecutive variables => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][3]["code"]
+        elif test4 == False:
+            # invalid key function syntax => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][4]["code"] + ' | %s' % key_error
+        elif test5 == False:
+            # consecutive operations => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][5]["code"]
+        elif test6 == False:
+            # dicision by zero => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][6]["code"]
+        elif test7 == False:
+            # no operands for operation => terminate program
+            global_bypass = True
+            return info["error"]["poststructure"][7]["code"]
+        else:
+
+            # generates substructures, i.e. "sets", within structure
+            # sets exist so that multiple arguments can be accessed at a single index for key functions
+            if is_brack == True:
+                # structure sets
+                log_process("Structure Sets")
+                log_process(structure)
+                sets_ref = []
+                for i in range(0, len(structure)):
+                    if structure[i] == "[":
+                        sets_ref.append({"char": "[", "index": i})
+                    elif structure[i] == "]":
+                        sets_ref.append({"char": "]", "index": i})
+                
+                # identify next set to structure using sets_ref
+                while len(sets_ref) > 0:
+                    log_process(structure)
+                    for i in range(0, len(sets_ref)):
+                        if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
+                            # build set
+                            start_index = sets_ref[i]["index"]
+                            end_index = sets_ref[i + 1]["index"]
+                            solution_length = abs(start_index - end_index) + 1
+                            the_set_itself = []
+                            for i in range(0, solution_length):
+                                the_set_itself.append(structure[start_index + i])
+
+                            # restructure
+                            structure = restructure(the_set_itself, start_index, end_index, structure)
+                            
+                            # update reference
+                            sets_ref = []
+                            for i in range(0, len(structure)):
+                                if structure[i] == "[":
+                                    sets_ref.append({"char": "[", "index": i})
+                                elif structure[i] == "]":
+                                    sets_ref.append({"char": "]", "index": i})
+                            break
+            
+            # mark end of structuring pocess
+            log_process("Problem Structure Generation Complete")
+
+            return structure
+    
+    # Evaluation Setup
+    use_logs = input["use_logs"]
+    problem = input["problem"]
+    answer = ""
+
+    # PRE STRUCTURE VALIDATION
+    if len(problem) > 0:
+        # non-empty string
+        if len(set(problem)) > 1:
+            # multiple character types
+
+            # TEST0: character validation
+            character = ""
+            for char in problem:
+                try:
+                    int(char)
+                except:
+                    # not a number
+                    o = False
+                    for c in valid_chars:
+                        if char == c:
+                            o = True
+                            break
+                    if o == False:
+                        # not a non-numeral character
+                        global_bypass = True
+                        character = char
                         break
             
-            # TEST4: valid key function syntax
-
-            if len(is_key) > 0 and test6 == True and test5 == True and test1 == True and test2 == True and test3 == True:
-                if is_paren == False and is_brack == False:
-                    # is key but no parenthesis and no brackets
-                    test4 = False
-                    key_error = 'key requires arguments wrapped in parenthesis or brackets'
-                else:
-                    # is key and parens or is key and brackets => test index
-                    for i in range(0, structure_length):
-                        if key_test(structure[i]):
-                            # key at i
-                            key = structure[i]
-                            if i + 3 >= structure_length:
-                                # key passed last valid index to also have arguments
-                                test4 = False
-                                key_error = '%s key requires an argument' % key
-                                break
-                            elif i + 1 < structure_length:
-                                after_key = structure[i + 1]
-
-                                # no parens or bracks
-                                if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
-                                    test4 = False
-                                    key_error = '%s key requires argument to be wrapped in parenthesis or brackets' % key
-                                    break
-                                
-                                # key uses correct parens or bracks
-                                else:
-                                    # scan for key in info structure (ommitting algebraic module)
-                                    for module in range(0, len(info["key_functions"]) - 1):
-                                        # use key modules to determine which module(s) to scan
-                                        if key_modules[module]["use"] == True:
-                                            # scan module
-                                            for j in range(0, len(info["key_functions"][module])):
-                                                if key == info["key_functions"][module][j]["key"]:
-                                                    # key discovered
-                                                    syntax = info["key_functions"][module][j]["syntax"]
-                                                    open_char = syntax[len(key):][0]
-
-                                                    if after_key != open_char:
-                                                        test4 = False
-                                                        key_error = '%s key requires %s not %s' % (key, open_char, after_key)
-                                                        break
-
-                                                    elif open_char == operation["open_parenthesis"]:
-
-                                                        # get argument section of problem structure
-                                                        nest_lvl = 0
-                                                        end_idx = structure_length
-
-                                                        for c in range(i + 1, structure_length):
-                                                            if structure[c] == operation["open_parenthesis"]:
-                                                                nest_lvl += 1
-                                                            elif structure[c] == operation["close_parenthesis"]:
-                                                                nest_lvl -= 1
-                                                                if nest_lvl == 0:
-                                                                    end_idx = c
-                                                                    break
-                                                        
-                                                        arguments = structure[i + 1:end_idx]
-                                                        
-                                                        # remove parenthesis from argument section
-                                                        # arguments.pop(0)
-                                                        # arguments.pop(len(arguments) - 1)
-
-                                                        # test for no argument
-                                                        if len(arguments) == 0:
-                                                            test4 = False
-                                                            key_error = '%s key requires an argument' % key
-
-                                                        # test argument for variable + single argument
-                                                        for c in arguments:
-                                                            if var_test(c):
-                                                                test4 = False
-                                                                key_error = 'variables detected in argument for %s key' % key
-                                                                break
-                                                            elif c == ",":
-                                                                # parenthesis cannot contain multiple arguments
-                                                                test4 = False
-                                                                key_error = '%s key only accepts a single argument' % key
-                                                                break
-
-                                                    elif open_char == operation["open_bracket"]:
-
-                                                        # get argument section of problem structure
-                                                        nest_lvl = 0
-                                                        end_idx = structure_length
-
-                                                        for c in range(i + 1, structure_length):
-                                                            if structure[c] == operation["open_bracket"]:
-                                                                nest_lvl += 1
-                                                            elif structure[c] == operation["close_bracket"]:
-                                                                nest_lvl -= 1
-                                                                if nest_lvl == 0:
-                                                                    end_idx = c
-                                                                    break
-                                                        arguments = structure[i + 1:end_idx]
-                                                        
-                                                        # remove open bracket
-                                                        arguments.pop(0)
-
-                                                        # test for no argument
-                                                        if len(arguments) == 0:
-                                                            test4 = False
-                                                            key_error = '%s requires an argument' % key
-
-                                                        # test argument for variables
-                                                        for c in arguments:
-                                                            if var_test(c):
-                                                                test4 = False
-                                                                key_error = 'variables detected in argument for %s key' % key
-                                                                break
-                                                        
-                                                        # confirm that expression arguments are wrapped in square brackets
-                                                        if test4 != False:
-                                                            # break down arguments list into each argument
-                                                            buffer = []
-                                                            args = []
-                                                            nest = 0
-                                                            for c in arguments:
-                                                                if c == operation["open_bracket"]:
-                                                                    nest += 1
-                                                                elif c == operation["close_bracket"]:
-                                                                    nest -= 1
-
-                                                                if c == "," and nest == 0:
-                                                                    args.append(buffer)
-                                                                    buffer = []
-                                                                else:
-                                                                    buffer.append(c)
-                                                            args.append(buffer)
-
-                                                            # test number of arguments
-                                                            syntax_arguments = syntax[len(key):]
-                                                            num_args = 0
-                                                            nest = -1
-                                                            for c in syntax_arguments:
-                                                                if c == operation["open_bracket"]:
-                                                                    nest += 1
-                                                                elif c == operation["close_bracket"]:
-                                                                    nest -= 1
-                                                                
-                                                                if nest == 0 and c == ",":
-                                                                    num_args += 1
-
-                                                            # correct fencepost error: no "," after last argument in syntax
-                                                            num_args += 1
-
-                                                            if len(args) < num_args:
-                                                                # incorrect number of arguments
-                                                                test4 = False
-                                                                key_error = '%s key has insufficient arguments' % key
-                                                                break
-
-                                                            # test each argument
-                                                            for c in range(0, len(args)):
-                                                                if len(args[c]) > 1:
-                                                                    if args[c][0] != operation["open_bracket"] or args[c][len(args[c]) - 1] != operation["close_bracket"]:
-                                                                        test4 = False
-                                                                        key_error = 'wrap expression arguments in brackets for %s key' % key
-                                                                        break
-
-                                        if test4 == False:
-                                            break
-
-                            # search for empty expression argument
-                            if test4 == True and after_key == operation["open_bracket"]:
-                                nest = 0
-                                for j in range(i, structure_length):
-                                    x = structure[j]
-                                    if x == operation["open_bracket"]:
-                                        nest += 1
-                                    elif x == operation["close_bracket"]:
-                                        nest -= 1
-                                        if j - 1 > -1 and structure[j - 1] == operation["open_bracket"]:
-                                            # found error
-                                            test4 = False
-                                            key_error = '%s key has missing expression argument' % key
-                                            break
-                                        elif nest == 0:
-                                            # reached end with no error
-                                            break
-           
-            if test1 == False:
-                # invalid parenthesis => terminate program
-                return "invalid parenthesis"
-            elif test2 == False:
-                # invalid brackets => terminate program
-                return "invalid brackets"
-            elif test3 == False:
-                # consecutive variables => terminate program
-                return "no consecutive variables"
-            elif test4 == False:
-                # invalid key function syntax => terminate program
-                return key_error
-            elif test5 == False:
-                # consecutive operations => terminate program
-                return "no consecutive operations"
-            elif test6 == False:
-                # dicision by zero => terminate program
-                return "no division by zero"
-            elif test7 == False:
-                # no operands for operation => terminate program
-                return "operations require operands"
+            if global_bypass == True:
+                # invalid character => terminate program
+                global_bypass = True
+                answer = info["error"]["prestructure"][2]["code"] + ' | Invalid character: %s' % character
             else:
-
-                # generates substructures, i.e. "sets", within structure
-                # sets exist so that multiple arguments can be accessed at a single index for key functions
-                if is_brack == True:
-                    # structure sets
-                    log_process("Structure Sets")
-                    log_process(structure)
-                    sets_ref = []
-                    for i in range(0, len(structure)):
-                        if structure[i] == "[":
-                            sets_ref.append({"char": "[", "index": i})
-                        elif structure[i] == "]":
-                            sets_ref.append({"char": "]", "index": i})
-                    
-                    # identify next set to structure using sets_ref
-                    while len(sets_ref) > 0:
-                        log_process(structure)
-                        for i in range(0, len(sets_ref)):
-                            if sets_ref[i]["char"] == "[" and sets_ref[i + 1]["char"] == "]":
-                                # build set
-                                start_index = sets_ref[i]["index"]
-                                end_index = sets_ref[i + 1]["index"]
-                                solution_length = abs(start_index - end_index) + 1
-                                the_set_itself = []
-                                for i in range(0, solution_length):
-                                    the_set_itself.append(structure[start_index + i])
-
-                                # restructure
-                                structure = restructure(the_set_itself, start_index, end_index, structure)
-                                
-                                # update reference
-                                sets_ref = []
-                                for i in range(0, len(structure)):
-                                    if structure[i] == "[":
-                                        sets_ref.append({"char": "[", "index": i})
-                                    elif structure[i] == "]":
-                                        sets_ref.append({"char": "]", "index": i})
-                                break
+                # all characters in problem string are valid characters
                 
-                # mark end of structuring pocess
-                log_process("Problem Structure Generation Complete")
+                # ------------------- #
+                # VALID PRE STRUCTURE #
+                # ------------------- #
 
-                print(structure)
-
-                if is_paren == True:
-                    # parenthetically section and solve
-                    return section(structure)
+                # change first log
+                if use_logs == "1":
+                    process_log["0"] = "Process Log Start"
+                
+                # POST STRUCTURE VALIDATION
+                problem = input["problem"] # get problem string from input object argument
+                structure = structure_problem(problem) # perform structurization and post structure validation
+                if global_bypass == True:
+                    # INVALID POST STRUCTURE
+                    global_bypass = True
+                    answer = structure # contains error code that tripped global_bypass
                 else:
-                    # calculate answer from problem structure
-                    return calculate(structure)
 
-    # Evaluation
-    use_logs = input["use_logs"]
-    problem = "empty string"
-    answer = "empty string"
-
-    # pre-structure problem validation
-    if len(input["problem"]) > 0:
-        # non-empty string
-        if len(set(input["problem"])) > 1:
-            
-            # run evaluation
-            problem = input["problem"]
-            answer = evaluate(problem)
+                    # -------------------- #
+                    # VALID POST STRUCTURE #
+                    # -------------------- #
+                    
+                    # evaluate problem structure
+                    # section > calculate > key_functions + arithmetic + simplify > answer
+                    answer = section(structure)
 
         else:
             # string of single character type
             try:
                 # numeral character type
+                problem = input["problem"]
                 int(input["problem"])
-                problem = input["problem"]
                 answer = input["problem"]
+
             except:
-                # non-numeral character type
-                problem = input["problem"]
-                answer = "single type of character"
+                
+                # INVALID PRE STRUCTURE
+                
+                # non-numeral character type for repeating character
+                global_bypass = True
+                answer = info["error"]["prestructure"][1]["code"]  
+       
+    else:
+        
+        # INVALID PRE STRUCTURE
+
+        # empty problem string
+        global_bypass = True
+        answer = info["error"]["prestructure"][0]["code"]
+
+    
+    # skip answer formatting if globally bypassed
+    if global_bypass == True and is_var != True:
+        # assign output object
+        output = {
+            "problem": problem,
+            "answer": answer,
+            "logs": process_log,
+        }
+        return output
+    
+    # ANSWER FORMATTING
 
     # convert answer expressions to answer string
     if isinstance(answer, list) or var_test(answer) == True:
@@ -6202,12 +6700,12 @@ def evaluator(input):
 #     print(output["answer"])
 #     print(logs)
 
-# test case
-# n = 4
-# side = 10
-# theta = np.deg2rad(360/(2*n))
-# radius = (side/2)/np.sin(theta)
-# apothem = (side/2)/np.tan(theta)
+# # test case
+# # n = 4
+# # side = 10
+# # theta = np.deg2rad(360/(2*n))
+# # radius = (side/2)/np.sin(theta)
+# # apothem = (side/2)/np.tan(theta)
 # input = {
 #     # "problem": "ngonas[4,%s]" % side, # note: number of sides, side length (square of side length 10)
 #     # "problem": "ngonar[4,%s]" % radius, # note: number of sides, radius length (radius of same sqaure)
@@ -6223,7 +6721,6 @@ def evaluator(input):
 
 #     "use_logs": "", # 1 = yes, else = no 
 #     "problem": "", # note: 
-
 # }
 # evaluator(input)
 
@@ -6232,72 +6729,73 @@ def evaluator(input):
 
 #     # PRE-STRUCTURE VALIDATION
 
-#     {"problem": "", "answer": "empty string"}, # prevents evaluation on empty string
-#     {"problem": "        ", "answer": "single type of character"}, # prevents evaluation of string with single type of character
+#     {"problem": "", "answer": "ERROR_101_0"}, # prevents evaluation on empty string
+#     {"problem": "        ", "answer": "ERROR_102_1"}, # prevents evaluation of string with single type of character
 #     {"problem": "11111111", "answer": "11111111"}, # returns problem of string with single type of numeral character
 
 #     # TEST0
-#     {"problem": "1+1/&%$#", "answer": "Invalid character: &"},
-#     {"problem": "1+A/27", "answer": "Invalid character: A"}, # no captial letters
+#     {"problem": "1+1/&%$#", "answer": "ERROR_103_2 | Invalid character: &"}, # no special characters
+#     {"problem": "1+A/27", "answer": "ERROR_103_2 | Invalid character: A"}, # no captial letters
 
+    
 #     # PROBLEM STRUCTURE VALIDATION
 
 #     # TEST0.1
-#     {"problem": "1+q", "answer": "non-entity detected: q"}, # formatting error for valid characters but no semantic meaning
+#     {"problem": "1+q", "answer": "ERROR_201_0 | non-entity: q"}, # formatting error for valid characters but no semantic meaning
 
 #     # TEST6
-#     {"problem": "1/0", "answer": "no division by zero"}, # prevents zero division before calculation
-#     {"problem": "3/(2-2)", "answer": "no division by zero"}, # prevents zero division during calculation
+#     {"problem": "1/0", "answer": "ERROR_207_6"}, # prevents zero division before calculation
+#     {"problem": "3/(2-2)", "answer": "ERROR_207_6"}, # prevents zero division during calculation
 
 #     # TEST5
-#     {"problem": "1++1", "answer": "no consecutive operations"},
-#     {"problem": "1+-1", "answer": "no consecutive operations"}, # different operations
+#     {"problem": "1++1", "answer": "ERROR_206_5"},
+#     {"problem": "1+-1", "answer": "ERROR_206_5"}, # different operations
 #     {"problem": "2*√16", "answer": "8"}, # except for second operation being √
-#     {"problem": "1√*16", "answer": "no consecutive operations"}, # including for first operation being √
-#     {"problem": "-1*2", "answer": "operations require operands"}, # prevent operations without operands
+#     {"problem": "1√*16", "answer": "ERROR_206_5"}, # including for first operation being √
+#     {"problem": "-1*2", "answer": "ERROR_208_7"}, # prevent operations without operands
 
 #     # TEST1
-#     {"problem": "1)+(1*2)", "answer": "invalid parenthesis"}, #      )()     : unequal number of open and close characters
-#     {"problem": "1+)1(+(1*2)", "answer": "invalid parenthesis"}, #   )(()    : no close on first parens
-#     {"problem": "(1*2)+)1(+1", "answer": "invalid parenthesis"}, #   ())(    : no open on last parens
-#     {"problem": "(1*2)+)3(+(1)", "answer": "invalid parenthesis"}, # ())(()  : all open characters have a closing pair
+#     {"problem": "1)+(1*2)", "answer": "ERROR_202_1"}, #      )()     : unequal number of open and close characters
+#     {"problem": "1+)1(+(1*2)", "answer": "ERROR_202_1"}, #   )(()    : no close on first parens
+#     {"problem": "(1*2)+)1(+1", "answer": "ERROR_202_1"}, #   ())(    : no open on last parens
+#     {"problem": "(1*2)+)3(+(1)", "answer": "ERROR_202_1"}, # ())(()  : all open characters have a closing pair
     
 #     # TEST2    
-#     {"problem": "1]+[1*2]", "answer": "invalid brackets"}, #      ][]     : unequal number of open and close characters
-#     {"problem": "1+]1[+[1*2]", "answer": "invalid brackets"}, #   ][[]    : no close on first parens
-#     {"problem": "[1*2]+]1[+1", "answer": "invalid brackets"}, #   ]][     : no open on last parens
-#     {"problem": "[1*2]+]3[+[1]", "answer": "invalid brackets"}, # []][[]  : all open characters have a closing pair
+#     {"problem": "1]+[1*2]", "answer": "ERROR_203_2"}, #      ][]     : unequal number of open and close characters
+#     {"problem": "1+]1[+[1*2]", "answer": "ERROR_203_2"}, #   ][[]    : no close on first parens
+#     {"problem": "[1*2]+]1[+1", "answer": "ERROR_203_2"}, #   ]][     : no open on last parens
+#     {"problem": "[1*2]+]3[+[1]", "answer": "ERROR_203_2"}, # []][[]  : all open characters have a closing pair
 
 #     # TEST3
-#     {"problem": "2+3-xy", "answer": "no consecutive variables"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
+#     {"problem": "2+3-xy", "answer": "ERROR_204_3"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
 
 #     # TEST4
-#     {"problem": "sin", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
-#     {"problem": "7-sin+1", "answer": "key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
-#     {"problem": "(1+2)*3-sin", "answer": "sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
-#     {"problem": "sin+1*(2-3)", "answer": "sin key requires argument to be wrapped in parenthesis or brackets"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
-#     {"problem": "sin([9-8],2)", "answer": "sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
+#     {"problem": "sin", "answer": "ERROR_205_4 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
+#     {"problem": "7-sin+1", "answer": "ERROR_205_4 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
+#     {"problem": "(1+2)*3-sin", "answer": "ERROR_205_4 | sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
+#     {"problem": "sin+1*(2-3)", "answer": "ERROR_205_4 | sin key requires argument to be wrapped in parenthesis or brackets"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
+#     {"problem": "sin([9-8],2)", "answer": "ERROR_205_4 | sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
 
-#     {"problem": "sin[0]", "answer": "sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
-#     {"problem": "mean(4,8)", "answer": "mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "sin[0]", "answer": "ERROR_205_4 | sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "mean(4,8)", "answer": "ERROR_205_4 | mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
 
-#     {"problem": "sin(x)", "answer": "variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable argument in parenthesis
-#     {"problem": "sin(1+2/x)", "answer": "variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable in expression argument in parenthesis
-#     {"problem": "sin()", "answer": "sin key requires an argument"}, # prevents running of key function with no argument in parenthesis
+#     {"problem": "sin(x)", "answer": "ERROR_205_4 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable argument in parenthesis
+#     {"problem": "sin(1+2/x)", "answer": "ERROR_205_4 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable in expression argument in parenthesis
+#     {"problem": "sin()", "answer": "ERROR_205_4 | sin key requires an argument"}, # prevents running of key function with no argument in parenthesis
 
-#     {"problem": "mean[4,x]", "answer": "variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable argument in brackets
-#     {"problem": "mean[4,[2*x]]", "answer": "variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable in expression argument in brackets
-#     {"problem": "mean[]", "answer": "mean key requires an argument"}, # prevents running of key function with no argument in brackets
-#     {"problem": "mean[4,4+4]", "answer": "wrap expression arguments in brackets for mean key"}, # prevents running of key function without expression arguments wrapped in square brackets
+#     {"problem": "mean[4,x]", "answer": "ERROR_205_4 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable argument in brackets
+#     {"problem": "mean[4,[2*x]]", "answer": "ERROR_205_4 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable in expression argument in brackets
+#     {"problem": "mean[]", "answer": "ERROR_205_4 | mean key requires an argument"}, # prevents running of key function with no argument in brackets
+#     {"problem": "mean[4,4+4]", "answer": "ERROR_205_4 | wrap expression arguments in brackets for mean key"}, # prevents running of key function without expression arguments wrapped in square brackets
 #     {"problem": "mean[4,[4+4]]", "answer": "6"}, # as it should be; gets 6
 
 #     {"problem": "sd[[mean[0,0]],1]", "answer": "0.5"}, # validation works for key function composition; gets 0.5
 
-#     {"problem": "mean[10]", "answer": "mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
-#     {"problem": "meanw[[10,0.5]]", "answer": "meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
+#     {"problem": "mean[10]", "answer": "ERROR_205_4 | mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
+#     {"problem": "meanw[[10,0.5]]", "answer": "ERROR_205_4 | meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
     
-#     {"problem": "sin(1,[2*8/4-2])", "answer": "sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
-#     {"problem": "expand[[]]", "answer": "expand key has missing expression argument"}, # no empty expression arguments
+#     {"problem": "sin(1,[2*8/4-2])", "answer": "ERROR_205_4 | sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
+#     {"problem": "expand[[]]", "answer": "ERROR_205_4 | expand key has missing expression argument"}, # no empty expression arguments
     
 #     # CONSTANTS
 
@@ -6321,116 +6819,125 @@ def evaluator(input):
 #     {"problem": "√4", "answer": "2"}, # implicit square root for radication without radical
 #     {"problem": "3√8", "answer": "2"}, # performs nth roots where n = given radical
 
+    
 #     # KEY FUNCTION ARGUMENT DOMAIN VALIDATION
 
 #     # TRIGONOMIC
-#     {"problem": "acsc(0)", "answer": "invalid argument = x, -1 < x < 1"},
+#     {"problem": "acsc(0)", "answer": "ERROR_504_0"},
 
-#     {"problem": "csc(0)", "answer": "no zero argument"},
+#     {"problem": "csc(0)", "answer": "ERROR_502_0"},
 
-#     {"problem": "asec(0)", "answer": "invalid argument = x, -1 < x < 1"},
+#     {"problem": "asec(0)", "answer": "ERROR_506_0"},
 
-#     {"problem": "sec((-1))", "answer": "invalid argument = x, x <= 0 or x >= π"},
-#     {"problem": "sec(0)", "answer": "invalid argument = x, x <= 0 or x >= π"},
-#     {"problem": "sec(pi)", "answer": "invalid argument = x, x <= 0 or x >= π"},
-#     {"problem": "sec(pi+1)", "answer": "invalid argument = x, x <= 0 or x >= π"},
+#     {"problem": "sec((-1))", "answer": "ERROR_505_0"},
+#     {"problem": "sec(0)", "answer": "ERROR_505_0"},
+#     {"problem": "sec(pi)", "answer": "ERROR_505_1"},
+#     {"problem": "sec(pi+1)", "answer": "ERROR_505_1"},
 
-#     {"problem": "acot(0)", "answer": "no zero argument"},
+#     {"problem": "acot(0)", "answer": "ERROR_508_0"},
 
-#     {"problem": "cot(0)", "answer": "invalid argument = x, x = 0 or x mod π = 0"},
-#     {"problem": "cot(2*pi)", "answer": "invalid argument = x, x = 0 or x mod π = 0"},
+#     {"problem": "cot(0)", "answer": "ERROR_507_0"},
+#     {"problem": "cot(2*pi)", "answer": "ERROR_507_1"},
     
-#     {"problem": "acosh(0)", "answer": "invalid argument = x, x < 1"},
+#     {"problem": "acosh(0)", "answer": "ERROR_509_0"},
 
-#     {"problem": "atanh(0)", "answer": "invalid argument = x, -1 < x < 1"},
+#     {"problem": "atanh(0)", "answer": "ERROR_510_0"},
 
-#     {"problem": "asin(2)", "answer": "invalid argument = x, x < -1 or x > 1"},
+#     {"problem": "asin(2)", "answer": "ERROR_501_1"},
 
-#     {"problem": "acos(2)", "answer": "invalid argument = x, x < -1 or x > 1"},
+#     {"problem": "acos(2)", "answer": "ERROR_502_1"},
 
-#     {"problem": "tan(0)", "answer": "invalid argument = x, -1 < x < 1 or x mod π = 0"},
-#     {"problem": "tan(2*pi)", "answer": "invalid argument = x, -1 < x < 1 or x mod π = 0"},
+#     {"problem": "tan(3*(pi/2))", "answer": "ERROR_503_0"},
 
 #     # GEOMTERIC
-#     {"problem": "hypot[1,0]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "hypot[1,(-1)]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "hypot[0,1]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "hypot[(-1),1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hypot[1,0]", "answer": "ERROR_511_0"},
+#     {"problem": "hypot[1,(-1)]", "answer": "ERROR_511_0"},
+#     {"problem": "hypot[0,1]", "answer": "ERROR_511_0"},
+#     {"problem": "hypot[(-1),1]", "answer": "ERROR_511_0"},
 
-#     {"problem": "heron[1,1,0]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "heron[1,1,(-1)]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "heron[1,0,1]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "heron[1,(-1),1]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "heron[0,1,1]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "heron[(-1),1,1]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "heron[1,1,0]", "answer": "ERROR_512_0"},
+#     {"problem": "heron[1,1,(-1)]", "answer": "ERROR_512_0"},
+#     {"problem": "heron[1,0,1]", "answer": "ERROR_512_0"},
+#     {"problem": "heron[1,(-1),1]", "answer": "ERROR_512_0"},
+#     {"problem": "heron[0,1,1]", "answer": "ERROR_512_0"},
+#     {"problem": "heron[(-1),1,1]", "answer": "ERROR_512_0"},
 
-#     {"problem": "ngonas[(-4),10]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "ngonas[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonas[(-4),10]", "answer": "ERROR_513_0"},
+#     {"problem": "ngonas[4,(-10)]", "answer": "ERROR_513_0"},
 
-#     {"problem": "ngonar[(-4),10]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "ngonar[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonar[(-4),10]", "answer": "ERROR_514_0"},
+#     {"problem": "ngonar[4,(-10)]", "answer": "ERROR_514_0"},
 
-#     {"problem": "ngonaa[(-4),10]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "ngonaa[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonaa[(-4),10]", "answer": "ERROR_515_0"},
+#     {"problem": "ngonaa[4,(-10)]", "answer": "ERROR_515_0"},
 
-#     {"problem": "ngonperim[(-4),10]", "answer": "invalid argument = x, x <= 0"},
-#     {"problem": "ngonperim[4,(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ngonperim[(-4),10]", "answer": "ERROR_516_0"},
+#     {"problem": "ngonperim[4,(-10)]", "answer": "ERROR_516_0"},
 
-#     {"problem": "tetrahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "tetrahedronv[(-10)]", "answer": "ERROR_517_0"},
 
-#     {"problem": "tetrahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "tetrahedronsa[(-10)]", "answer": "ERROR_518_0"},
 
-#     {"problem": "hexahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hexahedronv[(-10)]", "answer": "ERROR_519_0"},
 
-#     {"problem": "hexahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "hexahedronsa[(-10)]", "answer": "ERROR_520_0"},
 
-#     {"problem": "octahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "octahedronv[(-10)]", "answer": "ERROR_521_0"},
 
-#     {"problem": "octahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "octahedronsa[(-10)]", "answer": "ERROR_522_0"},
 
-#     {"problem": "dodecahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "dodecahedronv[(-10)]", "answer": "ERROR_523_0"},
 
-#     {"problem": "dodecahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "dodecahedronsa[(-10)]", "answer": "ERROR_524_0"},
 
-#     {"problem": "icosahedronv[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "icosahedronv[(-10)]", "answer": "ERROR_525_0"},
 
-#     {"problem": "icosahedronsa[(-10)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "icosahedronsa[(-10)]", "answer": "ERROR_526_0"},
 
 #     # COMBINATORIC
-#     {"problem": "fact((-6))", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "fact((-6))", "answer": "ERROR_527_0"},
 
-#     {"problem": "perm[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "perm[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "perm[2,3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "perm[(-1),3]", "answer": "ERROR_528_0"},
+#     {"problem": "perm[3,(-1)]", "answer": "ERROR_528_0"},
+#     {"problem": "perm[2,3]", "answer": "ERROR_528_1"},
     
-#     {"problem": "permr[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "permr[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "permr[2,3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "permr[(-1),3]", "answer": "ERROR_529_0"},
+#     {"problem": "permr[3,(-1)]", "answer": "ERROR_529_0"},
+#     {"problem": "permr[2,3]", "answer": "ERROR_529_1"},
 
-#     {"problem": "comb[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
-#     {"problem": "comb[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
-#     {"problem": "comb[2,5]", "answer": "invalid arguments: n <= 0 or r <= 0 or n <= r"},
+#     {"problem": "comb[(-1),3]", "answer": "ERROR_530_0"},
+#     {"problem": "comb[3,(-1)]", "answer": "ERROR_530_0"},
+#     {"problem": "comb[2,5]", "answer": "ERROR_530_1"},
 
-#     {"problem": "combr[(-1),3]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "combr[3,(-1)]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
-#     {"problem": "combr[2,5]", "answer": "invalid arguments: n <= 0 or r <= 0 or n < r"},
+#     {"problem": "combr[(-1),3]", "answer": "ERROR_531_0"},
+#     {"problem": "combr[3,(-1)]", "answer": "ERROR_531_0"},
+#     {"problem": "combr[2,5]", "answer": "ERROR_531_1"},
 
-#     {"problem": "comp((-5))", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "comp((-5))", "answer": "ERROR_532_0"},
+
+#     {"problem": "multiples[9,9,2]", "answer": "ERROR_533_0"},
+#     {"problem": "multiples[3,9,1]", "answer": "ERROR_533_1"},
+#     {"problem": "multiples[3,9,(-1)]", "answer": "ERROR_533_1"},
+#     {"problem": "multiples[3,9,9]", "answer": "ERROR_533_2"},
+#     {"problem": "multiples[3,9,10]", "answer": "ERROR_533_2"},
+
+#     {"problem": "gcf[(-2),3]", "answer": "ERROR_534_0"},
+#     {"problem": "gcf[2,(-3)]", "answer": "ERROR_534_0"},
+
+#     {"problem": "lcm[(-2),3]", "answer": "ERROR_535_0"},
+#     {"problem": "lcm[2,(-3)]", "answer": "ERROR_535_0"},
 
 #     # STATISTICAL
-#     {"problem": "meanh[1,0,2]", "answer": "no zero argument"},
+#     {"problem": "meanh[1,0,2]", "answer": "ERROR_536_0"},
     
-#     {"problem": "gcf[2,(-3)]", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "log[(-1),10]", "answer": "ERROR_537_0"},
 
-#     {"problem": "lcm[2,(-3)]", "answer": "invalid argument = x, x <= 0"},
-    
-#     {"problem": "log[(-1),10]", "answer": "invalid argument = x, x <= 0"},
-
-#     {"problem": "ln((-3))", "answer": "invalid argument = x, x <= 0"},
+#     {"problem": "ln((-3))", "answer": "ERROR_538_0"},
 
 #     # ALGEBRAIC
-#     {"problem": "expon[[x+1],y]", "answer": "invalid exponent argument: no variables"},
-#     {"problem": "expon[x,2]", "answer": "invalid base argument: must be algebraic expression"},
+#     {"problem": "expon[[x+1],y]", "answer": "ERROR_539_0"},
+#     {"problem": "expon[x,2]", "answer": "ERROR_539_1"},
+
 #     {"problem": "expand[[x+1]]", "answer": "x+1"},
 
     
@@ -6480,6 +6987,9 @@ def evaluator(input):
 #     {"problem": "comb[3,2]", "answer": "3"}, # pass = 3
 #     {"problem": "combr[3,2]", "answer": "6"}, # pass = 6
 #     {"problem": "comp(6)", "answer": "32"}, # pass = 32
+#     {"problem": "multiples[3,9,2]", "answer": "3"}, # pass = 3
+#     {"problem": "gcf[10,15]", "answer": "5"}, # pass = 5
+#     {"problem": "lcm[7,2]", "answer": "14"}, # pass = 14
 
 #     # STATISTICAL
 #     {"problem": "sd[0,2]", "answer": "1"}, # pass = 1
@@ -6490,15 +7000,34 @@ def evaluator(input):
 #     {"problem": "mean[1,3]", "answer": "2"}, # pass = 2
 #     {"problem": "rms[2,3]", "answer": "2.5495097567963922"}, # pass = 2.5495097567963922
 
-#     {"problem": "gcf[10,15]", "answer": "5"}, # pass = 5
-#     {"problem": "lcm[7,2]", "answer": "14"}, # pass = 14
-
 #     {"problem": "log[10,10]", "answer": "1"}, # pass = 1
 #     {"problem": "ln(1)", "answer": "0"}, # pass = 0
 
+    
 #     # KEY FUNCTION COMPOSITION TEST
 #     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
+    
+    
+    
 
+
+
+
+
+
+#     # {"problem": "sine(sin(0))", "answer": "0"}, # key function composition fails for key functions with single argument 
+
+
+
+
+
+
+
+
+
+
+
+    
 #     # ALGEBRAIC FORMAT STANDARDIZATION
 
 #     {"problem": "2-3*x", "answer": "-3*x+2"}, # prevents operation out of precedence in algebraic expressions using getidx function
@@ -6540,6 +7069,7 @@ def evaluator(input):
 #     {"problem": "x+2*(-y)", "answer": "x-2*y"}, # var => coef => op ; - => + => + : -
 #     {"problem": "x+2*y", "answer": "x+2*y"}, # var => coef => op ; + => + => + : +
 
+    
 #     # ALGEBRAIC SIMPLIFICATION
 
 #     {"problem": "a+a+a-2*3", "answer": "3*a-6"}, # solve arithmetic in algebraic expression even if not in parens
