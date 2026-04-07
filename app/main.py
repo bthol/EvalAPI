@@ -4,6 +4,7 @@ import numpy as np
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
+import os
 import copy
 
 # Environment variables
@@ -6652,7 +6653,7 @@ def evaluator(input):
         answer = info["error"]["prestructure"][0]["code"]
 
     
-    # skip answer formatting if globally bypassed
+    # skip answer formatting if globally bypassed without variables
     if global_bypass == True and is_var != True:
         # assign output object
         output = {
@@ -6662,7 +6663,9 @@ def evaluator(input):
         }
         return output
     
-    # ANSWER FORMATTING
+    # ----------------- #
+    # ANSWER FORMATTING #
+    # ----------------- #
 
     # convert answer expressions to answer string
     if isinstance(answer, list) or var_test(answer) == True:
@@ -6712,15 +6715,10 @@ def evaluator(input):
 #     # "problem": "ngonaa[4,%s]" % apothem, # note: number of sides, apothem length (apothem of same square)
 #     # "problem": "ngonperim[4,%s]" % side, # note: 
 
-#     # "problem": "(4*x)/(2*x)", # note: 
-#     # "problem": "expand[[x/b*a+y],[x/a*b-y]]", # note: 
-#     # "problem": "2*((4+8)+x)", # note: prevents calulation beyond the level of parenthetical nesting of an unresolvable algebraic expression
-#     # "problem": "2*((x*y)^2)", # note: expression operation exponentiation case 1
-#     # "problem": "n√b*3√a", # note: 
+#     # "problem": "sin(sin())", # note: get function composition for single argument key functions 
 #     # "problem": "", # note: 
 
 #     "use_logs": "", # 1 = yes, else = no 
-#     "problem": "", # note: 
 # }
 # evaluator(input)
 
