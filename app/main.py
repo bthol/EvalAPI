@@ -48,11 +48,11 @@ info = {
     ],
 
     "constants": [
-        {"name":"π", "syntax":"pi"}, # alt code 227
-        {"name":"𝜏", "syntax":"tau"}, # alt code 231
-        {"name":"φ", "syntax":"phi"}, # alt code 237 or 232 for capital
-        {"name":"Euler's Number (e)", "syntax":"euler"},
-        {"name":"Euler's Constant (Γ)", "syntax":"gamma"}, # alt code 226
+        {"name":"π", "syntax":"pi", "value": np.pi}, # alt code 227
+        {"name":"𝜏", "syntax":"tau", "value": np.pi*2}, # alt code 231
+        {"name":"φ", "syntax":"phi", "value": (1 + np.sqrt(5))/2}, # alt code 237 or 232 for capital
+        {"name":"Euler's Number (e)", "syntax":"euler", "value": np.e},
+        {"name":"Euler's Constant (Γ)", "syntax":"gamma", "value": np.euler_gamma}, # alt code 226
     ],
 
     # the whole lowercase alphabet may be used as variables (keys are also composed of lowercase letters)
@@ -262,28 +262,6 @@ info = {
                 ],
                 "simp_limit": [
                     {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]}
-                ],
-            },
-
-            # operator parameters
-            "operator" : {
-                "addition": [
-                    {"code": "ERROR_002_0", "description": "parameter error: addition character cannot be identical to other operator character."}
-                ],
-                "subtraction": [
-                    {"code": "ERROR_002_0", "description": "parameter error: subtraction character cannot be identical to other operator character."}
-                ],
-                "multiplication": [
-                    {"code": "ERROR_002_0", "description": "parameter error: multiplication character cannot be identical to other operator character."}
-                ],
-                "division": [
-                    {"code": "ERROR_002_0", "description": "parameter error: division character cannot be identical to other operator character."}
-                ],
-                "exponentiation": [
-                    {"code": "ERROR_002_0", "description": "parameter error: exponentiation character cannot be identical to other operator character."}
-                ],
-                "radication": [
-                    {"code": "ERROR_002_0", "description": "parameter error: radication character cannot be identical to other operator character."}
                 ],
             },
         },
@@ -520,11 +498,9 @@ info = {
                 ]
             }
         }
+    
     }
 }
-
-# clear parameters after init of info
-parameters = {}
 
 def evaluator(input):
 
@@ -739,41 +715,61 @@ def evaluator(input):
                             break
         return ref
 
-    def word_struct(word, arr, module = None):
+    def word_struct(word, arr, module=None, value=1, const_count=0, key_count=0):
         # structures a given keyword
         nonlocal is_key
+        nonlocal const_limit
+        nonlocal key_limit
+        nonlocal global_bypass
         arrVar = arr
         ref = get_word(word, arrVar)
-        s = True
-        if module == None:
-            while ref is not None:
-                # for every word found in arr
-                if s == True:
-                    # for first word found
-                    # add key to is_key structure
-                    is_key = [word] + is_key
-                    s = False
-                # restructure with keyword
-                arrVar = restructure(word, ref["first"], ref["last"] - 1, arrVar)
-                # find next word or None
-                ref = get_word(word, arrVar)
-        else:
-            # for key function modules
-            while ref is not None:
-                # for every word found in arr
-                if s == True:
-                    # for first word found
-                    # add key to is_key structure
-                    is_key = [word] + is_key
-                    # activate key module
-                    key_modules[module]["use"] = True
-                    s = False
-                # restructure with keyword
-                arrVar = restructure(word, ref["first"], ref["last"] - 1, arrVar)
-                # find next word or None
-                ref = get_word(word, arrVar)
 
-        return arrVar
+        # constants
+        if module == None:
+            count = const_count
+            while ref is not None:
+                if count < const_limit:
+                    # add to count
+                    count += 1
+                    # restructure with keyword
+                    arrVar = restructure(value, ref["first"], ref["last"] - 1, arrVar)
+                    # find next word or None
+                    ref = get_word(word, arrVar)
+                else:
+                    # exceeded const limit
+                    global_bypass = True
+                    return info["error"]["parameter"]["limit"]["const_limit"][0]["code"]
+            
+            return {"count": count, "struct": arrVar}
+        
+        
+        # key function keys
+        else:
+            count = key_count
+            s = True
+            while ref is not None:
+                if count < key_limit:
+                    # add to count
+                    count += 1
+                    # for every word found in arr
+                    if s == True:
+                        # for first word found
+                        # add key to is_key structure
+                        is_key = [word] + is_key
+                        # activate key module
+                        key_modules[module]["use"] = True
+                        s = False
+                    
+                    # restructure with keyword
+                    arrVar = restructure(word, ref["first"], ref["last"] - 1, arrVar)
+                    # find next word or None
+                    ref = get_word(word, arrVar)
+                else:
+                    # exceeded key limit
+                    global_bypass = True
+                    return info["error"]["parameter"]["limit"]["key_limit"][0]["code"]
+            
+            return {"count": count, "struct": arrVar}
     
     def op_test(str):
         # tests if given str is an operation character
@@ -2671,42 +2667,50 @@ def evaluator(input):
         # determines post-processes for simplification
         destandardized = False # re-standardize
         recalculate = False # re-calculate
-        arrVar = standardize_form(arr)
+        arrVar = standardize_form(arr) # standardize form
 
         # log process label
         log_process("Simplification of Algebraic Expression")
-
-        # define process of simplification
-        # 1.) Format expression and terms into standard forms
-        # 2.) identify first variable in arr testing from left to right
-        # 3.) test simplification tree structure for cases until one is discovered and run that
-        # 4.) repeat step 2 - 4 until no simplifications are discovered during step 2, then go to step 5
-        # 5.) return result
         
         simplifying = True
         x = 0
         while x < simp_limit and simplifying == True:
+            # each iteration is one simplification
 
-            # each while loop interation is one simplification
+            # SIMPLIFICATION LOOP
+            # I. Identify variables from left to right in problem structure
+            # II. Identify case of simplification for variable in problem structure through SIMPLIFICATION TREE STRUCTURE
+            # III. Perform simplification on problem structure and restart loop
+
             x += 1
             
             # get length of arrVar
             length = len(arrVar)
 
+            # true on simplification
+            simplified = False
+
             # iterate over each string in problem structure
-            for c in range(0, length):
+            for c in range(0, length): # search problem
                 
                 # identify variables in problem structure from left to right
-                if var_test(arrVar[c]):
+                if var_test(arrVar[c]): # test problem
 
                     # each variable
                     var = arrVar[c]
 
                     # SIMPLIFICATION TREE STRUCTURE
-                    # SUPERCLASSES: organizational layer for developer clarity
-                    #   # CLASSES: layer for grouping cases to expedite tree performance
-                    #    #   # CASES: each exact character by character case of simplification
 
+                    # SUPERCLASS: organizational layer for developer clarity
+                    #   # CLASS: layer for grouping cases by form to expedite tree performance
+                    #   #   # CASE: an expression with abstract operand types (numbers and variables; known and unknown) including the form of the class to which it belongs
+                    #   #   #   # INSTANCE: zero abstraction exact character by character expression that can be simplified
+
+                    # The Problem Structure may contain instance(s) of some case(s) of simplification
+                    # simplification is the process of discovering instances of cases in problem structure
+                    # and restructuring with logically equivalent and simpler expressions
+
+                    # Falsification Expedite
                     # class switches (defaultly all on)
                     class_num = 11 # stores number of classes
                     x_y = True  # x^y
@@ -2722,14 +2726,20 @@ def evaluator(input):
                     div = True  # division
                     add = True  # addition
                     sub = True  # subtraction
-
-                    # while loop repeats, at most for the number of classes as stored in class_num, if no cases are identified in a class so other classes may be tested
-                    # while loop terminates when all class are switched false
                     
-                    lim = 0
-                    simplifiable = True
-                    while simplifiable == True and lim < class_num:
-                        lim += 1
+                    for index in range(class_num):
+                        # repeating condition,
+                        # at most for the number of classes as stored in class_num,
+                        # at least once to identify
+                        #   an instance of some case of simplification
+                        #               or
+                        #   no classes of simplification
+                        
+                        # terminating condition,
+                        #   when simplification is run
+                        #               or
+                        #   when all class are switched false
+                        
                         
                         # EXPONENTIATION SUPERCLASS
 
@@ -2742,6 +2752,7 @@ def evaluator(input):
                                 end = c + 2
                                 simp = [neg_var(arrVar[c - 2], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 2], operation["addition"], 1, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^y case 2: x^y*x => x^(y+1), index = 1st x
@@ -2750,6 +2761,7 @@ def evaluator(input):
                                 end = c + 4
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 2], operation["addition"], 1, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                         
                             # x^y case 3: x^y * x^i
@@ -2758,6 +2770,7 @@ def evaluator(input):
                                 end = c + 6
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 2], operation["addition"], arrVar[c + 6], operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^y case 4: x/x^y => x^(1-y), index = 2nd x
@@ -2766,6 +2779,7 @@ def evaluator(input):
                                 end = c + 2
                                 simp = [neg_var(arrVar[c - 2], var), operation["exponentiation"], operation["open_parenthesis"], 1, operation["subtraction"], arrVar[c + 2], operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                                 
                             # x^y case 5: x^y/x => x^(y-1), index = 1st x
@@ -2774,6 +2788,7 @@ def evaluator(input):
                                 end = c + 4
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 2], operation["subtraction"], 1, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^y case 6: x^y / x^i => x^(y-i)
@@ -2782,6 +2797,7 @@ def evaluator(input):
                                 end = c + 6
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 2], operation["subtraction"], arrVar[c + 6], operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
@@ -2791,7 +2807,7 @@ def evaluator(input):
                         elif x_i == True and c + 2 < length and arrVar[c + 1] == operation["exponentiation"] and not isinstance(num_cast(arrVar[c + 2]), bool):
                             
                             # expedite falsification
-                            x_y = True  # x^y
+                            x_y = False  # x^y
                             
                             # x^i case 1: x*x^i => x^b, where b = i + 1, index = 2nd x
                             if c - 2 > -1 and test_term_ends(c - 2, c + 2, arrVar) and equ_var(arrVar[c - 2], var) and arrVar[c - 1] == operation["multiplication"]:
@@ -2800,6 +2816,7 @@ def evaluator(input):
                                 b = num_cast(arrVar[c + 2]) + 1
                                 simp = [neg_var(arrVar[c - 2], var), operation["exponentiation"], b]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^i case 2: x/x^i => x^b, where b = 1 - i, index = 2nd x
@@ -2809,6 +2826,7 @@ def evaluator(input):
                                 b = 1 - num_cast(arrVar[c + 2])
                                 simp = [neg_var(arrVar[c - 2], var), operation["exponentiation"], b]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
 
                             # x^i case 3: x^i*x => x^b, where b = i + 1, index = 1st x
@@ -2818,6 +2836,7 @@ def evaluator(input):
                                 b = num_cast(arrVar[c + 2]) + 1
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], b]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^i case 4: x^i/x => x^b, where b = i - 1, index = 1st x
@@ -2827,6 +2846,7 @@ def evaluator(input):
                                 b = num_cast(arrVar[c + 2]) - 1
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], b]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # x^i case 5: x^i * x^y => x^(y+i)
@@ -2835,6 +2855,7 @@ def evaluator(input):
                                 end = c + 6
                                 simp = [neg_var(arrVar[c + 4], var), operation["exponentiation"], operation["open_parenthesis"], arrVar[c + 6], operation["addition"], arrVar[c + 2], operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
@@ -2844,8 +2865,8 @@ def evaluator(input):
                         elif i_x == True and c - 2 > -1 and not isinstance(num_cast(arrVar[c - 2]), bool) and arrVar[c - 1] == operation["exponentiation"]:
 
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
                             
                             # i^x case 1: i*i^x => i^(x+1)
                             if c - 4 > -1 and test_term_ends(c - 4, c, arrVar) and num_cast(arrVar[c - 4]) == num_cast(arrVar[c - 2]) and arrVar[c - 3] == operation["multiplication"]:
@@ -2853,6 +2874,7 @@ def evaluator(input):
                                 end = c
                                 simp = [arrVar[c - 2], operation["exponentiation"], operation["open_parenthesis"], var, operation["addition"], 1, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # i^x case 2: i/i^x => i^(1-x)
@@ -2861,6 +2883,7 @@ def evaluator(input):
                                 end = c
                                 simp = [arrVar[c - 2], operation["exponentiation"], operation["open_parenthesis"], 1, operation["subtraction"], var, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             # i^x case 4: i^x/i => i^(x-1)
@@ -2869,20 +2892,22 @@ def evaluator(input):
                                 end = c + 2
                                 simp = [arrVar[c - 2], operation["exponentiation"], operation["open_parenthesis"], var, operation["subtraction"], 1, operation["close_parenthesis"]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
                                 i_x = False
 
+                        
                         # RADICATION SUPERCLASS
 
                         # k√x class
                         elif k_x == True and c - 2 > -1 and arrVar[c - 1] == operation["radication"] and not isinstance(num_cast(arrVar[c - 2]), bool):
                             
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
                             # k√x case 1: k√x^k = > x, operations cancel
                             if c + 2 < length and test_term_ends(c - 2, c + 2, arrVar) and arrVar[c + 1] == operation["exponentiation"] and not isinstance(num_cast(arrVar[c + 2]), bool) and num_cast(arrVar[c + 2]) == num_cast(arrVar[c - 2]):
@@ -2890,6 +2915,7 @@ def evaluator(input):
                                 end = c + 2
                                 simp = [var]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
@@ -2899,11 +2925,11 @@ def evaluator(input):
                         elif x_k == True and c + 2 < length and arrVar[c + 1] == operation["radication"] and not isinstance(num_cast(arrVar[c + 2]), bool):
                             
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
+                            k_x = False  # k√x, where k is a number
                             
                             # x√k case 1: x√k^x => k, operations cancel
                             if c + 4 < length and test_term_ends(c, c + 4, arrVar) and arrVar[c + 3] == operation["exponentiation"] and equ_var(arrVar[c + 4], var):
@@ -2911,6 +2937,7 @@ def evaluator(input):
                                 end = c + 4
                                 simp = [arrVar[c + 2]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
@@ -2920,18 +2947,19 @@ def evaluator(input):
                         elif y_x == True and c + 2 < length and arrVar[c + 1] == operation["radication"] and var_test(arrVar[c + 2]) == True:
                             
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
 
                             if c + 4 < length and test_term_ends(c, c + 4, arrVar) and arrVar[c + 3] == operation["exponentiation"] and equ_var(arrVar[c + 4], var):
                                 start = c
                                 end = c + 4
                                 simp = [arrVar[c + 2]]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
@@ -2941,13 +2969,13 @@ def evaluator(input):
                         elif _x == True and c - 1 > -1 and arrVar[c - 1] == operation["radication"]:
                             
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
-                            y_x = True  # y√x
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
+                            y_x = False  # y√x
 
                             # √x case 1: √x*√x => x, operations cancel
                             if c + 3 < length and test_term_ends(c - 1, c + 3, arrVar) and arrVar[c + 1] == operation["multiplication"] and arrVar[c + 2] == operation["radication"] and equ_var(arrVar[c + 3], var):
@@ -2955,6 +2983,7 @@ def evaluator(input):
                                 end = c + 3
                                 simp = [var]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
 
                             # √x case 2: √x^2 => x, operations cancel
@@ -2963,25 +2992,27 @@ def evaluator(input):
                                 end = c + 2
                                 simp = [var]
                                 arrVar = restructure(simp, start, end, arrVar)
+                                simplified = True
                                 break
                             
                             else:
                                 _x = False
                             
+                        
                         # ALGEBRAIC ARITHMETIC SUPERCLASS
                         
                         # MULTIPLICATION CLASS
                         elif mult == True and c + 2 < length and arrVar[c + 1] == operation["multiplication"]:
 
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
-                            y_x = True  # y√x
-                            _x = True   # √x 
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
+                            y_x = False  # y√x
+                            _x = False   # √x 
 
                             # SIMP1: multiplication of variables with coefficients
 
@@ -2998,6 +3029,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % multiply(coefficient1, coefficient2), operation["multiplication"], var, operation["exponentiation"], "2"], c - 2, c + 4, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # case: x * a * x => a * x ^ 2, where a is a particular value
@@ -3012,6 +3044,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % coefficient, operation["multiplication"], var, operation["exponentiation"], "2"], c, c + 4, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # SIMP3: a * x * b => (a*b) * x
@@ -3025,6 +3058,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % multiply(val1, val2), operation["multiplication"], var], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # SIMP4: a / x * b => (a*b) / x
@@ -3038,6 +3072,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % multiply(val1, val2), operation["division"], var], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                         
                             # SIMP2: multiply a variable by itself
@@ -3067,6 +3102,7 @@ def evaluator(input):
                                 arrVar = restructure([var, operation["exponentiation"],'%s' % power], c, place, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             else:
@@ -3076,16 +3112,16 @@ def evaluator(input):
                         elif div == True and c + 2 < length and arrVar[c + 1] == operation["division"]:
 
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
-                            y_x = True  # y√x
-                            _x = True   # √x 
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
+                            y_x = False  # y√x
+                            _x = False   # √x 
 
-                            mult = True # multiplication
+                            mult = False # multiplication
 
                             # SIMP5: division of variables with coefficients
 
@@ -3105,6 +3141,7 @@ def evaluator(input):
                                     return quotient
                                 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # SIMP7: a * x / b => (a/b) * x
@@ -3123,6 +3160,7 @@ def evaluator(input):
                                     return quotient
 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # SIMP8: a / x / b => (a/b) / x
@@ -3136,6 +3174,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % divide(val1, val2), operation["division"], var], c - 2, c + 2, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             # SIMP6: divide a variable by itself
@@ -3164,6 +3203,7 @@ def evaluator(input):
                                     # apply simplification to problem structure
                                     arrVar = restructure([var, operation["division"], operation["open_parenthesis"], var, operation["exponentiation"], '%s' % power, operation["close_parenthesis"]], c, place, arrVar)
                                     # end current simplification
+                                    simplified = True
                                     break
 
                                 elif c - 2 > -1:
@@ -3172,6 +3212,7 @@ def evaluator(input):
                                         # any number multiplied by 1 is itself
                                         arrVar = restructure("delete", c - 1, c + 2, arrVar)
                                         # end current simplification
+                                        simplified = True
                                         break
 
                                     elif arrVar[c - 1] == operation["division"]:
@@ -3179,6 +3220,7 @@ def evaluator(input):
                                         # any number divided by 1 is itself
                                         arrVar = restructure("delete", c - 1, c + 2, arrVar)
                                         # end current simplification
+                                        simplified = True
                                         break
                                         
                                 else:
@@ -3187,6 +3229,7 @@ def evaluator(input):
                                     # apply simplification to problem structure
                                     arrVar = restructure("1", c, c + 2, arrVar)
                                     # end current simplification
+                                    simplified = True
                                     break
                             
                             else:
@@ -3196,17 +3239,17 @@ def evaluator(input):
                         elif add == True and c + 2 < length and arrVar[c + 1] == operation["addition"]:
 
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
-                            y_x = True  # y√x
-                            _x = True   # √x 
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
+                            y_x = False  # y√x
+                            _x = False   # √x 
 
-                            mult = True # multiplication
-                            div = True  # division
+                            mult = False # multiplication
+                            div = False  # division
                             
                             # SIMP9: add coefficients between terms with no exponents
                             
@@ -3221,6 +3264,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % add(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # case: a * x + x => (a + 1) * x, where a is a particular value
@@ -3233,6 +3277,7 @@ def evaluator(input):
                                 arrVar = restructure([str(int(coefficient) + 1), operation["multiplication"], var], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                         
                             # case: x + a * x => (a + 1) * x, where a is a particular value
@@ -3246,6 +3291,7 @@ def evaluator(input):
                                     arrVar = restructure([str(int(coefficient) + 1), operation["multiplication"], var], c, c + 4, arrVar)
 
                                     # end current simplification
+                                    simplified = True
                                     break
 
                             # SIMP11: a + x + b => (a+b) + x
@@ -3259,20 +3305,22 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % add(val1, val2), operation["addition"], var], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             # SIMP12: a - x + b => (a+b) - x
                             elif c - 2 > -1 and test_term_ends(c - 2, c + 2, arrVar) and arrVar[c - 1] == operation["subtraction"] and not var_test(arrVar[c - 2]) and not var_test(arrVar[c + 2]):
                                     
-                                    # get term data
-                                    val1 = arrVar[c - 2]
-                                    val2 = arrVar[c + 2]
+                                # get term data
+                                val1 = arrVar[c - 2]
+                                val2 = arrVar[c + 2]
 
-                                    # apply simplification to problem structure
-                                    arrVar = restructure(['%s' % add(val1, val2), operation["subtraction"], var], c - 2, c + 2, arrVar)
+                                # apply simplification to problem structure
+                                arrVar = restructure(['%s' % add(val1, val2), operation["subtraction"], var], c - 2, c + 2, arrVar)
 
-                                    # end current simplification
-                                    break
+                                # end current simplification
+                                simplified = True
+                                break
                             
                             # SIMP10: add a variable to itself
                             elif arrVar[c + 2] == var and operate(c + 1, arrVar) == True:
@@ -3297,6 +3345,7 @@ def evaluator(input):
                                 # apply simplification to problem structure
                                 arrVar = restructure(['%s' % multiplier, operation["multiplication"], var], c, place, arrVar)
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             else:
@@ -3306,18 +3355,18 @@ def evaluator(input):
                         elif sub == True and c + 2 < length and arrVar[c + 1] == operation["subtraction"]:
 
                             # expedite falsification
-                            x_y = True  # x^y
-                            x_i = True  # x^i, where i is a number
-                            i_x = True  # i^x, where i is a number
+                            x_y = False  # x^y
+                            x_i = False  # x^i, where i is a number
+                            i_x = False  # i^x, where i is a number
                             
-                            k_x = True  # k√x, where k is a number
-                            x_k = True  # x√k, where k is a number
-                            y_x = True  # y√x
-                            _x = True   # √x 
+                            k_x = False  # k√x, where k is a number
+                            x_k = False  # x√k, where k is a number
+                            y_x = False  # y√x
+                            _x = False   # √x 
 
-                            mult = True # multiplication
-                            div = True  # division
-                            add = True  # addition
+                            mult = False # multiplication
+                            div = False  # division
+                            add = False  # addition
 
                             # SIMP13: subtract coefficients between terms with no exponents
 
@@ -3332,6 +3381,7 @@ def evaluator(input):
                                 arrVar = restructure(['%s' % subtract(coefficient1, coefficient2), operation["multiplication"], var], c - 2, c + 4, arrVar)
                                 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # case: a * x - x => (a - 1) * x, where a is a particular value
@@ -3344,6 +3394,7 @@ def evaluator(input):
                                 arrVar = restructure([str(int(coefficient) - 1), operation["multiplication"], var], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             # case: x - a * x => (1 - a) * x, where a is a particular value
@@ -3356,6 +3407,7 @@ def evaluator(input):
                                 arrVar = restructure([str(1 - int(coefficient)), operation["multiplication"], var], c, c + 4, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
 
                             # SIMP15: a + x - b => x+(a-b)
@@ -3369,6 +3421,7 @@ def evaluator(input):
                                 arrVar = restructure([var, operation["addition"], '%s' % subtract(val1, val2)], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             # SIMP16: a - x - b => (-x)+(a-b)
@@ -3383,6 +3436,7 @@ def evaluator(input):
                                 arrVar = restructure([var, operation["addition"], '%s' % subtract(val1, val2)], c - 2, c + 2, arrVar)
 
                                 # end current simplification
+                                simplified = True
                                 break
                         
                             # SIMP14: subtracted from itself
@@ -3408,26 +3462,31 @@ def evaluator(input):
                                 # apply simplification to problem structure
                                 arrVar = restructure(['%s' % (1 - multiplier), operation["multiplication"], var], c, place, arrVar)
                                 # end current simplification
+                                simplified = True
                                 break
                             
                             else:
                                 sub = False
                             
                         else:
-                            # terminate while loop
-                            simplifiable = False
+                            # no class => no simplifications on variable
+                            # maybe simplifications on next variable
+                            break
 
-                    
-                    # if simplifiable, keep simplifying
-                    # a.k.a. restart iteration on simplified problem
-                    if simplifiable == True:
-                        break # prevents testing of terminating condition
-                    
-                # test terminating condition
-                if c + 1 == length:
-                    # no further simplifications; on end character and no simplifications run
-                    simplifying = False
+                # trigger next simplification
+                if simplified == True:
+                    break
+                # else next variable search
+                
+            # no further simplifications
+            if simplified == False:
+                simplifying = False
 
+        if x >= simp_limit:
+            # exceeded simp_limit
+            global_bypass = True
+            return info["error"]["parameter"]["limit"]["simp_limit"][0]["code"]
+        
         # log end of simplification
         log_process("Simplification Complete")
 
@@ -5225,7 +5284,7 @@ def evaluator(input):
                         args[1] = x
 
                 elif isinstance(args[1], list):
-                    # simplify power expression then append power value
+                    # power expression then append power value
                     x = num_cast(section(args[1]))
                     if x == False:
                         # invalid arguments
@@ -5241,6 +5300,9 @@ def evaluator(input):
 
                 # perform algebraic operation using numeral set
                 base = simplify(args[0]) # base expression
+                if global_bypass == True:
+                    # exceeded simp_limit
+                    return base # contains error
                 power = args[1] # power value
 
                 # log values
@@ -5306,8 +5368,11 @@ def evaluator(input):
 
                     # Log keyword
                     log_process(arrVar[ref])
-                    # standardize/simplify
+                    # standardize
                     nomials = simplify(nomials)
+                    if global_bypass == True:
+                        # exceeded simp_limit
+                        return nomials # contains error
                     # restructure with product expression
                     arrVar = restructure(nomials, ref, ref + 1, arrVar)
                     # identify further cases of polynomial expansion
@@ -5323,6 +5388,10 @@ def evaluator(input):
                     for nomial in nomials:
                         # simplify nomial
                         x = simplify(nomial)
+                        if global_bypass == True:
+                            print("this one")
+                            # exceeded simp_limit
+                            return x
                         # structure by terms
                         x = get_terms(x)
                         # concatenate with sect_struct
@@ -5366,8 +5435,10 @@ def evaluator(input):
                                             y[0] = op + y[0]
 
                                 # get product term
-
                                 product += simplify(product_term(x, y))
+                                if global_bypass == True:
+                                    # exceeded simp limit
+                                    return product
                                 product.append(operation["addition"])
                         
                             # update sect product with last product for next expansion
@@ -5382,6 +5453,9 @@ def evaluator(input):
                         expansion.pop()
                         
                         expansion = simplify(expansion)
+                        if global_bypass == True:
+                            # exceeded simp limit
+                            return expansion
 
                         sect_product = get_terms(expansion)
 
@@ -5394,6 +5468,9 @@ def evaluator(input):
                     expansion.pop()
 
                     expansion = simplify(expansion)
+                    if global_bypass == True:
+                        # exceeded simp limit
+                        return expansion
                     
                     # restructure with product expression
                     arrVar = restructure(expansion, ref, ref + 1, arrVar)
@@ -5619,7 +5696,6 @@ def evaluator(input):
                 if has_var(arrVar):
                     # run algebraic simplifications
                     arrVar = simplify(arrVar)
-                    
                     # return algebraic expression
                     return arrVar
                 else:
@@ -5676,7 +5752,7 @@ def evaluator(input):
 
                 if len(sect) > 1:
 
-                    # calculate and simplify section
+                    # calculate section
                     sect = calculate(sect)
 
                     if global_bypass == True:
@@ -6054,9 +6130,10 @@ def evaluator(input):
                     # update arrVar with calculations and simplifications
                     arrVar = restructure(sect, start, end - 1, arrVar)
             
-        if thresh == paren_limit:
-            # paren lmit reached
-            return "limit reached: parenthesis"
+        if thresh >= paren_limit:
+            # paren lmit reached/exceeded
+            global_bypass = False
+            return info["error"]["parameter"]["limit"]["paren_limit"][0]["code"]
         else:
             # if nested expressions are solved
             if global_bypass == False:
@@ -6069,12 +6146,14 @@ def evaluator(input):
     
     def structure_problem(str):
         # I. structure problem string into problem structure
-        # II. Identify program entities
+        #   I. Single-index tokenization: multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
+        #   II. Multi-index tokenization: constants (keyword that becomes a value), key function key (remains a keyword)
+        # II. Identify program entities && detect non-entities
         # III. run post structure validation on problem structure
         nonlocal global_bypass
+        nonlocal is_key
         log_process("Generating Problem Structure from Problem String")
         log_process("Structuring multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets")
-        # structure multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
         structure = []
         digits = ""
         negative = False
@@ -6109,67 +6188,44 @@ def evaluator(input):
                     if (i == len(str) - 1 and len(digits) > 0):
                         structure.append(digits)
         
+        # structure constants
         log_process(structure)
         log_process("Structuring Constants")
-
-        # structure pi
-        ref = get_word("pi", structure)
-        itr = 0
-        while itr < const_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.pi, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("pi", structure)
+        const_count = 0
+        for i in range(0, len(info["constants"])):
+            constant = info["constants"][i]
+            obj = word_struct(constant["syntax"], structure, value=constant["value"], const_count=const_count)
+            if global_bypass == True:
+                return obj # contains error code
+            const_count = obj["count"]
+            structure = obj["struct"]
         
-        # structure tau
-        ref = get_word("tau", structure)
-        itr = 0
-        while itr < const_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.pi/2, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("tau", structure)
-        
-        # structure phi
-        ref = get_word("phi", structure)
-        itr = 0
-        while itr < const_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(1.61803398874989484820, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("phi", structure)
-        
-        # structure euler's number
-        ref = get_word("euler", structure)
-        itr = 0
-        while itr < const_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.e, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("euler", structure)
-        
-        # structure euler's constant (gamma)
-        ref = get_word("gamma", structure)
-        itr = 0
-        while itr < const_limit and ref is not None:
-            itr = itr + 1
-            structure = restructure(np.euler_gamma, ref["first"], ref["last"] - 1, structure)
-            ref = get_word("gamma", structure)
-
         # structure keywords
         log_process("Structuring Keywords")
         
         # structure key functions
-        for module in range(0, len(info["key_functions"])):
-            for i in range(0, len(info["key_functions"][module])):
-                structure = word_struct(info["key_functions"][module][i]["key"], structure, module)
-
+        key_count = 0
+        p1 = info["key_functions"]
+        for module in range(0, len(p1)): # each module
+            p2 = p1[module]
+            for i in range(0, len(p2)): # each key in module
+                obj = word_struct(info["key_functions"][module][i]["key"], structure, module, key_count=key_count)
+                if global_bypass == True:
+                    return obj # contains error code
+                key_count = obj["count"]
+                structure = obj["struct"]
+        
+        log_process(is_key)
         log_process(key_modules)
 
         # Identify program entities in problem structure
         err = identify_entities(structure)
         if len(err) > 0:
+            # non-entity detected
             global_bypass = True
             return info["error"]["poststructure"][0]["code"] + err
         
         # POST STRUCTURE VALIDATION
-        nonlocal is_key
         nonlocal is_brack
         nonlocal is_paren
 
@@ -6690,39 +6746,7 @@ def evaluator(input):
 
     return output
 
-#     # Development
-
-#     # Prints feedback
-#     logs = """"""
-#     process_log_keys = list(process_log.keys())
-#     for key in process_log_keys:
-#         logs += """%s
-# """ % process_log[key]
-    
-#     print(output["problem"])
-#     print(output["answer"])
-#     print(logs)
-
-# # test case
-# # n = 4
-# # side = 10
-# # theta = np.deg2rad(360/(2*n))
-# # radius = (side/2)/np.sin(theta)
-# # apothem = (side/2)/np.tan(theta)
-# input = {
-#     # "problem": "ngonas[4,%s]" % side, # note: number of sides, side length (square of side length 10)
-#     # "problem": "ngonar[4,%s]" % radius, # note: number of sides, radius length (radius of same sqaure)
-#     # "problem": "ngonaa[4,%s]" % apothem, # note: number of sides, apothem length (apothem of same square)
-#     # "problem": "ngonperim[4,%s]" % side, # note: 
-
-#     # "problem": "sin(sin())", # note: get function composition for single argument key functions 
-#     # "problem": "", # note: 
-
-#     "use_logs": "", # 1 = yes, else = no 
-# }
-# evaluator(input)
-
-# # comprehensive testing
+# comprehensive test
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -6798,7 +6822,7 @@ def evaluator(input):
 #     # CONSTANTS
 
 #     {"problem": "pi", "answer": "3.141592653589793"}, # pi
-#     {"problem": "tau", "answer": "1.5707963267948966"}, # half pi
+#     {"problem": "tau", "answer": "6.283185307179586"}, # twice pi
 #     {"problem": "phi", "answer": "1.618033988749895"}, # Golden Ratio
 #     {"problem": "euler", "answer": "2.718281828459045"}, # Euler's Number ; base e
 #     {"problem": "gamma", "answer": "0.5772156649015329"}, # Euler's Constant ; Gamma Function
@@ -7227,6 +7251,12 @@ def evaluator(input):
 #     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # 
 #     # {"problem": "", "answer": ""}, # 
 # ]
+
+# # single test
+# tests = [
+#     {"problem": "1+1", "answer": ""}
+# ]
+
 # def diagnostic():
 #     global tests
 #     print('Total number of tests: %s' % len(tests))

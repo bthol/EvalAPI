@@ -34,3 +34,4 @@ By this point, the program was getting large and difficult to manage. There was 
 
  *Note*: run `$pipenv shell` after dependency install and before running server
 
+force IPv4 in deploy:           `git push -4 heroku main`
