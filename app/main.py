@@ -17,7 +17,7 @@ parameters = {
     # limits exist as program parameters to prevent the possibility of infinite computation
     "paren_limit": 10**2, # controls the number of nested pairs of parenthesis in any given problem
     "const_limit": 10**3, # controls the number of any one kind of constant in any given problem
-    "key_limit": 10**2, # controls the number of any one kind of key function call in any given problem
+    "key_limit": 10**1, # controls the number of any one kind of key function call in any given problem
     "simp_limit": 10**3, # controls the number of cases of simplification in any given problem
     
     # operator parameters
@@ -48,9 +48,9 @@ info = {
     ],
 
     "constants": [
-        {"name":"π", "syntax":"pi", "value": np.pi}, # alt code 227
-        {"name":"𝜏", "syntax":"tau", "value": np.pi*2}, # alt code 231
-        {"name":"φ", "syntax":"phi", "value": (1 + np.sqrt(5))/2}, # alt code 237 or 232 for capital
+        {"name":"Pi (π)", "syntax":"pi", "value": np.pi}, # alt code 227
+        {"name":"Tau (𝜏)", "syntax":"tau", "value": np.pi*2}, # alt code 231
+        {"name":"Phi (φ)", "syntax":"phi", "value": (1 + np.sqrt(5))/2}, # alt code 237 or 232 for capital
         {"name":"Euler's Number (e)", "syntax":"euler", "value": np.e},
         {"name":"Euler's Constant (Γ)", "syntax":"gamma", "value": np.euler_gamma}, # alt code 226
     ],
@@ -216,7 +216,7 @@ info = {
             # {"name":"Polynomial Factorization", "key":"factor", "syntax":"factor[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
         
         # add:
-        #  - Polynomial Factorization: deterinistic algorithm for worst-case complexity polynomial is an open problem in mathematics
+        #  - Polynomial Factorization: deterministic algorithm for worst-case complexity polynomial is an open problem in mathematics
         #  - complex conjugate
         ],
     ],
@@ -2710,7 +2710,6 @@ def evaluator(input):
                     # simplification is the process of discovering instances of cases in problem structure
                     # and restructuring with logically equivalent and simpler expressions
 
-                    # Falsification Expedite
                     # class switches (defaultly all on)
                     class_num = 11 # stores number of classes
                     x_y = True  # x^y
@@ -6746,7 +6745,7 @@ def evaluator(input):
 
     return output
 
-# comprehensive test
+# # comprehensive test
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -7254,18 +7253,19 @@ def evaluator(input):
 
 # # single test
 # tests = [
-#     {"problem": "1+1", "answer": ""}
+#     {"problem": "cos(sin(0))", "answer": ""}
 # ]
 
 # def diagnostic():
 #     global tests
-#     print('Total number of tests: %s' % len(tests))
+#     tests_len = len(tests)
+#     print('Total number of tests: %s' % tests_len)
 #     for i, obj in enumerate(tests):
-#         print(obj["problem"])
+#         # print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
-#     return 'passed all tests'
+#     return 'passed all %s tests' % tests_len
 # print(diagnostic())
 
 
