@@ -1022,7 +1022,7 @@ def evaluator(input):
     # SPECIAL OPERATIONS START
 
     def monus(a, b):
-        # monus; truncated minus; doz (difference or zero)
+        # monus; truncated minus; dot minus; doz (difference or zero)
         a = float(a)
         if a % 1 == 0:
             a = int(a)
@@ -6275,8 +6275,12 @@ def evaluator(input):
                                 break
                             elif first == True and s1 != operation["radication"] and i - 1 > -1:
                                 s0 = structure[i - 1]
-                                if isinstance(num_cast(s0), bool) and var_test(s0) == False and s0 != operation["close_parenthesis"] and s0 != operation["close_bracket"] or isinstance(num_cast(s2), bool) and var_test(s2) == False and s2 != operation["open_parenthesis"] and s2 != operation["open_bracket"]:
-                                    # missing operands (number, variable, expression, set) for operation
+                                missing = True
+                                if not isinstance(num_cast(s0), bool) or var_test(s0) == True or s0 == operation["close_parenthesis"] or s0 == operation["close_bracket"]: # operand before operator
+                                    if not isinstance(num_cast(s2), bool) or var_test(s2) == True or s2 == operation["open_parenthesis"] or s2 == operation["open_bracket"] or key_test(s2) == True: # operand after operator
+                                        # both operands located (number, variable, expression, set) for operation
+                                        missing = False
+                                if missing == True:
                                     test7 = False
                                     break
         
@@ -6745,7 +6749,7 @@ def evaluator(input):
 
     return output
 
-# # comprehensive test
+# comprehensive test
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -6836,6 +6840,7 @@ def evaluator(input):
 #     {"problem": "1-1", "answer": "0"}, # subtraction
 
 #     {"problem": "2^1√4*2/2+1-2", "answer": "1"}, # operator precedence is enforced
+#     {"problem": "(1-1*48)*sin(0)", "answer": "0"}, # operator precedence is enforced
 
 #     {"problem": "√4", "answer": "2"}, # implicit square root for radication without radical
 #     {"problem": "3√8", "answer": "2"}, # performs nth roots where n = given radical
@@ -7253,7 +7258,7 @@ def evaluator(input):
 
 # # single test
 # tests = [
-#     {"problem": "cos(sin(0))", "answer": ""}
+#     {"problem": "", "answer": ""}
 # ]
 
 # def diagnostic():
