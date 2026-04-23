@@ -1,5 +1,6 @@
 # Dependencies
 import math
+import cmath
 import numpy as np
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -49,7 +50,7 @@ info = {
 
     "constants": [
         {"name":"Pi (π)", "syntax":"pi", "value": np.pi}, # alt code 227
-        {"name":"Tau (𝜏)", "syntax":"tau", "value": np.pi*2}, # alt code 231
+        {"name":"Tau (𝜏)", "syntax":"tau", "value": math.tau}, # alt code 231
         {"name":"Phi (φ)", "syntax":"phi", "value": (1 + np.sqrt(5))/2}, # alt code 237 or 232 for capital
         {"name":"Euler's Number (e)", "syntax":"euler", "value": np.e},
         {"name":"Euler's Constant (Γ)", "syntax":"gamma", "value": np.euler_gamma}, # alt code 226
@@ -57,7 +58,7 @@ info = {
 
     # the whole lowercase alphabet may be used as variables (keys are also composed of lowercase letters)
     # "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
-    "variables": ["x", "y", "z", "a", "b", "c", "n", "i"], # 8 variables is plenty, i is planned to represent imaginary numbers
+    "variables": ["x", "y", "z", "a", "b", "c", "n", "f", "g", "i"], # 10 variables is plenty, i is planned to represent imaginary numbers, f and g will represent functions
 
     "key_functions": [
         # Trigonomic Module
@@ -179,7 +180,7 @@ info = {
             {"name":"Least Common Multiple", "key":"lcm", "syntax": "lcm[a,b]", "about": "Gets the least common multiple of values a and b within square brackets, where a and b are values or expressions that evaluate to values wrapped in square brackets, e.g. lcm[a,[b+x]]."},
              
         # add
-        #  - partition: no known closed general formula for partition
+        #  - partition: no known closed general formula for partition;
 
         ],
 
@@ -268,19 +269,19 @@ info = {
 
         "prestructure": [
             {"code": "ERROR_101_0", "description": "prestructure error: empty string"},
-            {"code": "ERROR_102_1", "description": "prestructure error: single type of non-numeral character"},
+            {"code": "ERROR_102_1", "description": "prestructure error: repeating non-numeral character"},
             {"code": "ERROR_103_2", "description": "prestructure error: invalid character in problem string"},
+            {"code": "ERROR_104_3", "description": "no division by zero"},
+            {"code": "ERROR_105_4", "description": "prestructure error: invalid parenthesis"},
+            {"code": "ERROR_106_5", "description": "prestructure error: invalid brackets"},
         ],
 
         "poststructure": [
             {"code": "ERROR_201_0", "description": "poststructure error: non-entity detected"},
-            {"code": "ERROR_202_1", "description": "poststructure error: invalid parenthesis"},
-            {"code": "ERROR_203_2", "description": "poststructure error: invalid brackets"},
-            {"code": "ERROR_204_3", "description": "poststructure error: no consecutive variables"},
-            {"code": "ERROR_205_4", "description": "poststructure error: invalid key function syntax"},
-            {"code": "ERROR_206_5", "description": "poststructure error: no consecutive operations"},
-            {"code": "ERROR_207_6", "description": "poststructure error: no division by zero"},
-            {"code": "ERROR_208_7", "description": "poststructure error: operations require operands"},
+            {"code": "ERROR_202_1", "description": "poststructure error: invalid key function syntax"},
+            {"code": "ERROR_203_2", "description": "poststructure error: no consecutive variables"},
+            {"code": "ERROR_204_3", "description": "poststructure error: no consecutive operations"},
+            {"code": "ERROR_205_4", "description": "poststructure error: operations require operands"},
         ],
 
         "key_function": {
@@ -551,13 +552,13 @@ def evaluator(input):
     # Operator Precedence is from highest to least in this structure
     operator_precedence = [[operation["subtraction"], operation["addition"]], [operation["division"], operation["multiplication"]], [operation["radication"], operation["exponentiation"]]]
     
-    # variable characters
+    # variable characters (variable at end of struture is imaginary variable)
     variables = ""
     for v in info["variables"]:
         variables += v
 
     # represents a string containing all of the valid non-numeral characters
-    valid_chars = " " + "." + "," + "defghijklmnopqrstuvw" + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
+    valid_chars = " " + "." + "," + "dehjklmnopqrstuvw" + variables + operation["addition"] + operation["subtraction"] + operation["multiplication"] + operation["division"] + operation["exponentiation"] + operation["radication"] + operation["open_parenthesis"] + operation["close_parenthesis"] + operation["open_bracket"] + operation["close_bracket"]
     
     # global_bypass is an emergeny brake which prevents the continuation of the program
     # If True, bypasses the whole program 
@@ -630,15 +631,18 @@ def evaluator(input):
     
     # STRUCTURE START
 
-    def num_cast(str):
+    def num_cast(dat):
         # a single data type converter for all your data type conversion needs!
-        try:
-            num = float(str)
-            if (num % 1 == 0):
-                num = int(num)
-            return num
-        except:
-            return False
+        if isinstance(dat, complex):
+            return dat
+        else:
+            try:
+                num = float(dat)
+                if (num % 1 == 0):
+                    num = int(num)
+                return num
+            except:
+                return False
     
     def restructure(solution, start, end, arr):
         # A single restructure function for all your restructuring needs!
@@ -989,7 +993,7 @@ def evaluator(input):
             return quotient
         else:
             global_bypass = True
-            return info["error"]["poststructure"][6]["code"]
+            return info["error"]["prestructure"][3]["code"]
 
     def add(augend, addend):
         augend = float(augend)
@@ -1367,20 +1371,24 @@ def evaluator(input):
 
     def standardize_form(arr):
         # identifies terms in algebraic expression,
-        # standardizes term forms, combines like terms,
+        # standardizes term forms
         # standardizes expression form, returns result
         # called before simplification + after when destandardized from simplification 
         log_process("Standardizing Format of Algebraic Terms and Expressions")
         log_process(arr)
 
-        # return empty argument
+        # return single/empty argument
         if not isinstance(arr, list) or len(arr) == 0:
             log_process("Standardization Aborted")
             return arr
 
         # prevent standardization on blacklisted characters
+        a = operation["open_parenthesis"]
+        b = operation["close_parenthesis"]
+        c = operation["open_bracket"]
+        d = operation["close_bracket"]
         for i in arr:
-            if i == operation["open_parenthesis"] or i == operation["close_parenthesis"] or i == operation["open_bracket"] or i == operation["close_bracket"]:
+            if i == a or i == b or i == c or i == d:
                 log_process("Standardization Aborted")
                 return arr
 
@@ -6217,6 +6225,14 @@ def evaluator(input):
         log_process(is_key)
         log_process(key_modules)
 
+        # # structure imaginary and complex numbers
+        # imgnry = variables[len(variables) - 1] # imaginary variable
+        # structure_len = len(structure)
+        # for i in range(structure_len):
+        #     # look for ["i", ")"], where "i" is the imaginary variable
+        #     if structure[i] == imgnry and i + 1 < structure_len and structure[i + 1] == operation["close_parenthesis"]:
+
+
         # Identify program entities in problem structure
         err = identify_entities(structure)
         if len(err) > 0:
@@ -6229,26 +6245,17 @@ def evaluator(input):
         nonlocal is_paren
 
         # validation variables
-        test1 = True
-        test2 = True
+        is_valid = True
         test3 = True
         test4 = True
         test5 = True
-        test6 = True
         test7 = True
         key_error = ""
         structure_length = len(structure)
-
-        # TEST6: Zero Division
-
-        for i in range(0, structure_length):
-            if i + 1 < structure_length and structure[i] == operation["division"] and structure[i + 1] == "0":
-                test6 = False
-                break
-
+        
         # TEST5: consecutive operations / TEST7: no operands (number, variable, expression, set) for operation
 
-        if test6 == True:
+        if is_valid == True:
 
             # test ends of structure for operation
             s_start = structure[0]
@@ -6256,9 +6263,12 @@ def evaluator(input):
             if op_test(s_end) and s_end != operation["close_parenthesis"] and s_end != operation["close_bracket"]:
                 # operation at end of structure
                 test7 = False
+                is_valid = False
             elif op_test(s_start) and s_start != operation["radication"] and s_start != operation["open_parenthesis"] and s_start != operation["open_bracket"]:
                 # operation at start of structure
                 test7 = False
+                is_valid = False
+
             if test7 == True:
                 for i in range(0, structure_length):
                     # each index in problem structure
@@ -6272,109 +6282,36 @@ def evaluator(input):
                             if first == True and second == True:
                                 # consecutive operations
                                 test5 = False
+                                is_valid = False
                                 break
                             elif first == True and s1 != operation["radication"] and i - 1 > -1:
                                 s0 = structure[i - 1]
                                 missing = True
-                                if not isinstance(num_cast(s0), bool) or var_test(s0) == True or s0 == operation["close_parenthesis"] or s0 == operation["close_bracket"]: # operand before operator
+                                if not isinstance(num_cast(s0), bool) or var_test(s0) == True or s0 == operation["close_parenthesis"] or s0 == operation["close_bracket"] or key_test(s0): # operand before operator
                                     if not isinstance(num_cast(s2), bool) or var_test(s2) == True or s2 == operation["open_parenthesis"] or s2 == operation["open_bracket"] or key_test(s2) == True: # operand after operator
                                         # both operands located (number, variable, expression, set) for operation
                                         missing = False
                                 if missing == True:
                                     test7 = False
+                                    is_valid = False
                                     break
-        
-        # TEST1: valid parenthesis
-        
-        if is_paren == True and test6 == True and test5 == True:
-
-            nest_lvl = 0
-            parens = []
-
-            for i in range(0, structure_length):
-                if structure[i] == operation["open_parenthesis"]:
-                    nest_lvl += 1
-                    parens.append(structure[i])
-                elif structure[i] == operation["close_parenthesis"]:
-                    nest_lvl -= 1
-                    parens.append(structure[i])
-
-            if nest_lvl != 0:
-                # unequal number of open and closing characters
-                test1 = False
-            elif parens[len(parens) - 1] == operation["open_parenthesis"]:
-                # no opening character on end
-                test1 = False
-            elif parens[0] == operation["close_parenthesis"]:
-                # no closing character on start
-                test1 = False
-            else:
-                # test for pairs (account for nesting)
-                for i in range(0, structure_length):
-                    if structure[i] == operation["open_parenthesis"]:
-                        x = 0
-                        for j in range(i, structure_length):
-                            if structure[j] == operation["close_parenthesis"]:
-                                x -= 1
-                            elif structure[j] == operation["open_parenthesis"]:
-                                x += 1
-                            if x == 0:
-                                break
-                        if x != 0:
-                            test1 = False
-        
-        # TEST2: valid brackets
-
-        if is_brack == True and test6 == True and test5 == True and test1 == True:
-                
-            nest_lvl = 0
-            bracks = []
-
-            for i in range(0, structure_length):
-                if structure[i] == operation["open_bracket"]:
-                    nest_lvl += 1
-                    bracks.append(structure[i])
-                elif structure[i] == operation["close_bracket"]:
-                    nest_lvl -= 1
-                    bracks.append(structure[i])
-
-            if nest_lvl != 0:
-                # unequal number of open and closing characters
-                test2 = False
-            elif bracks[len(bracks) - 1] == operation["open_bracket"]:
-                # no opening character on end
-                test2 = False
-            elif bracks[0] == operation["close_bracket"]:
-                # no closing character on start
-                test2 = False
-            else:
-                # test for pairs (account for nesting)
-                for i in range(0, structure_length):
-                    if structure[i] == operation["open_bracket"]:
-                        x = 0
-                        for j in range(i, structure_length):
-                            if structure[j] == operation["close_bracket"]:
-                                x -= 1
-                            elif structure[j] == operation["open_bracket"]:
-                                x += 1
-                            if x == 0:
-                                break
-                        if x != 0:
-                            test2 = False
-            
+         
         # TEST3: consecutive variables
-        if test6 == True and test5 == True and test1 == True and test2 == True:
+
+        if is_valid == True:
             for i in range(0, structure_length):
                 if i + 1 < structure_length and var_test(structure[i]) and var_test(structure[i + 1]):
                     test3 = False
+                    is_valid = False
                     break
         
         # TEST4: valid key function syntax
 
-        if len(is_key) > 0 and test6 == True and test5 == True and test1 == True and test2 == True and test3 == True:
+        if is_valid == True and len(is_key) > 0:
             if is_paren == False and is_brack == False:
                 # is key but no parenthesis and no brackets
                 test4 = False
+                is_valid = False
                 key_error = 'key requires arguments wrapped in parenthesis or brackets'
             else:
                 # is key and parens or is key and brackets => test index
@@ -6385,6 +6322,7 @@ def evaluator(input):
                         if i + 3 >= structure_length:
                             # key passed last valid index to also have arguments
                             test4 = False
+                            is_valid = False
                             key_error = '%s key requires an argument' % key
                             break
                         elif i + 1 < structure_length:
@@ -6393,6 +6331,7 @@ def evaluator(input):
                             # no parens or bracks
                             if after_key != operation["open_parenthesis"] and after_key != operation["open_bracket"]:
                                 test4 = False
+                                is_valid = False
                                 key_error = '%s key requires argument to be wrapped in parenthesis or brackets' % key
                                 break
                             
@@ -6411,6 +6350,7 @@ def evaluator(input):
 
                                                 if after_key != open_char:
                                                     test4 = False
+                                                    is_valid = False
                                                     key_error = '%s key requires %s not %s' % (key, open_char, after_key)
                                                     break
 
@@ -6438,6 +6378,7 @@ def evaluator(input):
                                                     # test for no argument
                                                     if len(arguments) == 0:
                                                         test4 = False
+                                                        is_valid = False
                                                         key_error = '%s key requires an argument' % key
 
                                                     # test argument for variable + single argument
@@ -6449,6 +6390,7 @@ def evaluator(input):
                                                         elif c == ",":
                                                             # parenthesis cannot contain multiple arguments
                                                             test4 = False
+                                                            is_valid = False
                                                             key_error = '%s key only accepts a single argument' % key
                                                             break
 
@@ -6474,12 +6416,14 @@ def evaluator(input):
                                                     # test for no argument
                                                     if len(arguments) == 0:
                                                         test4 = False
+                                                        is_valid = False
                                                         key_error = '%s requires an argument' % key
 
                                                     # test argument for variables
                                                     for c in arguments:
                                                         if var_test(c):
                                                             test4 = False
+                                                            is_valid = False
                                                             key_error = 'variables detected in argument for %s key' % key
                                                             break
                                                     
@@ -6521,6 +6465,7 @@ def evaluator(input):
                                                         if len(args) < num_args:
                                                             # incorrect number of arguments
                                                             test4 = False
+                                                            is_valid = False
                                                             key_error = '%s key has insufficient arguments' % key
                                                             break
 
@@ -6529,6 +6474,7 @@ def evaluator(input):
                                                             if len(args[c]) > 1:
                                                                 if args[c][0] != operation["open_bracket"] or args[c][len(args[c]) - 1] != operation["close_bracket"]:
                                                                     test4 = False
+                                                                    is_valid = False
                                                                     key_error = 'wrap expression arguments in brackets for %s key' % key
                                                                     break
 
@@ -6553,34 +6499,22 @@ def evaluator(input):
                                         # reached end with no error
                                         break
         
-        if test1 == False:
-            # invalid parenthesis => terminate program
+        if test4 == False:
+            # invalid key function syntax => terminate program
             global_bypass = True
-            return info["error"]["poststructure"][1]["code"]
-        elif test2 == False:
-            # invalid brackets => terminate program
-            global_bypass = True
-            return info["error"]["poststructure"][2]["code"]
+            return info["error"]["poststructure"][1]["code"] + ' | %s' % key_error
         elif test3 == False:
             # consecutive variables => terminate program
             global_bypass = True
-            return info["error"]["poststructure"][3]["code"]
-        elif test4 == False:
-            # invalid key function syntax => terminate program
-            global_bypass = True
-            return info["error"]["poststructure"][4]["code"] + ' | %s' % key_error
+            return info["error"]["poststructure"][2]["code"]
         elif test5 == False:
             # consecutive operations => terminate program
             global_bypass = True
-            return info["error"]["poststructure"][5]["code"]
-        elif test6 == False:
-            # dicision by zero => terminate program
-            global_bypass = True
-            return info["error"]["poststructure"][6]["code"]
+            return info["error"]["poststructure"][3]["code"]
         elif test7 == False:
             # no operands for operation => terminate program
             global_bypass = True
-            return info["error"]["poststructure"][7]["code"]
+            return info["error"]["poststructure"][4]["code"]
         else:
 
             # generates substructures, i.e. "sets", within structure
@@ -6637,7 +6571,7 @@ def evaluator(input):
         if len(set(problem)) > 1:
             # multiple character types
 
-            # TEST0: character validation
+            # TEST0: Character validation
             character = ""
             for char in problem:
                 try:
@@ -6657,35 +6591,133 @@ def evaluator(input):
             
             if global_bypass == True:
                 # invalid character => terminate program
-                global_bypass = True
                 answer = info["error"]["prestructure"][2]["code"] + ' | Invalid character: %s' % character
             else:
-                # all characters in problem string are valid characters
-                
-                # ------------------- #
-                # VALID PRE STRUCTURE #
-                # ------------------- #
+                # enforce semantic rules for single index entities
+                problem_length = len(problem)
+                test1 = True
+                test2 = True
+                test3 = True
 
-                # change first log
-                if use_logs == "1":
-                    process_log["0"] = "Process Log Start"
-                
-                # POST STRUCTURE VALIDATION
-                problem = input["problem"] # get problem string from input object argument
-                structure = structure_problem(problem) # perform structurization and post structure validation
-                if global_bypass == True:
-                    # INVALID POST STRUCTURE
-                    global_bypass = True
-                    answer = structure # contains error code that tripped global_bypass
-                else:
+                # TEST1: Zero Division
 
-                    # -------------------- #
-                    # VALID POST STRUCTURE #
-                    # -------------------- #
+                for i in range(0, problem_length):
+                    if i + 1 < problem_length and problem[i] == operation["division"] and problem[i + 1] == "0":
+                        test1 = False
+                        break
+
+                # TEST2: Valid Parenthesis
+
+                if test1 == True:
+                    nest_lvl = 0
+                    parens = []
+
+                    for i in range(0, problem_length):
+                        if problem[i] == operation["open_parenthesis"]:
+                            nest_lvl += 1
+                            parens.append(problem[i])
+                        elif problem[i] == operation["close_parenthesis"]:
+                            nest_lvl -= 1
+                            parens.append(problem[i])
                     
-                    # evaluate problem structure
-                    # section > calculate > key_functions + arithmetic + simplify > answer
-                    answer = section(structure)
+                    if len(parens) > 0:
+                        if nest_lvl != 0:
+                            # unequal number of open and closing characters
+                            test2 = False
+                        elif parens[len(parens) - 1] == operation["open_parenthesis"]:
+                            # no opening character on end
+                            test2 = False
+                        elif parens[0] == operation["close_parenthesis"]:
+                            # no closing character on start
+                            test2 = False
+                        else:
+                            # test for pairs (account for nesting)
+                            for i in range(0, problem_length):
+                                if problem[i] == operation["open_parenthesis"]:
+                                    x = 0
+                                    for j in range(i, problem_length):
+                                        if problem[j] == operation["close_parenthesis"]:
+                                            x -= 1
+                                        elif problem[j] == operation["open_parenthesis"]:
+                                            x += 1
+                                        if x == 0:
+                                            break
+                                    if x != 0:
+                                        test2 = False
+            
+                # TEST3: Valid Brackets``
+
+                if test1 == True and test2 == True:
+                        
+                    nest_lvl = 0
+                    bracks = []
+
+                    for i in range(0, problem_length):
+                        if problem[i] == operation["open_bracket"]:
+                            nest_lvl += 1
+                            bracks.append(problem[i])
+                        elif problem[i] == operation["close_bracket"]:
+                            nest_lvl -= 1
+                            bracks.append(problem[i])
+
+                    if len(bracks) > 0:
+                        if nest_lvl != 0:
+                            # unequal number of open and closing characters
+                            test2 = False
+                        elif bracks[len(bracks) - 1] == operation["open_bracket"]:
+                            # no opening character on end
+                            test2 = False
+                        elif bracks[0] == operation["close_bracket"]:
+                            # no closing character on start
+                            test2 = False
+                        else:
+                            # test for pairs (account for nesting)
+                            for i in range(0, problem_length):
+                                if problem[i] == operation["open_bracket"]:
+                                    x = 0
+                                    for j in range(i, problem_length):
+                                        if problem[j] == operation["close_bracket"]:
+                                            x -= 1
+                                        elif problem[j] == operation["open_bracket"]:
+                                            x += 1
+                                        if x == 0:
+                                            break
+                                    if x != 0:
+                                        test2 = False
+                
+                if test1 == False:
+                    # zero division
+                    answer = info["error"]["prestructure"][3]["code"]
+                elif test2 == False:
+                    # invalid parenthesis
+                    answer = info["error"]["prestructure"][4]["code"]
+                elif test3 == False:
+                    # invalid brackets
+                    answer = info["error"]["prestructure"][5]["code"]
+                else:
+                        
+                    # ------------------- #
+                    # VALID PRE STRUCTURE #
+                    # ------------------- #
+
+                    # change first log
+                    if use_logs == "1":
+                        process_log["0"] = "Process Log Start"
+                    
+                    # POST STRUCTURE VALIDATION
+                    structure = structure_problem(problem) # perform structurization and post structure validation
+                    if global_bypass == True:
+                        # INVALID POST STRUCTURE
+                        answer = structure # contains error code that tripped global_bypass
+                    else:
+
+                        # -------------------- #
+                        # VALID POST STRUCTURE #
+                        # -------------------- #
+                        
+                        # evaluate problem structure
+                        # section > calculate > key_functions + arithmetic + simplify > answer
+                        answer = section(structure)
 
         else:
             # string of single character type
@@ -6699,7 +6731,7 @@ def evaluator(input):
                 
                 # INVALID PRE STRUCTURE
                 
-                # non-numeral character type for repeating character
+                # repeating non-numeral character
                 global_bypass = True
                 answer = info["error"]["prestructure"][1]["code"]  
        
@@ -6749,7 +6781,7 @@ def evaluator(input):
 
     return output
 
-# comprehensive test
+# # comprehensive test
 # tests = [
 
 #     # PRE-STRUCTURE VALIDATION
@@ -6769,58 +6801,59 @@ def evaluator(input):
 #     {"problem": "1+q", "answer": "ERROR_201_0 | non-entity: q"}, # formatting error for valid characters but no semantic meaning
 
 #     # TEST6
-#     {"problem": "1/0", "answer": "ERROR_207_6"}, # prevents zero division before calculation
-#     {"problem": "3/(2-2)", "answer": "ERROR_207_6"}, # prevents zero division during calculation
+#     {"problem": "1/0", "answer": "ERROR_104_3"}, # prevents zero division before calculation
+#     {"problem": "3/(2-2)", "answer": "ERROR_104_3"}, # prevents zero division during calculation
 
 #     # TEST5
-#     {"problem": "1++1", "answer": "ERROR_206_5"},
-#     {"problem": "1+-1", "answer": "ERROR_206_5"}, # different operations
+#     {"problem": "1++1", "answer": "ERROR_204_3"},
+#     {"problem": "1+-1", "answer": "ERROR_204_3"}, # different operations
 #     {"problem": "2*√16", "answer": "8"}, # except for second operation being √
-#     {"problem": "1√*16", "answer": "ERROR_206_5"}, # including for first operation being √
-#     {"problem": "-1*2", "answer": "ERROR_208_7"}, # prevent operations without operands
+#     {"problem": "1√*16", "answer": "ERROR_204_3"}, # including for first operation being √
+#     {"problem": "-1*2", "answer": "ERROR_205_4"}, # prevent operations without operands
 
 #     # TEST1
-#     {"problem": "1)+(1*2)", "answer": "ERROR_202_1"}, #      )()     : unequal number of open and close characters
-#     {"problem": "1+)1(+(1*2)", "answer": "ERROR_202_1"}, #   )(()    : no close on first parens
-#     {"problem": "(1*2)+)1(+1", "answer": "ERROR_202_1"}, #   ())(    : no open on last parens
-#     {"problem": "(1*2)+)3(+(1)", "answer": "ERROR_202_1"}, # ())(()  : all open characters have a closing pair
+#     {"problem": "1)+(1*2)", "answer": "ERROR_105_4"}, #      )()     : unequal number of open and close characters
+#     {"problem": "1+)1(+(1*2)", "answer": "ERROR_105_4"}, #   )(()    : no close on first parens
+#     {"problem": "(1*2)+)1(+1", "answer": "ERROR_105_4"}, #   ())(    : no open on last parens
+#     {"problem": "(1*2)+)3(+(1)", "answer": "ERROR_105_4"}, # ())(()  : all open characters have a closing pair
     
 #     # TEST2    
-#     {"problem": "1]+[1*2]", "answer": "ERROR_203_2"}, #      ][]     : unequal number of open and close characters
-#     {"problem": "1+]1[+[1*2]", "answer": "ERROR_203_2"}, #   ][[]    : no close on first parens
-#     {"problem": "[1*2]+]1[+1", "answer": "ERROR_203_2"}, #   ]][     : no open on last parens
-#     {"problem": "[1*2]+]3[+[1]", "answer": "ERROR_203_2"}, # []][[]  : all open characters have a closing pair
+#     {"problem": "1]+[1*2]", "answer": "ERROR_105_4"}, #      ][]     : unequal number of open and close characters
+#     {"problem": "1+]1[+[1*2]", "answer": "ERROR_105_4"}, #   ][[]    : no close on first parens
+#     {"problem": "[1*2]+]1[+1", "answer": "ERROR_105_4"}, #   ]][     : no open on last parens
+#     {"problem": "[1*2]+]3[+[1]", "answer": "ERROR_105_4"}, # []][[]  : all open characters have a closing pair
 
 #     # TEST3
-#     {"problem": "2+3-xy", "answer": "ERROR_204_3"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
+#     {"problem": "2+3-xy", "answer": "ERROR_203_2"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
 
 #     # TEST4
-#     {"problem": "sin", "answer": "ERROR_205_4 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
-#     {"problem": "7-sin+1", "answer": "ERROR_205_4 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
-#     {"problem": "(1+2)*3-sin", "answer": "ERROR_205_4 | sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
-#     {"problem": "sin+1*(2-3)", "answer": "ERROR_205_4 | sin key requires argument to be wrapped in parenthesis or brackets"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
-#     {"problem": "sin([9-8],2)", "answer": "ERROR_205_4 | sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
+#     {"problem": "sin", "answer": "ERROR_202_1 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks
+#     {"problem": "7-sin+1", "answer": "ERROR_202_1 | key requires arguments wrapped in parenthesis or brackets"}, # prevents program from evaluating problem structure if the problem structure has key without parens or bracks in middle of problem
+#     {"problem": "(1+2)*3-sin", "answer": "ERROR_202_1 | sin key requires an argument"}, # prevents program from evaulating problem structure if there is a key at the end with no argument
+#     {"problem": "sin+1*(2-3)", "answer": "ERROR_202_1 | sin key requires argument to be wrapped in parenthesis or brackets"}, # prevents program from evaulating problem structure if there is a key before the end with no argument
+#     {"problem": "sin([9-8],2)", "answer": "ERROR_202_1 | sin key only accepts a single argument"}, # prevents multiple arguments in single argument functions while allowing expression arguments
 
-#     {"problem": "sin[0]", "answer": "ERROR_205_4 | sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
-#     {"problem": "mean(4,8)", "answer": "ERROR_205_4 | mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "sin[0]", "answer": "ERROR_202_1 | sin key requires ( not ["}, # prevents program from evaulating problem structure if wrong open and close characters are used
+#     {"problem": "mean(4,8)", "answer": "ERROR_202_1 | mean key requires [ not ("}, # prevents program from evaulating problem structure if wrong open and close characters are used
 
-#     {"problem": "sin(x)", "answer": "ERROR_205_4 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable argument in parenthesis
-#     {"problem": "sin(1+2/x)", "answer": "ERROR_205_4 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable in expression argument in parenthesis
-#     {"problem": "sin()", "answer": "ERROR_205_4 | sin key requires an argument"}, # prevents running of key function with no argument in parenthesis
+#     {"problem": "sin(x)", "answer": "ERROR_202_1 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable argument in parenthesis
+#     {"problem": "sin(1+2/x)", "answer": "ERROR_202_1 | variables detected in argument for sin key"}, # prevents program from evaulating problem structure if variable in expression argument in parenthesis
+#     {"problem": "sin()", "answer": "ERROR_202_1 | sin key requires an argument"}, # prevents running of key function with no argument in parenthesis
 
-#     {"problem": "mean[4,x]", "answer": "ERROR_205_4 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable argument in brackets
-#     {"problem": "mean[4,[2*x]]", "answer": "ERROR_205_4 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable in expression argument in brackets
-#     {"problem": "mean[]", "answer": "ERROR_205_4 | mean key requires an argument"}, # prevents running of key function with no argument in brackets
-#     {"problem": "mean[4,4+4]", "answer": "ERROR_205_4 | wrap expression arguments in brackets for mean key"}, # prevents running of key function without expression arguments wrapped in square brackets
+#     {"problem": "mean[4,x]", "answer": "ERROR_202_1 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable argument in brackets
+#     {"problem": "mean[4,[2*x]]", "answer": "ERROR_202_1 | variables detected in argument for mean key"}, # prevents program from evaulating problem structure if variable in expression argument in brackets
+#     {"problem": "mean[]", "answer": "ERROR_202_1 | mean key requires an argument"}, # prevents running of key function with no argument in brackets
+#     {"problem": "mean[4,4+4]", "answer": "ERROR_202_1 | wrap expression arguments in brackets for mean key"}, # prevents running of key function without expression arguments wrapped in square brackets
 #     {"problem": "mean[4,[4+4]]", "answer": "6"}, # as it should be; gets 6
 
 #     {"problem": "sd[[mean[0,0]],1]", "answer": "0.5"}, # validation works for key function composition; gets 0.5
 
-#     {"problem": "mean[10]", "answer": "ERROR_205_4 | mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
-#     {"problem": "meanw[[10,0.5]]", "answer": "ERROR_205_4 | meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
+#     {"problem": "mean[10]", "answer": "ERROR_202_1 | mean key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function
+#     {"problem": "meanw[[10,0.5]]", "answer": "ERROR_202_1 | meanw key has insufficient arguments"}, # prevents program from evaluating problem structure if insufficient arguments for key function with expression arguments
     
-#     {"problem": "sin(1,[2*8/4-2])", "answer": "ERROR_205_4 | sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
-#     {"problem": "expand[[]]", "answer": "ERROR_205_4 | expand key has missing expression argument"}, # no empty expression arguments
+#     {"problem": "sin(1,[2*8/4-2])", "answer": "ERROR_202_1 | sin key only accepts a single argument"}, # prevents mutiple arguments into single argument key function permitting expression arguments
+#     {"problem": "expand[[]]", "answer": "ERROR_202_1 | expand key has missing expression argument"}, # no empty expression arguments
+#     {"problem": "expand[[2*x],[]]", "answer": "ERROR_202_1 | expand key has missing expression argument"}, # no empty expression arguments
     
 #     # CONSTANTS
 
@@ -7258,7 +7291,12 @@ def evaluator(input):
 
 # # single test
 # tests = [
-#     {"problem": "", "answer": ""}
+#     {"problem": "(1-i)+(3+2*i)", "answer": ""}
+#     # {"problem": "(1-i)-(3+2*i)", "answer": ""}
+#     # {"problem": "(1-i)/(3+2*i)", "answer": ""}
+#     # {"problem": "(1-i)*(3+2*i)", "answer": ""}
+#     # {"problem": "(1-i)^(3+2*i)", "answer": ""}
+#     # {"problem": "(1-i)√(3+2*i)", "answer": ""}
 # ]
 
 # def diagnostic():
