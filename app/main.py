@@ -20,6 +20,7 @@ parameters = {
     "const_limit": 10**3, # controls the number of any one kind of constant in any given problem
     "key_limit": 10**1, # controls the number of any one kind of key function call in any given problem
     "simp_limit": 10**3, # controls the number of cases of simplification in any given problem
+    "imagin_limit": 10**3, # controls the number of complex or imaginary numbers in any given problem
     
     # operator parameters
     # operation syntax is made parametric to work with any available charset
@@ -35,17 +36,30 @@ parameters = {
 info = {
     
     "operations": [
+        # parametric operations
         {"name":"Addition", "syntax": parameters["addition"]},
         {"name":"Subtraction", "syntax": parameters["subtraction"]},
         {"name":"Multiplication", "syntax": parameters["multiplication"]},
         {"name":"Division", "syntax": parameters["division"]},
         {"name":"Exponentiation", "syntax": parameters["exponentiation"]},
-        {"name":"radication", "syntax": parameters["radication"]}, 
-        {"name":"negation", "syntax":"(-x)"},
+        {"name":"radication", "syntax": parameters["radication"]},
+
+        # non-parametric operations
         {"name":"open_parenthesis", "syntax":"("},
         {"name":"close_parenthesis", "syntax":")"},
         {"name":"open_bracket", "syntax":"["},
         {"name":"close_bracket", "syntax":"]"},
+
+        # syntax user guide
+        {"name":"negative number", "syntax":"(-x)"},
+
+        {"name":"pure imaginary number", "syntax":"(i)"},
+        {"name":"negative pure imaginary number", "syntax":"((-1)*i)"},
+        {"name":"imaginary number", "syntax":"(b*i)"},
+        {"name":"negative imaginary number", "syntax":"((-b)*i)"},
+        {"name":"standard complex number", "syntax":"(a+b*i)"},
+        {"name":"complex number with negative imaginary component", "syntax":"(a-b*i)"},
+        {"name":"complex number with negative real component", "syntax":"((-a)+b*i)"},
     ],
 
     "constants": [
@@ -227,6 +241,7 @@ info = {
         "const_limit": parameters["const_limit"],
         "key_limit": parameters["key_limit"],
         "simp_limit": parameters["simp_limit"],
+        "imagin_limit": parameters["imagin_limit"],
     },
     
     "error": {
@@ -242,6 +257,8 @@ info = {
         # -------------------------------- #
         # 201 - 299     | poststructure    #
         # -------------------------------- #
+        # 301 - 399     | operator         #
+        # -------------------------------- #
         # 501 - 999     | key function     #
         # -------------------------------- #
 
@@ -249,7 +266,6 @@ info = {
         # e.g. ERROR_527_0 @ zeroth index, ERROR_527_1 @ first index
         
         "parameter": {
-            
             # limit parameters
             "limit": {
                 "paren_limit": [
@@ -264,6 +280,9 @@ info = {
                 "simp_limit": [
                     {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]}
                 ],
+                "imagin_limit": [
+                    {"code": "ERROR_005_0", "description": "parameter error: imaginary limit. Problems are not to exceed %s number of imaginary or complex numbers." % parameters["imagin_limit"]}
+                ],
             },
         },
 
@@ -271,9 +290,8 @@ info = {
             {"code": "ERROR_101_0", "description": "prestructure error: empty string"},
             {"code": "ERROR_102_1", "description": "prestructure error: repeating non-numeral character"},
             {"code": "ERROR_103_2", "description": "prestructure error: invalid character in problem string"},
-            {"code": "ERROR_104_3", "description": "no division by zero"},
-            {"code": "ERROR_105_4", "description": "prestructure error: invalid parenthesis"},
-            {"code": "ERROR_106_5", "description": "prestructure error: invalid brackets"},
+            {"code": "ERROR_104_3", "description": "prestructure error: invalid parenthesis"},
+            {"code": "ERROR_105_4", "description": "prestructure error: invalid brackets"},
         ],
 
         "poststructure": [
@@ -283,6 +301,28 @@ info = {
             {"code": "ERROR_204_3", "description": "poststructure error: no consecutive operations"},
             {"code": "ERROR_205_4", "description": "poststructure error: operations require operands"},
         ],
+
+        "operator": {
+            "addition": [
+                {"code": "ERROR_301_0", "description": "addition error: invalid operand number type"}
+            ],
+            "subtraction": [
+                {"code": "ERROR_302_0", "description": "subtraction error: invalid operand number type"}
+            ],
+            "multiplication": [
+                {"code": "ERROR_303_0", "description": "multiplication error: invalid operand number type"}
+            ],
+            "division": [
+                {"code": "ERROR_304_0", "description": "division error: invalid operand number type"},
+                {"code": "ERROR_304_1", "description": "division error: no division by zero"},
+            ],
+            "exponentiation": [
+                {"code": "ERROR_305_0", "description": "exponentiation error: invalid operand number type"}
+            ],
+            "radication": [
+                {"code": "ERROR_306_0", "description": "radication error: invalid operand number type"}
+            ],
+        },
 
         "key_function": {
 
@@ -525,6 +565,9 @@ def evaluator(input):
 
     # the simp_limit parameter constrols the maximum number of simplifications in any one evaluation
     simp_limit = info["limits"]["simp_limit"]
+    
+    # the imagin_limit parameter constrols the maximum number of complex and imaginary numbers in any one evaluation
+    imagin_limit = info["limits"]["imagin_limit"]
 
     # PROGRAM ENTITY REFERENCE
 
@@ -540,11 +583,18 @@ def evaluator(input):
         "radication": info["operations"][5]["syntax"],
 
         # non-parametric operations
-        "open_parenthesis": info["operations"][7]["syntax"],
-        "close_parenthesis": info["operations"][8]["syntax"],
-        "open_bracket": info["operations"][9]["syntax"],
-        "close_bracket": info["operations"][10]["syntax"]
+        "open_parenthesis": info["operations"][6]["syntax"],
+        "close_parenthesis": info["operations"][7]["syntax"],
+        "open_bracket": info["operations"][8]["syntax"],
+        "close_bracket": info["operations"][9]["syntax"]
     }
+
+    # access constants from their definition to maintain constant consistency
+    pi = info["constants"][0]["value"]
+    # tau = info["constants"][1]["value"]
+    # phi = info["constants"][2]["value"]
+    euler = info["constants"][3]["value"]
+    # gamma = info["constants"][4]["value"]
 
     # key placeholder for subtraction of algebraic terms
     subtract_key = "sub"
@@ -629,7 +679,7 @@ def evaluator(input):
             else:
                 process_log["%s" % new_key] = log
     
-    # STRUCTURE START
+    # TESTS START
 
     def num_cast(dat):
         # a single data type converter for all your data type conversion needs!
@@ -643,6 +693,414 @@ def evaluator(input):
                 return num
             except:
                 return False
+    
+    def op_test(str):
+        # tests if given str is an operation character
+        for i in range(0, len(info["operations"])):
+            if info["operations"][i]["syntax"] == str:
+                return True
+        return False
+
+    def var_test(dat):
+        # treat imaginary as variable
+        if isinstance(dat, complex) and dat.real == 0 and dat.imag == 1:
+            # form: (i)
+            return True
+        # test for variables
+        neg = operation["subtraction"]
+        for i in variables:
+            if i == dat or neg + i == dat:
+                return True
+        return False
+
+    def key_test(str):
+        # tests if str is key
+        for i in range(0, len(info["key_functions"])):
+            for j in range(0, len(info["key_functions"][i])):
+                if info["key_functions"][i][j]["key"] == str:
+                    return True
+        return False
+
+    def operand_type(aa, bb, op):
+        # determines whether operand types are to be sent to arithmetic or algebraic systems
+
+        # cast number types
+        a = num_cast(aa)
+        b = num_cast(bb)
+
+        # prevent test on booleans
+        if not isinstance(a, bool) and not isinstance(b, bool):
+            
+            # test integers and floats
+            if not isinstance(a, complex) and not isinstance(b, complex):
+                return True
+
+            # test complex and imaginary numbers
+            cond1 = isinstance(a, complex)
+            cond2 = isinstance(b, complex)
+            if cond1 == True or cond2 == True:
+                add = operation["addition"]
+                sub = operation["subtraction"]
+                mult = operation["multiplication"]
+                div = operation["division"]
+                exp = operation["exponentiation"]
+                rad = operation["radication"]
+                if op == add:
+                    # inclusions (send to arithmetic system)
+                    return True
+                
+                elif op == sub:
+                    # inclusions (send to arithmetic system)
+                    return True
+                
+                elif op == mult:
+                    # inclusions (send to arithmetic system)
+                    return True
+                
+                elif op == div:
+                    # exclusions (send to algebraic system)
+                    if cond1 == True and cond2 == False and a.real == 0 and a.imag == 1 or cond1 == False and cond2 == True and b.real == 0 and b.imag == 1:
+                        # n/i or i/n, where n is a real number
+                        return False
+                    # inclusions (send to arithmetic system)
+                    return True
+                
+                elif op == exp:
+                    # inclusions (send to arithmetic system)
+                    if cond1 == True and cond2 == True and a.real == 0 and a.imag == 1 and b.real == 0 and b.imag == 1:
+                        # form: (i)^(i)
+                        return True
+                    elif cond1 == True and cond2 == False and a.real == 0 and a.imag == 1:
+                        # form: (i)^r
+                        return True
+                    elif cond1 == True and cond2 == False and a.real == 0 and a.imag != 1:
+                        # form: (b*i)^r
+                        return True
+                    # exclusions (send to algebraic system)
+                    return False
+                
+                elif op == rad:
+                    # exclusions (send to algebraic system)
+                    return False
+        
+        return False
+    
+    def precedence(op1, op2):
+        # returns true if op1 has higher operator precedence than op2
+        # larger op value indicates larger operator precedence
+        nonlocal operator_precedence
+        if op_test(op1) and op_test(op2):
+            op1_precedence = 0
+            op2_precedence = 0
+            for o in range(len(operator_precedence)):
+                for i in range(len(operator_precedence[o])):
+                    if op1 == operator_precedence[o][i]:
+                        op1_precedence = o
+                    if op2 == operator_precedence[o][i]:
+                        op2_precedence = o
+            
+            if op1_precedence >= op2_precedence:
+                return True
+            else:
+                return False
+        else:
+            return None
+
+    def operate(i, arr):
+        # returns True if operation at index i in structure arr is operating in operator precedence
+        arrVar = arr
+        # larger op value indicates larger operator precedence
+        op1 = arrVar[i] # operation on current index
+        op2 = "" # operation before index
+        op3 = "" # operation after index
+
+        if i - 2 > -1 and op_test(arrVar[i - 2]):
+            op2 = arr[i  -2]
+        if i + 2 < len(arrVar) and op_test(arrVar[i + 2]):
+            op3 = arr[i + 2]
+
+        if op2 != "" and op3 != "":
+            # test both op2 and op3
+            x = precedence(op1, op2)
+            y = precedence(op1, op3)
+            if x == True and y == True:
+                # op1 has higher precedence than op2 and op3
+                return True
+            else:
+                # op1 has lower precedence than either op2 or op3
+                return None
+        
+        elif op2 != "" and op3 == "":
+            # only test op2
+            x = precedence(op1, op2)
+            if x == True:
+                # op1 has higher precedence than op2
+                return True
+            else:
+                # op1 has lower precedence than op2
+                return None
+
+        elif op2 == "" and op3 != "":
+            # only test op3
+            y = precedence(op1, op3)
+            if y == True:
+                # op1 has higher precedence than op3
+                return True
+            else:
+                # op1 has lower precedence than op3
+                return None
+        
+        else: # op2 == "" and op3 == ""
+            return True
+
+    def has_var(arr):
+        # test for variables in section
+        for i in range(0, len(arr)):
+            x = arr[i]
+            if var_test(x) == True:
+                return True
+        return False
+
+    def has_complex(arr):
+        # test for complex numbers in section
+        for i in range(0, len(arr)):
+            x = arr[i]
+            if isinstance(x, complex) == True:
+                return True
+        return False
+
+    def equ_var(v1, v2):
+        # tests variables v1 and v2 for same variable character
+        # ignores negativity
+        s = operation["subtraction"]
+        vs1 = str(v1)
+        vs2 = str(v2)
+        if vs1 == vs2: # both negative or both positive
+            return True
+        elif s + vs1 == vs2: # positive v1 and negative v2
+            return True
+        elif vs1 == s + vs2: # negative v1 and positive v2
+            return True
+        else:
+            # different variables
+            return False
+
+    def like_terms(t1, t2):
+        # returns True if given terms are like
+        # terms are like if:
+        #  - same variables
+        #  - same exponent for each variable
+        nonlocal subtract_key
+        t1_len = len(t1)
+        t2_len = len(t2)
+        t1_dat = []
+        t2_dat = []
+
+        # get data for term 1
+        for x in range(t1_len):
+            if var_test(t1[x]):
+                if x + 2 < t1_len and t1[x + 1] == operation["exponentiation"]:
+                    # assumes no power expression
+                    t1_dat.append({"var": t1[x], "pow": t1[x + 2]})
+                else:
+                    # no power
+                    t1_dat.append({"var": t1[x], "pow": 1})
+        
+        # get data for term 2
+        for x in range(t2_len):
+            if var_test(t2[x]):
+                if x + 2 < t2_len and t2[x + 1] == operation["exponentiation"]:
+                    # assumes no power expression
+                    t2_dat.append({"var": t2[x], "pow": t2[x + 2]})
+                else:
+                    # no power
+                    t2_dat.append({"var": t2[x], "pow": 1})
+        
+        # make comparison using term data
+        t1_dat_len = len(t1_dat)
+        t2_dat_len = len(t2_dat)
+
+        if t1_dat_len == t2_dat_len:
+            # compare term data
+            for x in range(t1_dat_len):
+                if t1_dat[x]["var"] != t2_dat[x]["var"]:
+                    return False
+                else:
+                    p1 = num_cast(t1_dat[x]["pow"])
+                    p2 = num_cast(t2_dat[x]["pow"])
+                    if not isinstance(p1, bool) and not isinstance(p2, bool) and p1 != p2:
+                        return False
+        else:
+            # dissimilar length of main term and compare term  
+            return False
+
+        # no conditions met for falsification
+        return True
+
+    def getIdx(dat, arr):
+        # gets index of dat in structure
+        # used for identifying operators in arithmetic
+        nonlocal global_bypass
+        nonlocal operator_precedence
+
+        if global_bypass == False:
+
+            # get length of arr
+            length = len(arr)
+
+            # test if dat contains an operation
+            if op_test(dat):
+
+                # operation string
+                op_paren = operation["open_parenthesis"]
+                cl_paren = operation["close_parenthesis"]
+                op_brack = operation["open_bracket"]
+                cl_brack = operation["close_bracket"]
+                rad = operation["radication"]
+                val = None
+                for i in range(0, length):
+                    if arr[i] == dat:
+
+                        # test index range
+                        if i - 1 > -1 and i + 1 < length:
+                            a = arr[i - 1]
+                            b = arr[i + 1]
+
+                            # exclude operation on parenthesis and square brackets
+                            if a != op_paren and a != cl_paren and a != op_brack and a != cl_brack and b != op_paren and b != cl_paren and b != op_brack and b != cl_brack:
+                                
+                                # exclude operation on variables
+                                if not var_test(a) or isinstance(a, complex) and not var_test(b) or isinstance(b, complex):
+
+                                    # test for neighbor variables
+                                    if i - 3 > -1 and var_test(arr[i - 3]) or i + 3 < length and var_test(arr[i + 3]):
+                                        
+                                        # exclude operation on neighbor variables out of precedence
+                                        if operate(i, arr) == True:
+                                            
+                                            # test operand type
+                                            if operand_type(a, b, dat) == True:
+                                                # arithmetic operation approved
+                                                val = i
+                                                break
+                                    
+                                    # no neighbor variables
+                                    else:
+                                        # test operand type
+                                        if operand_type(a, b, dat) == True:
+                                            # arithmetic operation approved
+                                            val = i
+                                            break
+
+                        # approve radication
+                        if dat == rad and i + 1 < length and not isinstance(num_cast(arr[i + 1]), bool) and not isinstance(num_cast(arr[i + 1]), complex):
+                            cond1 = i - 1 > -1
+                            if cond1 == False:
+                                # nothing before radication operator
+                                # form: √r, where r is a rational number and there is an implicit 2 value for index of radication
+                                # arithmetic operation approved
+                                val = i
+                                break
+                            
+                            elif op_test(arr[i - 1]) == True:
+                                # operation before radication operator
+                                # form: √r, where r is a rational number and there is an implicit 2 value for index of radication
+                                # arithmetic operation approved
+                                val = i
+                                break
+
+                            elif not isinstance(num_cast(arr[i - 1]), bool) and not isinstance(arr[i - 1], complex):
+                                # rational index of radication before radication operator
+                                # form: n√r, where r is a rational number and n is a rational number
+                                # arithmetic operation approved
+                                val = i
+                                break
+
+                # return result
+                return val
+            
+            else:
+                # not operation string
+                val = None
+                for i in range(0, length):
+                    if arr[i] == dat:
+                        val = i
+                        break
+                return val
+        else:
+            # globally bypassed
+            return None
+
+    def identify_entities(arr):
+        # identify program entities and update program entity reference
+        # serve error on non-entity detection
+        nonlocal operation
+        nonlocal is_paren
+        nonlocal is_brack
+        nonlocal is_exp
+        nonlocal is_root
+        nonlocal is_mult
+        nonlocal is_div
+        nonlocal is_add
+        nonlocal is_sub
+        nonlocal is_var
+        
+        for i in arr:
+
+            # Identify parenthesis
+            if i == operation["open_parenthesis"] or i == operation["close_parenthesis"]:
+                is_paren = True
+        
+            # Identify square brackets
+            elif i == operation["open_bracket"] or i == operation["close_bracket"]:
+                is_brack = True
+
+            # Identify exponentiation
+            elif i == operation["exponentiation"]:
+                is_exp = True
+
+            # Identify roots
+            elif i == operation["radication"]:
+                is_root = True
+        
+            # Identify multiplication
+            elif i == operation["multiplication"]:
+                is_mult = True
+        
+            # Identify division
+            elif i == operation["division"]:
+                is_div = True
+        
+            # Identify addition
+            elif i == operation["addition"]:
+                is_add = True
+        
+            # Identify subtraction
+            elif i == operation["subtraction"]:
+                is_sub = True
+            
+            # Identify number
+            elif not isinstance(num_cast(i), bool):
+                continue
+            
+            # Identify algebraic mode
+            elif var_test(i):
+                is_var = True
+
+            # identify key
+            elif key_test(i):
+                continue
+
+            # serve error for non-entity
+            elif i != " " and i != "." and i != ",":
+                return " | non-entity: %s" % i
+        
+        # return empty string on no error
+        return ""
+
+    # TESTS END
+
+    # STRUCTURE START
     
     def restructure(solution, start, end, arr):
         # A single restructure function for all your restructuring needs!
@@ -775,249 +1233,461 @@ def evaluator(input):
             
             return {"count": count, "struct": arrVar}
     
-    def op_test(str):
-        # tests if given str is an operation character
-        for i in range(0, len(info["operations"])):
-            if info["operations"][i]["syntax"] == str:
-                return True
-        return False
-
-    def var_test(str):
-        # test for variables
-        neg = operation["subtraction"]
-        for i in variables:
-            if i == str or neg + i == str:
-                return True
-        return False
-
-    def key_test(str):
-        # tests if str is key
-        for i in range(0, len(info["key_functions"])):
-            for j in range(0, len(info["key_functions"][i])):
-                if info["key_functions"][i][j]["key"] == str:
-                    return True
-        return False
-
-    def identify_entities(arr):
-        # identify program entities and update program entity reference
-        # serve error on non-entity detection
-        nonlocal operation
-        nonlocal is_paren
-        nonlocal is_brack
-        nonlocal is_exp
-        nonlocal is_root
-        nonlocal is_mult
-        nonlocal is_div
-        nonlocal is_add
-        nonlocal is_sub
-        nonlocal is_var
-        
-        for i in arr:
-
-            # Identify parenthesis
-            if i == operation["open_parenthesis"] or i == operation["close_parenthesis"]:
-                is_paren = True
-        
-            # Identify square brackets
-            elif i == operation["open_bracket"] or i == operation["close_bracket"]:
-                is_brack = True
-
-            # Identify exponentiation
-            elif i == operation["exponentiation"]:
-                is_exp = True
-
-            # Identify roots
-            elif i == operation["radication"]:
-                is_root = True
-        
-            # Identify multiplication
-            elif i == operation["multiplication"]:
-                is_mult = True
-        
-            # Identify division
-            elif i == operation["division"]:
-                is_div = True
-        
-            # Identify addition
-            elif i == operation["addition"]:
-                is_add = True
-        
-            # Identify subtraction
-            elif i == operation["subtraction"]:
-                is_sub = True
-            
-            # Identify number
-            elif not isinstance(num_cast(i), bool):
-                continue
-            
-            # Identify algebraic mode
-            elif var_test(i):
-                is_var = True
-
-            # identify key
-            elif key_test(i):
-                continue
-
-            # serve error for non-entity
-            elif i != " " and i != "." and i != ",":
-                return " | non-entity: %s" % i
-        
-        # return empty string on no error
-        return ""
-
     # STRUCTURE END
 
     # ARITHMETIC OPERATIONS START
 
-    def precedence(op1, op2):
-        # returns true if op1 has higher operator precedence than op2
-        # larger op value indicates larger operator precedence
-        nonlocal operator_precedence
-        if op_test(op1) and op_test(op2):
-            op1_precedence = 0
-            op2_precedence = 0
-            for o in range(len(operator_precedence)):
-                for i in range(len(operator_precedence[o])):
-                    if op1 == operator_precedence[o][i]:
-                        op1_precedence = o
-                    if op2 == operator_precedence[o][i]:
-                        op2_precedence = o
-            
-            if op1_precedence >= op2_precedence:
-                return True
-            else:
-                return False
-        else:
-            return None
-
-    def operate(i, arr):
-        # returns True if operation at index i in structure arr is operating in operator precedence
-        arrVar = arr
-        # larger op value indicates larger operator precedence
-        op1 = arrVar[i] # operation on current index
-        op2 = "" # operation before index
-        op3 = "" # operation after index
-
-        if i - 2 > -1 and op_test(arrVar[i - 2]):
-            op2 = arr[i  -2]
-        if i + 2 < len(arrVar) and op_test(arrVar[i + 2]):
-            op3 = arr[i + 2]
-
-        if op2 != "" and op3 != "":
-            # test both op2 and op3
-            x = precedence(op1, op2)
-            y = precedence(op1, op3)
-            if x == True and y == True:
-                # op1 has higher precedence than op2 and op3
-                return True
-            else:
-                # op1 has lower precedence than either op2 or op3
-                return None
-        
-        elif op2 != "" and op3 == "":
-            # only test op2
-            x = precedence(op1, op2)
-            if x == True:
-                # op1 has higher precedence than op2
-                return True
-            else:
-                # op1 has lower precedence than op2
-                return None
-
-        elif op2 == "" and op3 != "":
-            # only test op3
-            y = precedence(op1, op3)
-            if y == True:
-                # op1 has higher precedence than op3
-                return True
-            else:
-                # op1 has lower precedence than op3
-                return None
-        
-        else: # op2 == "" and op3 == ""
-            return True
-
     def exponentiate(base, exponent):
-        base = float(base)
-        if base % 1 == 0:
-            base = int(base)
+        base = num_cast(base)
+        exponent = num_cast(exponent)
+        if isinstance(base, bool) or isinstance(exponent, bool):
+            nonlocal global_bypass
+            global_bypass = True
+            return info["error"]["operator"]["exponentiation"][0]["code"]
+        complex1 = isinstance(base, complex)
+        complex2 = isinstance(exponent, complex)
+        if complex1 == True or complex2 == True:
+            # complex exponentiation
 
-        exponent = float(exponent)
-        if exponent % 1 == 0:
-            exponent = int(exponent)
+            # exclude unsolvable forms from arithmetic
+            # exclude forms with expression solutions from arithmetic
 
-        power = math.pow(base, exponent)
+            # (i)^(i)
+            if complex1 == True and complex1 == True and base.real == 0 and base.imag == 1 and exponent.real == 0 and exponent.imag == 1:
 
-        return power
+                # e^(ix) = cos(x) + i * sin(x)
+                # x = pi/2
+                # e^(i(pi/2)) = cos(pi/2) + i * sin(pi/2)
+                # e^(i(pi/2)) = 0 + i * 1
+                # e^(i(pi/2)) = i
+
+                # e^(i^2(pi/2)) = i^i
+                # e^(-pi/2) = i^i
+                nonlocal pi
+                nonlocal euler
+                return euler**(-pi/2)
+            
+            # (i)^r
+            elif complex1 == True and complex2 == False and base.real == 0 and base.imag == 1 and isinstance(exponent, int):
+
+                # integer powers of i
+                # i^0 = 1
+
+                # i^1 = i
+                # i^2 = -1
+                # i^3 = -i
+                # i^4 = 1
+
+                # i^5 = i
+                # i^6 = -1
+                # i^7 = -i
+                # i^8 = 1
+
+                # i, -1, -i, 1
+                if exponent == -4:
+                    # (i)^(-4) = 1
+                    return 1
+                elif exponent == -3:
+                    # (i)^(-3) = 1
+                    return 1j
+                elif exponent == -2:
+                    # (i)^(-2) = 1
+                    return -1
+                elif exponent == -1:
+                    # (i)^(-1) = 1
+                    return -1j
+                elif exponent == 0:
+                    # (i)^0 = 1
+                    return 1
+                elif exponent == 1:
+                    # (i)^1 = i
+                    return 1j
+                elif exponent == 2:
+                    # (i)^2 = -1
+                    return -1
+                elif exponent == 3:
+                    # (i)^3 = -i
+                    return -1j
+                elif exponent == 4:
+                    # (i)^4 = 1
+                    return 1
+
+                # impliment cyclic pattern of imaginary exponentiation
+                c = abs(exponent) % 4
+                neg = exponent < 0
+                if c == 1:
+                    if neg == True: # 1/i = -i
+                        return -1j
+                    else:
+                        return 1j
+                elif c == 2:
+                    if neg == True: # 1/(-1) = -1
+                        return -1
+                    else:
+                        return -1
+                elif c == 3:
+                    if neg == True: # 1/(-i) = i
+                        return 1j
+                    else:
+                        return -1j
+                elif c == 0:
+                    if neg == True: # 1/1 = 1
+                        return 1
+                    else:
+                        return 1
+        
+            # (b*i)^r
+            elif complex1 == True and complex2 == False and base.real == 0 and base.imag != 1 and isinstance(exponent, int):
+
+                # i, -1, -i, 1
+                b = base.imag
+                if exponent == -4:
+                    # (b*i)^(-4) = b^-4
+                    return b**-4
+                elif exponent == -3:
+                    # (b*i)^(-3) = i
+                    return 1j * b**-3
+                elif exponent == -2:
+                    # (b*i)^(-2) = -1
+                    return -(b**-2)
+                elif exponent == -1:
+                    # (b*i)^(-1) = -i
+                    return -1j * b**-1
+                elif exponent == 0:
+                    # (b*i)^0 = 1
+                    return 1
+                elif exponent == 1:
+                    # (b*i)^1 = b*i
+                    return 1j * b
+                elif exponent == 2:
+                    # (b*i)^2 = -1
+                    return -(b**2)
+                elif exponent == 3:
+                    # (b*i)^3 = -i
+                    return -1j * b**3
+                elif exponent == 4:
+                    # (b*i)^4 = 1
+                    return b**4
+
+                # impliment cyclic pattern of imaginary exponentiation
+                exp = abs(exponent)
+                c = exp % 4
+                neg = exponent < 0
+                if c == 1:
+                    if neg == True: # 1/i = -i
+                        return complex(0, -(b**(-exp)))
+                    else:
+                        return complex(0, b**exp)
+                elif c == 2:
+                    if neg == True: # 1/(-1) = -1
+                        return -(b**(-exp))
+                    else:
+                        return -(b**exp)
+                elif c == 3:
+                    if neg == True: # 1/(-i) = i
+                        return complex(0, b**(-exp))
+                    else:
+                        return complex(0, -(b**exp))
+                elif c == 0:
+                    if neg == True: # 1/1 = 1
+                        return b**(-exp)
+                    else:
+                        return b**exp
+
+        else:
+            # real exponentiation
+            power = math.pow(base, exponent)
+
+            return power
 
     def root(radicand, degree):
-        radicand = float(radicand)
-        if radicand % 1 == 0:
-            radicand = int(radicand)
-
-        degree = float(degree)
-        if degree % 1 == 0:
-            degree = int(degree)
-
+        radicand = num_cast(radicand)
+        degree = num_cast(degree)
+        if isinstance(radicand, bool) or isinstance(degree, bool):
+            nonlocal global_bypass
+            global_bypass = True
+            return info["error"]["operator"]["radication"][0]["code"]
+        # real radication
         root = math.pow(radicand, 1/degree)
 
         return root
 
     def multiply(multiplicand, multiplier):
-        multiplicand = float(multiplicand)
-        if multiplicand % 1 == 0:
-            multiplicand = int(multiplicand)
+        product = 1
+        multiplicand = num_cast(multiplicand)
+        multiplier = num_cast(multiplier)
+        if isinstance(multiplicand, bool) or isinstance(multiplier, bool):
+            nonlocal global_bypass
+            global_bypass = True
+            return info["error"]["operator"]["multiplication"][0]["code"]
+        complex1 = isinstance(multiplicand, complex)
+        complex2 = isinstance(multiplier, complex)
+        if complex1 == True or complex2 == True:
+            # complex multiplication
+            if complex1 == True and complex2 == True:
+                a_real = multiplicand.real
+                a_imag = multiplicand.imag
+                b_real = multiplier.real
+                b_imag = multiplier.imag
 
-        multiplier = float(multiplier)
-        if multiplier % 1 == 0:
-            multiplier = int(multiplier)
-
-        product = multiplicand * multiplier
+                # (a_real + a_imag) * (b_real + b_imag)
+                # => a_real * b_real + a_real * b_imag + a_imag * b_real + a_imag * b_imag
+                # => a_real * b_real - a_imag * b_imag + a_real * b_imag + a_imag * b_real
+                #  ( a_real * b_real - a_imag * b_imag , a_real * b_imag + a_imag * b_real )
+                
+                # (a + bi)(c + di)
+                # => a*c + a*di + bi*c + bi*di
+                    # bi*di = b*d*i^2
+                    # i^2 = -1
+                    # b*d*i^2 = -b*d
+                # => a*c - b*d + a*di + bi*c
+                product = complex(a_real*b_real - a_imag*b_imag, a_real*b_imag + a_imag*b_real)
+            elif complex1 == True and complex2 == False:
+                a_real = multiplicand.real
+                a_imag = multiplicand.imag
+                product = complex(a_real * multiplier, a_imag * multiplier)
+            elif complex1 == False and complex2 == True:
+                b_real = multiplier.real
+                b_imag = multiplier.imag
+                product = complex(multiplicand * b_real, multiplicand * b_imag)
+        else:
+            # real multiplication
+            product = multiplicand * multiplier
 
         return product
 
     def divide(dividend, divisor):
         nonlocal global_bypass
-        dividend = float(dividend)
-        if dividend % 1 == 0:
-            dividend = int(dividend)
-
-        divisor = float(divisor)
-        if divisor % 1 == 0:
-            divisor = int(divisor)
-
-        if divisor != 0:
-            quotient = dividend / divisor
-            if quotient % 1 == 0:
-                quotient = int(quotient)
-            return quotient
-        else:
+        quotient = 1
+        dividend = num_cast(dividend)
+        divisor = num_cast(divisor)
+        if isinstance(dividend, bool) or isinstance(divisor, bool):
             global_bypass = True
-            return info["error"]["prestructure"][3]["code"]
+            return info["error"]["operator"]["division"][0]["code"]
+        if divisor == 0:
+            global_bypass = True
+            return info["error"]["operator"]["division"][1]["code"]
+        complex1 = isinstance(dividend, complex)
+        complex2 = isinstance(divisor, complex)
+        if complex1 == True or complex2 == True:
+            # complex division
 
+            # (i) / (i) => 1
+            # (i) / (b*i) => 1/b
+            # (i) / (a+b*i) => ((i) * (a-b*i)) / ((a+b*i) * (a-b*i)) => (a*i - b*i^2) / (a^2-b^2*i^2) => (a*i + b) / (a^2+b^2) => b / (a^2+b^2) + a / (a^2+b^2) * i
+            
+            # (b*i) / (i) => b
+            # (b1*i) / (b2*i) => b1/b2
+            # (b1*i) / (a+b2*i) => ((b1*i)*(a-b2*i))/((a+b2*i)*(a-b2*i)) => ((b1*i)*(a-b2*i))/(a^2-b2^2*i^2) => ((b1*i)*(a-b2*i))/(a^2+b2^2) => (b1*i*a-b1*b2*i^2))/(a^2+b2^2) => (b1*i*a+b1*b2)/(a^2+b2^2) => ((b1*b2)/(a^2+b2^2)) + ((b1*a)/(a^2+b2^2))*i
+            
+            # (a+b*i) / (i) => -a*i+b
+            # (a+b1*i) / (b2*i) => a/(b2*i) + b1/b2 => b1/b2 + (a*i)/-b2 => b1/b2 - a/b2*i
+            # (a1+b1*i) / (a2+b2*i) => ((a1+b1*i)*(a2-b2*i)) / ((a2+b2*i)*(a2-b2*i)) => (a1*a2 - a1*b2*i + a2*b1*i - b1*b2*i^2) / (a2^2+b2^2) => (a1*a2 - (a1*b2 + a2*b1)*i + b1*b2) / (a2^2+b2^2) => (a1*a2 + b1*b2 - (a1*b2 + a2*b1)*i) / (a2^2+b2^2) => (a1*a2 + b1*b2)/(a2^2+b2^2) - (a1*b2 + a2*b1)/(a2^2+b2^2) * i
+            
+            
+            if complex1 == True and complex2 == True:
+                # complex / complex
+
+                # get components
+                a_real = dividend.real
+                a_imag = dividend.imag
+                b_real = divisor.real
+                b_imag = divisor.imag
+
+                # get form
+                a_form = 0
+                b_form = 0
+
+                # a form
+                if a_real == 0:
+                    # imaginary
+                    if a_imag == 1:
+                        # form: (i)
+                        a_form = 1
+                    else:
+                        # form: (b*i)
+                        a_form = 2
+                else:
+                    # complex
+                    # form: (a+b*i)
+                    a_form = 3
+                
+                # b form
+                if b_real == 0:
+                    # imaginary
+                    if b_imag == 1:
+                        # form: (i)
+                        b_form = 1
+                    else:
+                        # form: (b*i)
+                        b_form = 2
+                else:
+                    # complex
+                    # form: (a+b*i)
+                    b_form = 3
+
+                # apply solution by form combination
+                if a_form == 1 and b_form == 1:
+                    # (i) / (i) => 1
+                    quotient = 1
+                elif a_form == 1 and b_form == 2:
+                    # (i) / (b*i) => 1/b
+                    quotient = 1/b_imag
+                elif a_form == 1 and b_form == 3:
+                    # (i) / (a+b*i) => b / (a^2+b^2) + a / (a^2+b^2) * i
+                    denominator = b_real**2 + b_imag**2
+                    quotient = complex(b_imag / denominator, b_real / denominator)
+
+                elif a_form == 2 and b_form == 1:
+                    # (b*i) / (i) => b
+                    quotient = a_imag
+                elif a_form == 2 and b_form == 2:
+                    # (b1*i) / (b2*i) => b1/b2
+                    quotient = a_imag/b_imag
+                elif a_form == 2 and b_form == 3:
+                    # (b1*i) / (a+b2*i) => ((b1*b2)/(a^2+b2^2)) + ((b1*a)/(a^2+b2^2))*i
+                    denominator = b_real**2 + b_imag**2
+                    quotient = complex((a_imag*b_imag)/denominator, (a_imag*b_real)/denominator)
+
+                elif a_form == 3 and b_form == 1:
+                    # (a+b*i) / (i) => -a*i+b
+                    quotient = complex(a_imag, -a_real)
+                elif a_form == 3 and b_form == 2:
+                    # (a+b1*i) / (b2*i) => b1/b2 - a/b2 * i
+                    quotient = complex(a_imag/b_imag, -a_real/b_imag)
+                elif a_form == 3 and b_form == 3:
+                    # (a1+b1*i) / (a2+b2*i) => (a1*a2 + b1*b2)/(a2^2+b2^2) - (a1*b2 + a2*b1)/(a2^2+b2^2) * i
+                    denominator = b_real**2+b_imag**2
+                    numerator1 = a_real*b_real + a_imag*b_imag
+                    numerator2 = a_real*b_imag + b_real*a_imag
+                    quotient = complex(numerator1/denominator, -numerator2/denominator)
+
+            elif complex1 == True and complex2 == False:
+                # complex / rational
+
+                # where r is a rational number
+                # (i) / r => no solution
+                # (b*i) / r => b/r*i
+                # (a+b*i) / r => a/r + b/r * i
+
+                # get components
+                a_real = dividend.real
+                a_imag = dividend.imag
+                
+                # get form of a
+                if a_real == 0:
+                    # imaginary
+                    
+                    # form: (b*i)
+                    quotient = complex(a_real, a_imag/divisor)
+                else:
+                    # complex
+                    # form: (a+b*i)
+                    quotient = complex(a_real / divisor, a_imag / divisor)
+                
+            elif complex1 == False and complex2 == True:
+                # rational / complex
+
+                # where r is a rational number
+                # r / (i) => no solution
+                # r / (b*i) => -r/b * i
+                # r / (a+b*i) => (r*(a-b*i)) / ((a+b*i)*(a-b*i)) => (r*a-r*b*i) / (a^2-b^2*i^2) => (r*a-r*b*i) / (a^2+b^2) => (r*a)/(a^2+b^2) - (r*b)/(a^2+b^2) * i
+
+                # get components
+                b_real = divisor.real
+                b_imag = divisor.imag
+
+                # get form of b
+                if b_real == 0:
+                    # imaginary
+
+                    # form: (b*i)
+
+                    # multiply numerator and denominator by i or -i (negates either way)
+                    # numerator and denominator become a fractional coefficient of i
+                    quotient = complex(0, -dividend / b_imag)
+
+                else:
+                    # complex
+
+                    # form: (a+b*i)
+
+                    # (r*a)/(a^2+b^2) - (r*b)/(a^2+b^2) * i
+                
+                    # rationalize the denominator
+                    # multiply numerator and denominator by the complex conjugate of the divisor
+                    denominator = b_real**2 + b_imag**2
+                    numerator1 = dividend*b_real 
+                    numerator2 = dividend*b_imag
+                    quotient = complex(numerator1/denominator, -numerator2/denominator)
+            
+        else:
+            # real division
+            quotient = str(num_cast(dividend / divisor))
+
+        return quotient
+    
     def add(augend, addend):
-        augend = float(augend)
-        if augend % 1 == 0:
-            augend = int(augend)
-
-        addend = float(addend)
-        if addend % 1 == 0:
-            addend = int(addend)
-
-        total = augend + addend
+        total = 0
+        augend = num_cast(augend)
+        addend = num_cast(addend)
+        if isinstance(augend, bool) or isinstance(addend, bool):
+            nonlocal global_bypass
+            global_bypass = True
+            return info["error"]["operator"]["addition"][0]["code"]
+        complex1 = isinstance(augend, complex)
+        complex2 = isinstance(addend, complex)
+        if complex1 == True or complex2 == True:
+            # complex addition
+            if complex1 == True and complex2 == True:
+                a_real = augend.real
+                a_imag = augend.imag
+                b_real = addend.real
+                b_imag = addend.imag
+                total = complex(a_real + b_real, a_imag + b_imag)
+            elif complex1 == True and complex2 == False:
+                a_real = augend.real
+                a_imag = augend.imag
+                total = complex(a_real + addend, a_imag)
+            elif complex1 == False and complex2 == True:
+                b_real = addend.real
+                b_imag = addend.imag
+                total = complex(augend + b_real, b_imag)
+        else:
+            # real addition
+            total = str(augend + addend)
 
         return total
 
     def subtract(minuend, subtrahend):
-        minuend = float(minuend)
-        if minuend % 1 == 0:
-            minuend = int(minuend)
-
-        subtrahend = float(subtrahend)
-        if subtrahend % 1 == 0:
-            subtrahend = int(subtrahend)
-
-        difference = minuend - subtrahend
+        difference = 0
+        minuend = num_cast(minuend)
+        subtrahend = num_cast(subtrahend)
+        if isinstance(minuend, bool) or isinstance(subtrahend, bool):
+            nonlocal global_bypass
+            global_bypass = True
+            return info["error"]["operator"]["subtraction"][0]["code"]
+        complex1 = isinstance(minuend, complex)
+        complex2 = isinstance(subtrahend, complex)
+        if complex1 == True or complex2 == True:
+            # complex subtraction
+            if complex1 == True and complex2 == True:
+                a_real = minuend.real
+                a_imag = minuend.imag
+                b_real = subtrahend.real
+                b_imag = subtrahend.imag
+                difference = complex(a_real - b_real, a_imag - b_imag)
+            elif complex1 == True and complex2 == False:
+                a_real = minuend.real
+                a_imag = minuend.imag
+                difference = complex(a_real - subtrahend, a_imag)
+            elif complex1 == False and complex2 == True:
+                b_real = subtrahend.real
+                b_imag = subtrahend.imag
+                difference = complex(minuend - b_real, b_imag)
+        else:
+            # real subtraction
+            difference = str(minuend - subtrahend)
 
         return difference
 
@@ -1107,7 +1777,8 @@ def evaluator(input):
 
     def ngon_area(n,s):
         # returns area of a regular n-gon with n number of sides where eac side has length s
-        return round(s**2*n*(1/np.tan(np.pi/n))/4, 12)
+        nonlocal pi
+        return round(s**2*n*(1/np.tan(pi/n))/4, 12)
     
     # SPECIAL OPERATIONS END
 
@@ -1136,27 +1807,6 @@ def evaluator(input):
             # return second
             return v2
     
-    def equ_var(v1, v2):
-        # returns true if same variable () negated or not
-        s = operation["subtraction"]
-        vs1 = str(v1)
-        vs2 = str(v2)
-        if vs1 == vs2: # both negative or both positive
-            return True
-        elif s + vs1 == vs2: # positive v1 and negative v2
-            return True
-        elif vs1 == s + vs2: # negative v1 and positive v2
-            return True
-        else:
-            return False
-
-    def has_var(arr):
-        # test for variables in section
-        for i in range(0, len(arr)):
-            if var_test(arr[i]) == True:
-                return True
-        return False
-
     def get_terms(arr):
         nonlocal subtract_key
         terms = []
@@ -1182,58 +1832,6 @@ def evaluator(input):
         terms.append(buffer)
         
         return terms
-
-    def like_terms(t1, t2):
-        # returns True if given terms are like
-        # terms are like if:
-        #  - same variables
-        #  - same exponent for each variable
-        nonlocal subtract_key
-        t1_len = len(t1)
-        t2_len = len(t2)
-        t1_dat = []
-        t2_dat = []
-
-        # get data for term 1
-        for x in range(t1_len):
-            if var_test(t1[x]):
-                if x + 2 < t1_len and t1[x + 1] == operation["exponentiation"]:
-                    # assumes no power expression
-                    t1_dat.append({"var": t1[x], "pow": t1[x + 2]})
-                else:
-                    # no power
-                    t1_dat.append({"var": t1[x], "pow": 1})
-        
-        # get data for term 2
-        for x in range(t2_len):
-            if var_test(t2[x]):
-                if x + 2 < t2_len and t2[x + 1] == operation["exponentiation"]:
-                    # assumes no power expression
-                    t2_dat.append({"var": t2[x], "pow": t2[x + 2]})
-                else:
-                    # no power
-                    t2_dat.append({"var": t2[x], "pow": 1})
-        
-        # make comparison using term data
-        t1_dat_len = len(t1_dat)
-        t2_dat_len = len(t2_dat)
-
-        if t1_dat_len == t2_dat_len:
-            # compare term data
-            for x in range(t1_dat_len):
-                if t1_dat[x]["var"] != t2_dat[x]["var"]:
-                    return False
-                else:
-                    p1 = num_cast(t1_dat[x]["pow"])
-                    p2 = num_cast(t2_dat[x]["pow"])
-                    if not isinstance(p1, bool) and not isinstance(p2, bool) and p1 != p2:
-                        return False
-        else:
-            # dissimilar length of main term and compare term  
-            return False
-
-        # no conditions met for falsification
-        return True
 
     def combine_terms(t1, t2):
         # returns terms combined by addition or subtraction
@@ -1439,19 +2037,25 @@ def evaluator(input):
             for j in range(0, length):
 
                 if var_test(t[j]): # is a variable
-                    # get alphabetic index of variable for later alphabetization
-                    var = t[j]
 
-                    # remove negativity from var for alphabetic index test
-                    if len(var) > 1 and var[0] == operation["subtraction"]:
-                        v = var[1]
-                        var = v
-                    
+                    # get alphabetic index of variable for later alphabetization
                     alpha = None
-                    for a in range(0, 26):
-                        if var == alphabet[a]:
-                            alpha = a
-                            break
+                    if t[j] == 1j:
+                        # imaginary variable
+                        alpha = 100
+                    else:
+                        # proper variables
+                        var = t[j]
+
+                        # remove negativity from var for alphabetic index test
+                        if len(var) > 1 and var[0] == operation["subtraction"]:
+                            v = var[1]
+                            var = v
+                        
+                        for a in range(0, 26):
+                            if var == alphabet[a]:
+                                alpha = a
+                                break
                     
                     var_count += 1
                     tdata.append({"coef": False, "value": t[j], "term_index": j, "alpha_index": alpha})
@@ -1611,29 +2215,47 @@ def evaluator(input):
                         ti = tdata[j]["term_index"]
                         if d != None and d >= last:
                             use = True
-                            
-                            # ommit variables that are powers and variables that are indexes of radicals from alphabetization
-                            cond1 = j > 1 and tdata[j - 1]["value"] == op1
-                            cond2 = j + 1 < length and tdata[j + 1]["value"] == op2
-                            if cond1 == True or cond2 == True:
+
+                            # ommit imaginary variables
+                            if d == 100: # defualt alphabetical index for imaginary variables = 100
+                                
+                                # doesn't go to alphabetical structure
                                 use = False
+                                
+                                # test alphabetical_not for duplicates
                                 unique = True
-
-                                # exclude variables that are powers with variable bases and variables that are indexes of radicals with variable bases
-                                if cond1 == True and j > 2 and var_test(tdata[j - 2]["value"]) == True or cond2 == True and j + 2 < length and var_test(tdata[j + 2]["value"]) == True:
-                                    unique = False
-                                else:
-                                    # test alphabetical_not for duplicates
-                                    for a in alphabetical_not:
-                                        if ti == a["term_index"]:
-                                            unique = False
-                                            break
-
+                                for a in alphabetical_not:
+                                    if ti == a["term_index"]:
+                                        unique = False
+                                        break
+                                
                                 # append variables that are not to be alphabetized to alpha_not
                                 if unique == True:
                                     a_isnt = True
                                     alphabetical_not.append(tdata[j])
-                            
+                            else:
+                                # ommit variables that are powers and variables that are indexes of radicals from alphabetization
+                                cond1 = j > 1 and tdata[j - 1]["value"] == op1
+                                cond2 = j + 1 < length and tdata[j + 1]["value"] == op2
+                                if cond1 == True or cond2 == True:
+                                    use = False
+                                    unique = True
+
+                                    # exclude variables that are powers with variable bases and variables that are indexes of radicals with variable bases
+                                    if cond1 == True and j > 2 and var_test(tdata[j - 2]["value"]) == True or cond2 == True and j + 2 < length and var_test(tdata[j + 2]["value"]) == True:
+                                        unique = False
+                                    else:
+                                        # test alphabetical_not for duplicates
+                                        for a in alphabetical_not:
+                                            if ti == a["term_index"]:
+                                                unique = False
+                                                break
+
+                                    # append variables that are not to be alphabetized to alpha_not
+                                    if unique == True:
+                                        a_isnt = True
+                                        alphabetical_not.append(tdata[j])
+                                
                             # test alphabetical for duplicates
                             if use == True:
                                 for a in alphabetical:
@@ -2116,6 +2738,14 @@ def evaluator(input):
                                         # extend term
                                         term.extend(o)
                                 
+                                # imaginary variable case
+                                elif obj["alpha_index"] == 100:
+                                    o = obj["value"]
+                                    term_len = len(term)
+                                    if term_len > 0 and term[term_len - 1] != operation["division"]:
+                                        term.append(operation["multiplication"])
+                                    term.append(o)
+                                
                                 # print(term)
                     
                     # print(term)
@@ -2150,8 +2780,11 @@ def evaluator(input):
                 
                 # add arithmetic term to expression structure
                 expression.append(t)
-                
-        # --- EXPRESSION STANDARDS ---
+        
+        # ---------------------------- #
+        # --- EXPRESSION STANDARDS --- #
+        # ---------------------------- #
+
         # print(expression)
         if len(expression) == 1:
             # not an expression of terms; single term
@@ -2461,7 +3094,7 @@ def evaluator(input):
                     op = operation["subtraction"]
                     do = degree_order[0]
                     for j in range(len(do)): # iterate over term
-                        if var_test(do[j]) == True and len(do[j]) > 1 and do[j][0] == op:
+                        if var_test(do[j]) == True and not isinstance(do[j], complex) and len(do[j]) > 1 and do[j][0] == op:
                             # nagtive variable => transfer to coefficient
                             v = do[j][1]
                             degree_order[0][j] = v # remove negativity from variable
@@ -2516,7 +3149,7 @@ def evaluator(input):
                             op = operation["subtraction"]
                             do = degree_order[i]
                             for j in range(len(do)): # iterate over term
-                                if var_test(do[j]) == True and len(do[j]) > 1 and do[j][0] == op:
+                                if var_test(do[j]) == True and not isinstance(do[j], complex) and len(do[j]) > 1 and do[j][0] == op:
                                     # nagtive variable => transfer to coefficient
                                     v = do[j][1]
                                     degree_order[i][j] = v # remove negativity from variable
@@ -2677,8 +3310,138 @@ def evaluator(input):
         recalculate = False # re-calculate
         arrVar = standardize_form(arr) # standardize form
 
+        # print(arrVar)
+
         # log process label
         log_process("Simplification of Algebraic Expression")
+
+        # complex exponentiation
+
+        # complex ^ combplex
+
+        # (i)^(i)
+        # (i)^(b*i)
+        # (i)^(a+b*i)
+        
+        # (b*i)^(i)
+        # (b*i)^(b*i)
+        # (b*i)^(a+b*i)
+        
+        # (a+b*i)^(i)
+        # (a+b*i)^(b*i)
+        # (a+b*i)^(a+b*i)
+
+        # where r is a rational number
+
+        # complex ^ rational
+
+        # (i)^r
+
+        # r = z, where z is integers
+        # case = r mod 4
+        # case = 1 : (i)
+        # case = 2 : (-1)
+        # case = 3 : (-i)
+        # case = 4 : 1
+
+        # r = f, where f is proper fraction
+        # unsolvable : exclude from arithmetic
+
+        # where not r == z and not r == f
+        # z = floor(r)
+
+        # f = r - z
+        # case = z mod 4
+        # case = 1 : (i)^(f+1)
+        # case = 2 : (-i)^f
+        # case = 3 : (-i)^(f+1)
+        # case = 4 : (i)^f
+
+
+        # (b*i)^r
+
+        # r = z, where z is integers
+        # case = r mod 4
+        # case = 1 : b*(i)
+        # case = 2 : (-b)
+        # case = 3 : b*(-i)
+        # case = 4 : b
+
+        # r = f, where f is proper fraction
+        # unsolvable : exclude from arithmetic
+
+        # not r == z and not r == f
+        # z = floor(r)
+        # f = r - z
+        # case = z mod 4
+        # case = r mod 4
+        # case = 1 : b*(i)^(f+1)
+        # case = 2 : b*(-i)^f
+        # case = 3 : b*(-i)^(f+1)
+        # case = 4 : b*(i)^f
+
+
+        # (a+b*i)^r
+
+        # not r = z, where z is integer
+        # unsolvable : exclude from arithmetic
+
+        # r = z, where z is integer
+        
+        # z = 2
+        # (i)(2*a*b)+(a^2-b^2)
+
+        # z = 3
+        # (i)((2*a^2*b)+(a^2*b-b^3))+(a^3-a*b^2)-(2*a*b^2)
+
+        # z > 3
+        # expand and simplify loop
+
+
+        # rational ^ complex
+
+        # r^(i)
+        # unsolvable : exclude from arithmetic
+
+        # r^(b*i)
+        # (r^b)^(i)
+
+        # r^(a+b*i)
+        # r^a*(r^(b))^(i)
+
+
+
+        # complex radication
+
+
+        # complex √ complex
+        # (a1+b1*i) √ (a2+b2*i)
+
+        # (i) √ (i)
+        # (i) √ (b2*i)
+        # (i) √ (a2+b2*i)
+        
+        # (b1*i) √ (i)
+        # (b1*i) √ (b2*i)
+        # (b1*i) √ (a2+b2*i)
+        
+        # (a1b1*i) √ (i)
+        # (a1+b1*i) √ (b2*i)
+        # (a1+b1*i) √ (a2+b2*i)
+        
+        # complex √ rational
+        # (a1+b1*i) √ r
+        
+        # (i) √ r
+        # (b2*i) √ r
+        # (a2+b2*i) √ r
+        
+        # rational √ complex
+        # r √ (a1+b1*i)
+
+        # r √ (i)
+        # r √ (b2*i)
+        # r √ (a2+b2*i)
         
         simplifying = True
         x = 0
@@ -2721,13 +3484,13 @@ def evaluator(input):
                     # class switches (defaultly all on)
                     class_num = 11 # stores number of classes
                     x_y = True  # x^y
-                    x_i = True  # x^i, where i is a number
-                    i_x = True  # i^x, where i is a number
+                    x_i = True  # x^r, where r is a number
+                    i_x = True  # i^x, where r is a number
                     
                     k_x = True  # k√x, where k is a number
                     x_k = True  # x√k, where k is a number
                     y_x = True  # y√x
-                    _x = True   # √x 
+                    _x = True   # √x
 
                     mult = True # multiplication
                     div = True  # division
@@ -2771,7 +3534,7 @@ def evaluator(input):
                                 simplified = True
                                 break
                         
-                            # x^y case 3: x^y * x^i
+                            # x^y case 3: x^y * x^r
                             elif c + 6 < length and test_term_ends(c, c + 6, arrVar) and arrVar[c + 3] == operation["multiplication"] and equ_var(arrVar[c + 4], var) and arrVar[c + 5] == operation["exponentiation"] and not isinstance(num_cast(arrVar[c + 6]), bool):
                                 start = c
                                 end = c + 6
@@ -2798,7 +3561,7 @@ def evaluator(input):
                                 simplified = True
                                 break
                             
-                            # x^y case 6: x^y / x^i => x^(y-i)
+                            # x^y case 6: x^y / x^i => x^(y-r)
                             elif c + 6 < length and test_term_ends(c, c + 6, arrVar) and arrVar[c + 3] == operation["division"] and equ_var(arrVar[c + 4], var) and arrVar[c + 5] == operation["exponentiation"] and not isinstance(num_cast(arrVar[c + 6]), bool):
                                 start = c
                                 end = c + 6
@@ -2810,13 +3573,13 @@ def evaluator(input):
                             else:
                                 x_y = False
                             
-                        # x^i class
+                        # x^r class
                         elif x_i == True and c + 2 < length and arrVar[c + 1] == operation["exponentiation"] and not isinstance(num_cast(arrVar[c + 2]), bool):
                             
                             # expedite falsification
                             x_y = False  # x^y
                             
-                            # x^i case 1: x*x^i => x^b, where b = i + 1, index = 2nd x
+                            # x^i case 1: x*x^n => x^b, where b = n + 1, index = 2nd x
                             if c - 2 > -1 and test_term_ends(c - 2, c + 2, arrVar) and equ_var(arrVar[c - 2], var) and arrVar[c - 1] == operation["multiplication"]:
                                 start = c - 2
                                 end = c + 2
@@ -2826,7 +3589,7 @@ def evaluator(input):
                                 simplified = True
                                 break
                             
-                            # x^i case 2: x/x^i => x^b, where b = 1 - i, index = 2nd x
+                            # x^i case 2: x/x^n => x^b, where b = 1 - n, index = 2nd x
                             elif c - 2 > -1 and c + 2 < length and test_term_ends(c - 2, c + 2, arrVar) and equ_var(arrVar[c - 2], var) and arrVar[c - 1] == operation["division"]:
                                 start = c - 2
                                 end = c + 2
@@ -2836,7 +3599,7 @@ def evaluator(input):
                                 simplified = True
                                 break
 
-                            # x^i case 3: x^i*x => x^b, where b = i + 1, index = 1st x
+                            # x^i case 3: x^n*x => x^b, where b = n + 1, index = 1st x
                             elif c + 4 < length and test_term_ends(c, c + 4, arrVar) and arrVar[c + 3] == operation["multiplication"] and equ_var(arrVar[c + 4], var):
                                 start = c
                                 end = c + 4
@@ -2846,7 +3609,7 @@ def evaluator(input):
                                 simplified = True
                                 break
                             
-                            # x^i case 4: x^i/x => x^b, where b = i - 1, index = 1st x
+                            # x^i case 4: x^n/x => x^b, where b = i - 1, index = 1st x
                             elif c + 4 < length and test_term_ends(c, c + 4, arrVar) and arrVar[c + 3] == operation["division"] and equ_var(arrVar[c + 4], var):
                                 start = c
                                 end = c + 4
@@ -2856,7 +3619,7 @@ def evaluator(input):
                                 simplified = True
                                 break
                             
-                            # x^i case 5: x^i * x^y => x^(y+i)
+                            # x^n case 5: x^n * x^y => x^(y+n)
                             elif c + 6 < length and test_term_ends(c, c + 6, arrVar) and arrVar[c + 3] == operation["multiplication"] and equ_var(arrVar[c + 4], var) and arrVar[c + 5] == operation["exponentiation"] and var_test(arrVar[c + 6]) == True:
                                 start = c
                                 end = c + 6
@@ -2868,9 +3631,9 @@ def evaluator(input):
                             else:
                                 x_i = False
 
-                        # i^x class
+                        # r^x class
                         elif i_x == True and c - 2 > -1 and not isinstance(num_cast(arrVar[c - 2]), bool) and arrVar[c - 1] == operation["exponentiation"]:
-
+                            
                             # expedite falsification
                             x_y = False  # x^y
                             x_i = False  # x^i, where i is a number
@@ -3484,7 +4247,7 @@ def evaluator(input):
                 if simplified == True:
                     break
                 # else next variable search
-                
+            
             # no further simplifications
             if simplified == False:
                 simplifying = False
@@ -3513,68 +4276,11 @@ def evaluator(input):
 
     # KEY FUNCTIONS START
 
-    def getIdx(str, arr):
-        # gets index of string in structure
-        nonlocal global_bypass
-        nonlocal operator_precedence
-
-        if global_bypass == False:
-
-            # get length of arr
-            length = len(arr)
-
-            # test if string contains an operation
-            if op_test(str):
-
-                # operation string
-                val = None
-                for i in range(0, length):
-                    if arr[i] == str:
-                        # test for index range of test
-                        if i - 1 > -1 and i + 1 < length:
-                            a = arr[i - 1]
-                            b = arr[i + 1]
-                            # test for operation on parenthesis and square brackets
-                            if a != operation["open_parenthesis"] and a != operation["close_parenthesis"] and a != operation["open_bracket"] and a != operation["close_bracket"] and b != operation["open_parenthesis"] and b != operation["close_parenthesis"] and b != operation["open_bracket"] and b != operation["close_bracket"]:
-                                # test for operation on variables
-                                if not var_test(arr[i - 1]) and not var_test(arr[i + 1]):
-                                    # test for operation on exponent with algebraic base
-                                    if i - 2 <= -1 or arr[i - 2] != operation["exponentiation"]:
-                                        # operator precedence on variables
-                                        if i - 3 > -1 and var_test(arr[i - 3]) or i + 3 < length and var_test(arr[i + 3]):
-                                            if operate(i, arr) == True:
-                                                val = i
-                                                return val
-                                                
-                                        else:
-                                            # arithmetic operation approved
-                                            val = i
-                                            return val
-                        elif str == operation["radication"] and i + 1 < length and not var_test(arr[i + 1]):
-                            val = i
-                            return val
-
-
-                # no operation from string not on variable
-                return val
-                            
-            else:
-
-                # not operation string
-                val = None
-                for i in range(0, length):
-                    if arr[i] == str:
-                        val = i
-                        break
-                return val
-        else:
-            # globally bypassed
-            return None
-
     def trigonomic(arr):
         # key function module for trigonomic functions
         arrVar = arr
         nonlocal global_bypass
+        nonlocal pi
 
         if key_modules[0]["use"] == True and global_bypass == False:
             log_process("Trigonomic Key Module")
@@ -3670,7 +4376,7 @@ def evaluator(input):
 
                 x = num_cast(arrVar[ref + 1])
 
-                if round(x % (np.pi/2), 13) == 0 and math.floor(x/(np.pi/2))%2 != 0:
+                if round(x % (pi/2), 13) == 0 and math.floor(x/(pi/2))%2 != 0:
                     # no odd multiples of pi/2: is multiple and number of multiples is not even
                     # invalid arguments
                     global_bypass = True
@@ -3753,7 +4459,7 @@ def evaluator(input):
                     # invalid argument
                     global_bypass = True
                     return info["error"]["key_function"]["trigonomic"]["sec"][0]["code"]
-                elif x >= np.pi:
+                elif x >= pi:
                     # invalid argument
                     global_bypass = True
                     return info["error"]["key_function"]["trigonomic"]["sec"][1]["code"]
@@ -3797,7 +4503,7 @@ def evaluator(input):
                     # invalid argument
                     global_bypass = True
                     return info["error"]["key_function"]["trigonomic"]["cot"][0]["code"]
-                elif round(x % np.pi, 13) == 0:
+                elif round(x % pi, 13) == 0:
                     # no integer multiples of pi
                     # invalid argument
                     global_bypass = True
@@ -4094,7 +4800,7 @@ def evaluator(input):
                     return info["error"]["key_function"]["geometric"]["ngonar"][0]["code"]
                     
                 else:
-                    Area = round(r**2*n*np.sin(2*np.pi/n)/2, 12)
+                    Area = round(r**2*n*np.sin(2*pi/n)/2, 12)
                     # apply answer and search for new problem
                     arrVar = restructure(Area, ref, ref + 1, arrVar)
                     ref = getIdx("ngonar", arrVar)
@@ -4131,7 +4837,7 @@ def evaluator(input):
                     return info["error"]["key_function"]["geometric"]["ngonaa"][0]["code"]
                     
                 else:
-                    Area = round(a**2*np.tan(np.pi/n), 12)
+                    Area = round(a**2*np.tan(pi/n), 12)
                     # apply answer and search for new problem
                     arrVar = restructure(Area, ref, ref + 1, arrVar)
                     ref = getIdx("ngonaa", arrVar)
@@ -4977,7 +5683,7 @@ def evaluator(input):
                         x = num_cast(i)
                         set_2.append(x)
                     else:
-                        x = num_cast(section(i))
+                        x = section(i)
                         set_2.append(x)
 
                 # perform calculation using numeral set
@@ -5511,7 +6217,9 @@ def evaluator(input):
         return arrVar
     
     # KEY FUNCTIONS END
-    
+
+    # TOP LEVEL FUNCTIONS START
+
     def calculate(arr):
         nonlocal global_bypass
         arrVar = arr
@@ -5550,6 +6258,8 @@ def evaluator(input):
                     ref = getIdx(operation["exponentiation"], arrVar)
                     while ref is not None:
                         x = exponentiate(arrVar[ref - 1], arrVar[ref + 1])
+                        if global_bypass == True:
+                            return x # x contains error
                         arrVar = restructure(x, ref - 1, ref + 1, arrVar)
                         ref = getIdx(operation["exponentiation"], arrVar)
 
@@ -5561,11 +6271,15 @@ def evaluator(input):
                         if ref - 1 > -1 and not op_test(arrVar[ref - 1]):
                             # radication of given degree
                             x = root(arrVar[ref + 1], arrVar[ref - 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, ref - 1, ref + 1, arrVar)
                             ref = getIdx(operation["radication"], arrVar)
                         else:
                             # square root
                             x = root(arrVar[ref + 1], 2)
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, ref, ref + 1, arrVar)
                             ref = getIdx(operation["radication"], arrVar)
 
@@ -5577,55 +6291,57 @@ def evaluator(input):
                         if d_ref is None and m_ref is not None:
                             # Only Multiply
                             x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
                             m_ref = getIdx(operation["multiplication"], arrVar)
 
                         elif m_ref is None and d_ref is not None:
                             # Only Divide
                             x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                            if global_bypass == False:
-                                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                                d_ref = getIdx(operation["division"], arrVar)
-                            else:
-                                # division by zero
-                                return x
+                            if global_bypass == True:
+                                return x # x contains error
+                            arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                            d_ref = getIdx(operation["division"], arrVar)
                                 
                         elif m_ref is not None and d_ref is not None and m_ref < d_ref:
                             # Multiply first
                             x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
 
                             d_ref = getIdx(operation["division"], arrVar)
                             y = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                            if global_bypass == False:
-                                arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
+                            if global_bypass == True:
+                                return y # y contains error
+                            arrVar = restructure(y, d_ref - 1, d_ref + 1, arrVar)
 
-                                m_ref = getIdx(operation["multiplication"], arrVar)
-                                d_ref = getIdx(operation["division"], arrVar)
-                            else:
-                                # divison by zero
-                                return y
+                            m_ref = getIdx(operation["multiplication"], arrVar)
+                            d_ref = getIdx(operation["division"], arrVar)
 
                         elif d_ref is not None and m_ref is not None and d_ref < m_ref:
                             # Divide First
                             x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                            if global_bypass == False:
-                                arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                                m_ref = getIdx(operation["multiplication"], arrVar)
+                            if global_bypass == True:
+                                return x # x contains error
+                            arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                            m_ref = getIdx(operation["multiplication"], arrVar)
 
-                                y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
-                                arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
+                            y = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                            if global_bypass == True:
+                                return y # y contains error
+                            arrVar = restructure(y, m_ref - 1, m_ref + 1, arrVar)
 
-                                m_ref = getIdx(operation["multiplication"], arrVar)
-                                d_ref = getIdx(operation["division"], arrVar)
-                            else:
-                                # division by zero
-                                return x
+                            m_ref = getIdx(operation["multiplication"], arrVar)
+                            d_ref = getIdx(operation["division"], arrVar)
 
                 elif is_mult == True:
                     m_ref = getIdx(operation["multiplication"], arrVar)
                     while m_ref is not None:
                         x = multiply(arrVar[m_ref - 1], arrVar[m_ref + 1])
+                        if global_bypass == True:
+                            return x # x contains error
                         arrVar = restructure(x, m_ref - 1, m_ref + 1, arrVar)
                         m_ref = getIdx(operation["multiplication"], arrVar)
 
@@ -5633,12 +6349,10 @@ def evaluator(input):
                     d_ref = getIdx(operation["division"], arrVar)
                     while d_ref is not None:
                         x = divide(arrVar[d_ref - 1], arrVar[d_ref + 1])
-                        if global_bypass == False:
-                            arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
-                            d_ref = getIdx(operation["division"], arrVar)
-                        else:
-                            # division by zero
-                            return x
+                        if global_bypass == True:
+                            return x # x contains error
+                        arrVar = restructure(x, d_ref - 1, d_ref + 1, arrVar)
+                        d_ref = getIdx(operation["division"], arrVar)
 
                 # perform all Additions and Subtractions as they appear from left to right
                 if is_add == True and is_sub == True:
@@ -5648,23 +6362,31 @@ def evaluator(input):
                         if s_ref is None and a_ref is not None:
                             # only add
                             x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
                             a_ref = getIdx(operation["addition"], arrVar)
 
                         elif a_ref is None and s_ref is not None:
                             # only subtract
                             x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
                             s_ref = getIdx(operation["subtraction"], arrVar)
 
                         elif a_ref is not None and s_ref is not None and a_ref < s_ref:
                             # add first
                             x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
                             a_ref = getIdx(operation["addition"], arrVar)
 
                             s_ref = getIdx(operation["subtraction"], arrVar)
                             y = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            if global_bypass == True:
+                                return y # y contains error
                             arrVar = restructure(y, s_ref - 1, s_ref + 1, arrVar)
 
                             a_ref = getIdx(operation["addition"], arrVar)
@@ -5673,11 +6395,15 @@ def evaluator(input):
                         elif s_ref is not None and a_ref is not None and s_ref < a_ref:
                             # subtract first
                             x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                            if global_bypass == True:
+                                return x # x contains error
                             arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
                             s_ref = getIdx(operation["subtraction"], arrVar)
 
                             a_ref = getIdx(operation["addition"], arrVar)
                             y = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                            if global_bypass == True:
+                                return y # y contains error
                             arrVar = restructure(y, a_ref - 1, a_ref + 1, arrVar)
 
                             a_ref = getIdx(operation["addition"], arrVar)
@@ -5687,6 +6413,8 @@ def evaluator(input):
                     a_ref = getIdx(operation["addition"], arrVar)
                     while a_ref is not None:
                         x = add(arrVar[a_ref - 1], arrVar[a_ref + 1])
+                        if global_bypass == True:
+                            return x # x contains error
                         arrVar = restructure(x, a_ref - 1, a_ref + 1, arrVar)
                         a_ref = getIdx(operation["addition"], arrVar)
                 
@@ -5694,27 +6422,50 @@ def evaluator(input):
                     s_ref = getIdx(operation["subtraction"], arrVar)
                     while s_ref is not None:
                         x = subtract(arrVar[s_ref - 1], arrVar[s_ref + 1])
+                        if global_bypass == True:
+                            return x # x contains error
                         arrVar = restructure(x, s_ref - 1, s_ref + 1, arrVar)
                         s_ref = getIdx(operation["subtraction"], arrVar)
                 
                 log_process("Calculation Complete")
+                # print(arrVar)
                 
-                # test for variables in section
-                if has_var(arrVar):
-                    # run algebraic simplifications
-                    arrVar = simplify(arrVar)
-                    # return algebraic expression
-                    return arrVar
+                # handle expression solutions
+                if len(arrVar) > 1:
+                    # expression solution
+                    
+                    # algebraic expression
+                    if has_var(arrVar):
+                        # standardize format and simplify
+                        arrVar = simplify(arrVar)
+                        if len(arrVar) > 1:
+                            # return algebraic expression
+                            return arrVar
+                        else:
+                            # return single value solution
+                            return arrVar[0]
+
+                    # complex expression
+                    elif has_complex(arrVar):
+                        # return complex expression
+                        return arrVar
+                    
+                    # other ?
+                    else:
+                        return arrVar
+                    
                 else:
-                    # return single value
+                    # single value solution
                     return arrVar[0]
 
     def section(arr):
         # identifies next section of problem structure to process
         # runs calculation on section
         # if algebraic, runs simplification on section
+
         nonlocal global_bypass
         nonlocal is_paren
+        is_paren = True # assume parens to run paren test
         arrVar = arr
         thresh = 0
         while global_bypass == False and is_paren == True and thresh < paren_limit:
@@ -5733,6 +6484,7 @@ def evaluator(input):
                     count = count + 1
                     parens.append({"index": i, "char": ")"})
             
+            # decide from test result
             if count == 0:
                 is_paren = False
                 break
@@ -6118,7 +6870,7 @@ def evaluator(input):
 
                                     parens_removed = True
                                     end += 1
-                                    arrVar = restructure(x, start, end - 1, arrVar)
+                                    arrVar = restructure(x, start, end, arrVar)
                             
                             # if parenthetical algebraic expression cannot be simplified and has no expression operations to remove parenthesis
                             # then return current problem structure as solution
@@ -6158,6 +6910,7 @@ def evaluator(input):
         # II. Identify program entities && detect non-entities
         # III. run post structure validation on problem structure
         nonlocal global_bypass
+        nonlocal imagin_limit
         nonlocal is_key
         log_process("Generating Problem Structure from Problem String")
         log_process("Structuring multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets")
@@ -6225,13 +6978,69 @@ def evaluator(input):
         log_process(is_key)
         log_process(key_modules)
 
-        # # structure imaginary and complex numbers
-        # imgnry = variables[len(variables) - 1] # imaginary variable
-        # structure_len = len(structure)
-        # for i in range(structure_len):
-        #     # look for ["i", ")"], where "i" is the imaginary variable
-        #     if structure[i] == imgnry and i + 1 < structure_len and structure[i + 1] == operation["close_parenthesis"]:
+        # structure imaginary and complex numbers
+        log_process("Structuring Complex and Imaginary Numbers")
+        # complex form: (a+b*i), where a and b are real numbers
+        # imaginary forms: (b*i) (i), where b is a real number
+        # 1.) locate index of imaginary variable ("i") in structure from left to right
+        # 2.) test for match of complex or imaginary forms
+        # 3.) restructure with complex or imaginary values
+        # 4.) repeat until no match found for all i in structure
+        imgnry = variables[len(variables) - 1] # imaginary variable
+        op_paren = operation["open_parenthesis"]
+        cl_paren = operation["close_parenthesis"]
+        mult_op = operation["multiplication"]
+        add_op = operation["addition"]
+        sub_op = operation["subtraction"]
+        # loop starts here
+        searching = True
+        itr = 0
+        while itr < imagin_limit and searching == True:
+            itr += 1
+            structure_len = len(structure)
+            for i in range(structure_len):
+                if structure[i] == imgnry:
+                    # test complex form
+                    if i - 5 > -1 and i + 1 < structure_len and structure[i - 5] == op_paren and structure[i + 1] == cl_paren and structure[i - 1] == mult_op and not isinstance(num_cast(structure[i - 2]), bool) and not isinstance(num_cast(structure[i - 4]), bool):
+                        if structure[i - 3] == add_op:
+                            # form: (a+b*i)
+                            a = num_cast(structure[i - 4])
+                            b = num_cast(structure[i - 2])
+                            z = complex(a, b)
+                            structure = restructure(z, i - 5, i + 1, structure)
+                            searching = False
+                            break
+                        elif structure[i - 3] == sub_op:
+                            # form: (a-b*i)
+                            a = num_cast(structure[i - 4])
+                            b = -num_cast(structure[i - 2])
+                            z = complex(a, b)
+                            structure = restructure(z, i - 5, i + 1, structure)
+                            searching = False
+                            break
 
+                    # test imaginary forms
+                    if i - 3 > -1 and i + 1 < structure_len and structure[i - 3] == op_paren and structure[i + 1] == cl_paren and structure[i - 1] == mult_op and not isinstance(num_cast(structure[i - 2]), bool):
+                        # form: (b*i)
+                        b = num_cast(structure[i - 2])
+                        z = complex(0, b)
+                        structure = restructure(z, i - 3, i + 1, structure)
+                        searching = False
+                        break
+                    elif i - 1 > -1 and i + 1 < structure_len and structure[i - 1] == op_paren and structure[i + 1] == cl_paren:
+                        # form: (i)
+                        z = complex(0, 1)
+                        structure = restructure(z, i - 1, i + 1, structure)
+                        searching = False
+                        break
+            
+            if searching == False: # found something, but keep looking
+                searching = True
+            else: # found nothing after looking at everything
+                searching = False
+        
+        # print(structure)
+        log_process(structure)
 
         # Identify program entities in problem structure
         err = identify_entities(structure)
@@ -6560,12 +7369,22 @@ def evaluator(input):
 
             return structure
     
-    # Evaluation Setup
+    # TOP LEVEL FUNCTIONS END
+
+    # ---------------------- #
+    # EVALUATION PRE-PROCESS #
+    # ---------------------- #
+
     use_logs = input["use_logs"]
+    if use_logs == "1":
+        process_log["0"] = "Process Log Start"
     problem = input["problem"]
     answer = ""
 
-    # PRE STRUCTURE VALIDATION
+    # ------------------------ #
+    # PRE STRUCTURE VALIDATION #
+    # ------------------------ #
+
     if len(problem) > 0:
         # non-empty string
         if len(set(problem)) > 1:
@@ -6645,7 +7464,7 @@ def evaluator(input):
                                     if x != 0:
                                         test2 = False
             
-                # TEST3: Valid Brackets``
+                # TEST3: Valid Brackets
 
                 if test1 == True and test2 == True:
                         
@@ -6663,13 +7482,13 @@ def evaluator(input):
                     if len(bracks) > 0:
                         if nest_lvl != 0:
                             # unequal number of open and closing characters
-                            test2 = False
+                            test3 = False
                         elif bracks[len(bracks) - 1] == operation["open_bracket"]:
                             # no opening character on end
-                            test2 = False
+                            test3 = False
                         elif bracks[0] == operation["close_bracket"]:
                             # no closing character on start
-                            test2 = False
+                            test3 = False
                         else:
                             # test for pairs (account for nesting)
                             for i in range(0, problem_length):
@@ -6683,42 +7502,38 @@ def evaluator(input):
                                         if x == 0:
                                             break
                                     if x != 0:
-                                        test2 = False
+                                        test3 = False
                 
                 if test1 == False:
                     # zero division
-                    answer = info["error"]["prestructure"][3]["code"]
+                    answer = info["error"]["operator"]["division"][1]["code"]
                 elif test2 == False:
                     # invalid parenthesis
-                    answer = info["error"]["prestructure"][4]["code"]
+                    answer = info["error"]["prestructure"][3]["code"]
                 elif test3 == False:
                     # invalid brackets
-                    answer = info["error"]["prestructure"][5]["code"]
+                    answer = info["error"]["prestructure"][4]["code"]
                 else:
-                        
-                    # ------------------- #
-                    # VALID PRE STRUCTURE #
-                    # ------------------- #
-
-                    # change first log
-                    if use_logs == "1":
-                        process_log["0"] = "Process Log Start"
                     
-                    # POST STRUCTURE VALIDATION
-                    structure = structure_problem(problem) # perform structurization and post structure validation
-                    if global_bypass == True:
-                        # INVALID POST STRUCTURE
-                        answer = structure # contains error code that tripped global_bypass
-                    else:
+                    # ------------------------- #
+                    # POST STRUCTURE VALIDATION #
+                    # ------------------------- #
 
+                    # perform single index tokenization, lexicalization and post structure validation
+                    structure = structure_problem(problem)
+                    if global_bypass == True:
+                        # invalid structure
+                        answer = structure # contains error code
+                    else:
+                        
                         # -------------------- #
-                        # VALID POST STRUCTURE #
+                        #  EVALUATION PROCESS  #
                         # -------------------- #
                         
-                        # evaluate problem structure
-                        # section > calculate > key_functions + arithmetic + simplify > answer
-                        answer = section(structure)
+                        # evaluation workflow: |: section > calculate > key functions + arithmetic > simplify :| repeat for every section > answer
 
+                        # assign result to answer variable
+                        answer = section(structure)
         else:
             # string of single character type
             try:
@@ -6758,19 +7573,130 @@ def evaluator(input):
     # ANSWER FORMATTING #
     # ----------------- #
 
-    # convert answer expressions to answer string
-    if isinstance(answer, list) or var_test(answer) == True:
+    # format expression list
+    if isinstance(answer, list) and len(answer) > 1:
         string = ""
-        for i in answer:
-            string = string + str(i)
+        for a in answer:
+            # store buffer value
+            buffer = str(a)
+
+            # apply formatting
+            typ = num_cast(a)
+            if not isinstance(typ, bool):
+
+                # test complex
+                if isinstance(typ, complex):
+                    i = variables[len(variables) - 1] # imaginary variable
+                    real = num_cast(typ.real) # real component
+                    imag = num_cast(typ.imag) # imaginary coefficient
+
+                    if real == 0:
+                        # format imaginary numbers
+                        if imag == 1:
+                            # form: (i)
+                            buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
+                        else:
+                            # form: (b*i)
+                            if imag < 0:
+                                # negative imaginary coefficient
+                                imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
+                            else:
+                                # positive imaginary coefficient
+                                imag = str(imag)
+
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                    else:
+                        # format complex numbers
+                        # form: (a+b*i)
+                        if real < 0:
+                            # format negative real component
+                            real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
+                        else:
+                            real = str(real)
+
+                        if imag < 0:
+                            # format negative imaginary component
+                            imag = str(abs(imag))
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                        else:
+                            # format positive imaginary component
+                            imag = str(imag)
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+
+                # format negatives
+                elif typ < 0:
+                    # update buffer with format
+                    buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
+
+            string = string + buffer
+        
+        # apply converted answer
         answer = string
+    
+    # format singleton list
     else:
-        # prevent unnecessary decimal
-        try:
-            int(answer)
-            answer = num_cast(answer)
-        except:
-            log_process("ERROR: %s" % answer)
+
+        # store buffer value
+        buffer = answer
+        if not isinstance(buffer, complex):
+            buffer = num_cast(str(buffer))
+
+        # apply formatting
+        typ = buffer
+        if not isinstance(typ, bool):
+            
+            # test complex
+            if isinstance(typ, complex):
+                i = variables[len(variables) - 1] # imaginary variable
+                real = num_cast(typ.real) # real component
+                imag = num_cast(typ.imag) # imaginary coefficient
+
+                if real == 0:
+                    # format imaginary numbers
+                    if imag == 1:
+                        # form: (i)
+                        buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
+                    else:
+                        # form: (b*i)
+                        if imag < 0:
+                            # negative imaginary coefficient
+                            imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
+                        else:
+                            # positive imaginary coefficient
+                            imag = str(imag)
+
+                        # update buffer with format
+                        buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                else:
+                    # format complex numbers
+                    # form: (a+b*i)
+                    if real < 0:
+                        # format negative real component
+                        real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
+                    else:
+                        real = str(real)
+
+                    if imag < 0:
+                        # format negative imaginary component
+                        imag = str(abs(imag))
+                        # update buffer with format
+                        buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                    else:
+                        # format positive imaginary component
+                        imag = str(imag)
+                        # update buffer with format
+                        buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+
+            # format negatives
+            elif typ < 0:
+                # update buffer with format
+                buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
+            
+            # apply converted answer
+            answer = buffer
 
     # assign output object
     output = {
@@ -6789,10 +7715,24 @@ def evaluator(input):
 #     {"problem": "", "answer": "ERROR_101_0"}, # prevents evaluation on empty string
 #     {"problem": "        ", "answer": "ERROR_102_1"}, # prevents evaluation of string with single type of character
 #     {"problem": "11111111", "answer": "11111111"}, # returns problem of string with single type of numeral character
-
-#     # TEST0
+    
 #     {"problem": "1+1/&%$#", "answer": "ERROR_103_2 | Invalid character: &"}, # no special characters
 #     {"problem": "1+A/27", "answer": "ERROR_103_2 | Invalid character: A"}, # no captial letters
+
+#     {"problem": "1/0", "answer": "ERROR_304_1"}, # prevents zero division before calculation
+#     {"problem": "3/(2-2)", "answer": "ERROR_304_1"}, # prevents zero division during calculation
+
+#     # parenthesis
+#     {"problem": "1)+(1*2)", "answer": "ERROR_104_3"}, #      )()     : unequal number of open and close characters
+#     {"problem": "1+)1(+(1*2)", "answer": "ERROR_104_3"}, #   )(()    : no close on first parens
+#     {"problem": "(1*2)+)1(+1", "answer": "ERROR_104_3"}, #   ())(    : no open on last parens
+#     {"problem": "(1*2)+)3(+(1)", "answer": "ERROR_104_3"}, # ())(()  : all open characters have a closing pair after it
+    
+#     # brackets    
+#     {"problem": "1]+[1*2]", "answer": "ERROR_105_4"}, #      ][]     : unequal number of open and close characters
+#     {"problem": "1+]1[+[1*2]", "answer": "ERROR_105_4"}, #   ][[]    : no close on first parens
+#     {"problem": "[1*2]+]1[+1", "answer": "ERROR_105_4"}, #   ]][     : no open on last parens
+#     {"problem": "[1*2]+]3[+[1]", "answer": "ERROR_105_4"}, # []][[]  : all open characters have a closing pair after it
 
     
 #     # PROBLEM STRUCTURE VALIDATION
@@ -6800,28 +7740,12 @@ def evaluator(input):
 #     # TEST0.1
 #     {"problem": "1+q", "answer": "ERROR_201_0 | non-entity: q"}, # formatting error for valid characters but no semantic meaning
 
-#     # TEST6
-#     {"problem": "1/0", "answer": "ERROR_104_3"}, # prevents zero division before calculation
-#     {"problem": "3/(2-2)", "answer": "ERROR_104_3"}, # prevents zero division during calculation
-
 #     # TEST5
 #     {"problem": "1++1", "answer": "ERROR_204_3"},
 #     {"problem": "1+-1", "answer": "ERROR_204_3"}, # different operations
 #     {"problem": "2*√16", "answer": "8"}, # except for second operation being √
 #     {"problem": "1√*16", "answer": "ERROR_204_3"}, # including for first operation being √
 #     {"problem": "-1*2", "answer": "ERROR_205_4"}, # prevent operations without operands
-
-#     # TEST1
-#     {"problem": "1)+(1*2)", "answer": "ERROR_105_4"}, #      )()     : unequal number of open and close characters
-#     {"problem": "1+)1(+(1*2)", "answer": "ERROR_105_4"}, #   )(()    : no close on first parens
-#     {"problem": "(1*2)+)1(+1", "answer": "ERROR_105_4"}, #   ())(    : no open on last parens
-#     {"problem": "(1*2)+)3(+(1)", "answer": "ERROR_105_4"}, # ())(()  : all open characters have a closing pair
-    
-#     # TEST2    
-#     {"problem": "1]+[1*2]", "answer": "ERROR_105_4"}, #      ][]     : unequal number of open and close characters
-#     {"problem": "1+]1[+[1*2]", "answer": "ERROR_105_4"}, #   ][[]    : no close on first parens
-#     {"problem": "[1*2]+]1[+1", "answer": "ERROR_105_4"}, #   ]][     : no open on last parens
-#     {"problem": "[1*2]+]3[+[1]", "answer": "ERROR_105_4"}, # []][[]  : all open characters have a closing pair
 
 #     # TEST3
 #     {"problem": "2+3-xy", "answer": "ERROR_203_2"}, # prevents program from evaluating problem structure if the problem structure has consecutive variables
@@ -7067,32 +7991,12 @@ def evaluator(input):
 #     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
     
     
-    
-
-
-
-
-
-
-#     # {"problem": "sine(sin(0))", "answer": "0"}, # key function composition fails for key functions with single argument 
-
-
-
-
-
-
-
-
-
-
-
-    
 #     # ALGEBRAIC FORMAT STANDARDIZATION
 
-#     {"problem": "2-3*x", "answer": "-3*x+2"}, # prevents operation out of precedence in algebraic expressions using getidx function
+#     {"problem": "2-3*x", "answer": "(-3)*x+2"}, # prevents operation out of precedence in algebraic expressions using getidx function
 #     {"problem": "x^2-3*y", "answer": "x^2-3*y"}, # prevents operation out of precedence in algebraic expressions using getidx function
 #     {"problem": "2*y^2*3*x/b*a-5", "answer": "6*x*y^2/a*b-5"}, # standardizes terms: coefficient at start of divisional section + alphabetized variables + preserves subtraction of term
-#     {"problem": "3+3*x-7-3*x^3", "answer": "-3*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
+#     {"problem": "3+3*x-7-3*x^3", "answer": "(-3)*x^3+3*x-4"}, # standardizes expression: negates first term if subtracted + combines arithmetic terms into constant at end of expression
 #     {"problem": "3*x^2-1+2*x^3", "answer": "2*x^3+3*x^2-1"}, # orders terms in decrimental order of term degree + prevent arithemetic on values operated on by higher precedence operators
 #     {"problem": "a*x^3+a*x^2*y+a*x*y^2+a*y^3", "answer": "a*x^3+a*y^3+a*x^2*y+a*x*y^2"}, # (term indexes for coeficients) pascal's traingle expression format = 0, 1, 2, 3 => standard expression format = 0, 3, 1, 2; alternate from ends to center term assuming all term degrees from greatest to least are present
 #     {"problem": "x*x+x*x*x", "answer": "x^3+x^2"}, # note: enure standards are enforced after simplification 
@@ -7151,7 +8055,7 @@ def evaluator(input):
 #     # x^i case 1: x*x^i => x^b, where b = i + 1, index = 2nd x
 #     {"problem": "x*x^2", "answer": "x^3"}, # 
 #     # x^i case 2: x/x^i => x^b, where b = 1 - i, index = 2nd x
-#     {"problem": "x/x^2", "answer": "x^-1"}, # 
+#     {"problem": "x/x^2", "answer": "x^(-1)"}, # 
 #     # x^i case 3: x^i*x => x^b, where b = i + 1, index = 1st x
 #     {"problem": "x^2*x", "answer": "x^3"}, # 
 #     # x^i case 4: x^i/x => x^b, where b = i - 1, index = 1st x
@@ -7219,15 +8123,15 @@ def evaluator(input):
 #     {"problem": "3*x+x", "answer": "4*x"}, # combine terms one variable with coefficients added
 #     {"problem": "x+3*x", "answer": "4*x"}, # combine terms one variable with coefficients added
     
-#     {"problem": "a-a-a-a", "answer": "-2*a"}, # simplifies algebraic expression for consecutive substractions
+#     {"problem": "a-a-a-a", "answer": "(-2)*a"}, # simplifies algebraic expression for consecutive substractions
 #     {"problem": "10+x-2", "answer": "x+8"}, # a + x - b => (a-b) + x
 #     {"problem": "10-x-2", "answer": "-x+8"}, # a - x - b => (a-b) - x
 #     {"problem": "8*x-3*x", "answer": "5*x"}, # subtract coefficients of like terms
 #     {"problem": "8*x-3*y", "answer": "8*x-3*y"}, # don't subtract coefficients of not like terms
 #     {"problem": "3*x-x", "answer": "2*x"}, # combine terms one variable with coefficients subtracted
-#     {"problem": "x-3*x", "answer": "-2*x"}, # combine terms one variable with coefficients subtracted
+#     {"problem": "x-3*x", "answer": "(-2)*x"}, # combine terms one variable with coefficients subtracted
 #     {"problem": "3*x-x", "answer": "2*x"}, # a * x - x => (a - 1) * x
-#     {"problem": "x-3*x", "answer": "-2*x"}, # x - a * x => (1 - a) * x
+#     {"problem": "x-3*x", "answer": "(-2)*x"}, # x - a * x => (1 - a) * x
 
 #     # EXPRESSION OPERATIONS (distributable operations on algebraic expressions)
 
@@ -7254,7 +8158,7 @@ def evaluator(input):
 #     # multiplication
 #     {"problem": "2*((4+8)+x)", "answer": "2*x+24"}, # able to remove last parenthesis by distributing 2 from before section
 #     {"problem": "((4+8)+x)*2", "answer": "2*x+24"}, # able to remove last parenthesis by distributing 2 from after section
-#     {"problem": "2*((4+8)-x)", "answer": "-2*x+24"}, # able to remove last parenthesis by distributing 2 from before section
+#     {"problem": "2*((4+8)-x)", "answer": "(-2)*x+24"}, # able to remove last parenthesis by distributing 2 from before section
 #     {"problem": "((4-16)+x)*2", "answer": "2*x-24"}, # able to remove last parenthesis by distributing 2 from after section
 
 #     # ALGEBRAIC KEY FUNCTION ARGUMENT DOMAIN VALIDATION
@@ -7284,19 +8188,165 @@ def evaluator(input):
 #     # difference of cubes
 #     {"problem": "expand[[x-y],[x^2+y^2+x*y]]", "answer": "x^3-y^3"}, # (x-y)*(x^2+y^2+x*y) = x^3-y^3
 
-#     # {"problem": "x=2*x", "answer": ""}, # 
-#     # {"problem": "x/(3*x)", "answer": "1/(2*x)"}, # 
-#     # {"problem": "", "answer": ""}, # 
+#     # COMPLEX AND IMAGINARY NUMBERS
+    
+#     # complex/imaginary/negative output formatting
+#     {"problem": "(i)", "answer": "(i)"}, # format imaginary numbers
+#     {"problem": "(2*i)", "answer": "(2*i)"}, # format imaginary numbers
+#     {"problem": "((-2)*i)", "answer": "((-2)*i)"}, # format imaginary numbers
+#     {"problem": "(2+3*i)", "answer": "(2+3*i)"}, # format complex numbers
+#     {"problem": "((-2)+3*i)", "answer": "((-2)+3*i)"}, # format complex numbers
+#     {"problem": "x*((-1)-2)", "answer": "(-3)*x"}, # format negative numbers
+#     {"problem": "((-1)*i)", "answer": "((-1)*i)"}, # format negative complex numbers
+
+#     # complex addition
+#     {"problem": "(1-5*i)+(3+2*i)", "answer": "(4-3*i)"},
+#     {"problem": "(3-2*i)+1", "answer": "(4-2*i)"},
+#     {"problem": "1+(3-2*i)", "answer": "(4-2*i)"},
+
+#     # imaginary addition
+#     {"problem": "(i)+1", "answer": "(1+1*i)"},
+#     {"problem": "1+(i)", "answer": "(1+1*i)"},
+
+#     # complex subtraction
+#     {"problem": "(1-1*i)-(3+2*i)", "answer": "((-2)-3*i)"},
+#     {"problem": "(3-2*i)-1", "answer": "(2-2*i)"},
+#     {"problem": "1-(3-2*i)", "answer": "((-2)-2*i)"},
+    
+#     # imaginary subtraction
+#     {"problem": "(i)-1", "answer": "((-1)+1*i)"},
+#     {"problem": "1-(i)", "answer": "(1+1*i)"},
+
+#     # complex multiplication
+#     {"problem": "(1-3*i)*(3+2*i)", "answer": "(9-7*i)"},
+#     {"problem": "2*(3-2*i)", "answer": "(6-4*i)"},
+#     {"problem": "(3-2*i)*2", "answer": "(6-4*i)"},
+    
+#     # imaginary multiplication
+#     {"problem": "2*(i)", "answer": "(2*i)"},
+#     {"problem": "(i)*2", "answer": "(2*i)"},
+
+#     # complex division
+
+#     # complex / complex
+
+#     # (i) / (i) => 1
+#     {"problem": "(i)/(i)", "answer": "1"},
+#     # (i) / (b*i) => 1/b
+#     {"problem": "(i)/(2*i)", "answer": "0.5"},
+#     # (i) / (a+b*i) => b / (a^2+b^2) + a / (a^2+b^2) * i
+#     {"problem": "(i)/(2+2*i)", "answer": "(0.25+0.25*i)"},
+    
+#     # (b*i) / (i) => b
+#     {"problem": "(2*i)/(i)", "answer": "2"},
+#     # (b1*i) / (b2*i) => b1/b2
+#     {"problem": "(2*i)/(4*i)", "answer": "0.5"},
+#     # (b1*i) / (a+b2*i) => ((b1*b2)/(a^2+b2^2)) + ((b1*a)/(a^2+b2^2)) * i
+#     {"problem": "(2*i)/(2+4*i)", "answer": "(0.4+0.2*i)"},
+    
+#     # (a+b*i) / (i) => -a*i+b
+#     {"problem": "(2+4*i)/(i)", "answer": "(4-2*i)"},
+#     # (a+b1*i) / (b2*i) => b1/b2 - a/b2*i
+#     {"problem": "(2+4*i)/(2*i)", "answer": "(2-1*i)"},
+#     # (a1+b1*i) / (a2+b2*i) => (a1*a2 + b1*b2)/(a2^2+b2^2) - (a1*b2 + a2*b1)/(a2^2+b2^2) * i
+#     {"problem": "(2+4*i)/(4+2*i)", "answer": "(0.8-1*i)"},
+
+#     # complex / rational
+
+#     # where r is a rational number
+#     # (i)/r => (i)/r
+#     {"problem": "(i)/2", "answer": "(i)/2"},
+#     # (b*i) / r => (b/r*i)
+#     {"problem": "(4*i)/16", "answer": "(0.25*i)"},
+#     # (a+b*i) / r => a/r + b/r * i
+#     {"problem": "(2+4*i)/16", "answer": "(0.125+0.25*i)"},
+
+#     # rational / complex
+
+#     # where r is a rational number
+#     # r / (b*i) => -r/b * i
+#     {"problem": "4/(2*i)", "answer": "((-2)*i)"},
+#     # r / (a+b*i) => (r*(a-b*i)) / ((a+b*i)*(a-b*i)) => (r*a-r*b*i) / (a^2-b^2*i^2) => (r*a-r*b*i) / (a^2+b^2) => (r*a)/(a^2+b^2) - (r*b)/(a^2+b^2) * i
+#     {"problem": "4/(4+2*i)", "answer": "(0.8-0.4*i)"},
+
+#     # complex exponentiation
+
+#     # (a1+b1*i)^(a2+b2*i)
+#     {"problem": "(1-1*i)^(3+2*i)", "answer": "(1-1*i)^(3+2*i)"},
+
+#     # (a+b*i)^r
+#     {"problem": "(3+2*i)^2", "answer": "(3+2*i)^2"},
+
+#     # r^(a+b*i)
+#     {"problem": "2^(3+2*i)", "answer": "2^(3+2*i)"},
+
+#     # imaginary exponentiation
+#     # (i)^(i)
+#     {"problem": "(i)^(i)", "answer": "0.20787957635076193"}, # solution: e^(-pi/2)
+#     # (i)^r
+#     {"problem": "(i)^0", "answer": "1"},
+
+#     {"problem": "(i)^1", "answer": "(i)"},
+#     {"problem": "(i)^2", "answer": "(-1)"},
+#     {"problem": "(i)^3", "answer": "((-1)*i)"},
+#     {"problem": "(i)^4", "answer": "1"},
+    
+#     {"problem": "(i)^5", "answer": "(i)"},
+#     {"problem": "(i)^6", "answer": "(-1)"},
+#     {"problem": "(i)^7", "answer": "((-1)*i)"},
+#     {"problem": "(i)^8", "answer": "1"},
+    
+#     {"problem": "(i)^(-1)", "answer": "((-1)*i)"},
+#     {"problem": "(i)^(-2)", "answer": "(-1)"},
+#     {"problem": "(i)^(-3)", "answer": "(i)"},
+#     {"problem": "(i)^(-4)", "answer": "1"},
+    
+#     {"problem": "(i)^(-5)", "answer": "((-1)*i)"},
+#     {"problem": "(i)^(-6)", "answer": "(-1)"},
+#     {"problem": "(i)^(-7)", "answer": "(i)"},
+#     {"problem": "(i)^(-8)", "answer": "1"},
+    
+#     # (b*i)^r
+#     {"problem": "(2*i)^0", "answer": "1"},
+
+#     {"problem": "(2*i)^1", "answer": "(2*i)"},
+#     {"problem": "(2*i)^2", "answer": "(-4)"},
+#     {"problem": "(2*i)^3", "answer": "((-8)*i)"},
+#     {"problem": "(2*i)^4", "answer": "16"},
+    
+#     {"problem": "(2*i)^5", "answer": "(32*i)"},
+#     {"problem": "(2*i)^6", "answer": "(-64)"},
+#     {"problem": "(2*i)^7", "answer": "((-128)*i)"},
+#     {"problem": "(2*i)^8", "answer": "256"},
+    
+#     {"problem": "(2*i)^(-1)", "answer": "((-0.5)*i)"},
+#     {"problem": "(2*i)^(-2)", "answer": "(-0.25)"},
+#     {"problem": "(2*i)^(-3)", "answer": "(0.125*i)"},
+#     {"problem": "(2*i)^(-4)", "answer": "0.0625"},
+    
+#     {"problem": "(2*i)^(-5)", "answer": "((-0.03125)*i)"},
+#     {"problem": "(2*i)^(-6)", "answer": "(-0.015625)"},
+#     {"problem": "(2*i)^(-7)", "answer": "(0.0078125*i)"},
+#     {"problem": "(2*i)^(-8)", "answer": "0.00390625"},
+    
+#     # # r^(i)
+#     {"problem": "2^(i)", "answer": "2^(i)"},
+
+#     # complex radication
+
+#     # complex √ complex
+#     {"problem": "(1-1*i)√(3+2*i)", "answer": "(1-1*i)√(3+2*i)"},
+
+#     # rational √ complex
+#     {"problem": "2√(3+2*i)", "answer": "2√(3+2*i)"},
+
+#     # complex √ rational
+#     {"problem": "(3+2*i)√2", "answer": "(3+2*i)√2"},
 # ]
 
-# # single test
+# # expirimental testing
 # tests = [
-#     {"problem": "(1-i)+(3+2*i)", "answer": ""}
-#     # {"problem": "(1-i)-(3+2*i)", "answer": ""}
-#     # {"problem": "(1-i)/(3+2*i)", "answer": ""}
-#     # {"problem": "(1-i)*(3+2*i)", "answer": ""}
-#     # {"problem": "(1-i)^(3+2*i)", "answer": ""}
-#     # {"problem": "(1-i)√(3+2*i)", "answer": ""}
+#     {"problem": "", "answer":""}, #
 # ]
 
 # def diagnostic():
