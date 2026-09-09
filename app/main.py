@@ -2,11 +2,34 @@
 import math
 import cmath
 import numpy as np
+from decimal import Decimal
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 import copy
+
+# PROGRAMIC PROCESS
+# I. Evaluation Pre-process
+#   I. Pre-structure validation on problem string
+#   II. Decode Problem String: structure problem string into problem structure
+#       I. Single-index and Multi-index tokenization: integers, multi-digit numbers, negative numbers, rational numbers (decimal), mathematical operations, parenthesis, and square brackets
+#       II. Lexer: constants (keyword that becomes a value; includes special number types, i.e. imaginary and complex), key function key (keyword remains a keyword for later association with arguments during calculation)
+#   III. Identify program entities (update entity booleans to determine which operations should be unbypassed) && detect non-entities = valid characters but no corresponding token
+#   IV. Post-structure validation on problem structure
+# II. Evaluation Process
+#   I. Parenthetically Section and Solve: 
+#       I. get next parenthetical section from most to least nested
+#       II. Calculate result of expression in section
+#           I. Key Function System: perform key functions from activated key modules
+#           II. Arithmetic System: perform operations in accordance with operator precedence and number type rules
+#           III. Algebraic System: perform format standardization and simplification
+#       III. Decide from Result of calculation
+#           I. single value result: restructure with solution and get next section
+#           II. expression result: conditionally distribute to remove parenthesis or stop evaluation
+#       IV. No sections => Final Calculation
+# III. Evaluation Post-process
+#   I. Encode Problem Structure: convert problem structure to answer string and enforce format rules for problem string on answer string
 
 # Environment variables
 load_dotenv()
@@ -35,7 +58,7 @@ parameters = {
 # Program Information
 info = {
     
-    "operations": [
+    "operations": (
         # parametric operations
         {"name":"Addition", "syntax": parameters["addition"]},
         {"name":"Subtraction", "syntax": parameters["subtraction"]},
@@ -60,23 +83,23 @@ info = {
         {"name":"standard complex number", "syntax":"(a+b*i)"},
         {"name":"complex number with negative imaginary component", "syntax":"(a-b*i)"},
         {"name":"complex number with negative real component", "syntax":"((-a)+b*i)"},
-    ],
+    ),
 
-    "constants": [
+    "constants": (
         {"name":"Pi (π)", "syntax":"pi", "value": np.pi}, # alt code 227
         {"name":"Tau (𝜏)", "syntax":"tau", "value": math.tau}, # alt code 231
         {"name":"Phi (φ)", "syntax":"phi", "value": (1 + np.sqrt(5))/2}, # alt code 237 or 232 for capital
         {"name":"Euler's Number (e)", "syntax":"euler", "value": np.e},
         {"name":"Euler's Constant (Γ)", "syntax":"gamma", "value": np.euler_gamma}, # alt code 226
-    ],
+    ),
 
     # the whole lowercase alphabet may be used as variables (keys are also composed of lowercase letters)
     # "variables": ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"],
-    "variables": ["x", "y", "z", "a", "b", "c", "n", "f", "g", "i"], # 10 variables is plenty, i is planned to represent imaginary numbers, f and g will represent functions
+    "variables": ("x", "y", "z", "a", "b", "c", "n", "f", "g", "i"), # 10 variables is plenty, i is planned to represent imaginary numbers, f and g will represent functions
 
-    "key_functions": [
+    "key_functions": (
         # Trigonomic Module
-        [
+        (
                 
             # Reciprocal
             {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
@@ -116,10 +139,10 @@ info = {
             {"name":"Arcus Tangent", "key": "atan", "syntax": "atan(x)", "about": "Gets the arcus tangent, i.e. the inverse tangent, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Tangent", "key":"tan", "syntax": "tan(x)", "about": "Gets the tangent of x, where x is a value or an expression that evaluates to a value."},
-        ],
+        ),
 
         # Geometeric Module
-        [
+        (
             # Triangles
             {"name":"Right Triangle Hypotenuse", "key":"hypot", "syntax": "hypot[a,b]", "about": "Gets the hypotenuse length of a right triangle given leg lengths a and b, where a and b are a value or an expression that evaluates to a value wrapped within square brackets, e.g. hypot[a,[b+x]]."},
             
@@ -171,10 +194,10 @@ info = {
             {"name":"Icosahedron Volume", "key":"icosahedronv", "syntax": "icosahedronv[s]", "about": "Gets the volume of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronv[[s+x]]."},
             {"name":"Icosahedron Surface Area", "key":"icosahedronsa", "syntax": "icosahedronsa[s]", "about": "Gets the surface area of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronsa[[s+x]]."},
 
-        ],
+        ),
 
         # Combinatoric Module
-        [
+        (
             {"name":"Factorial", "key":"fact", "syntax": "fact(x)", "about": "Gets the factorial of x, where x is a value or an expression that evaluates to a value."},
 
             {"name":"Permutation", "key":"perm", "syntax": "perm[n,r]", "about": "Replacement + Ordered. Gets a permutation given n number of objects with r number of objects per permutation, where n and r are values or an expression that evaulates to a value wrapped within square brackets, e.g. perm[n,[r+x]]."},
@@ -196,10 +219,10 @@ info = {
         # add
         #  - partition: no known closed general formula for partition;
 
-        ],
+        ),
 
         # Statistical Module
-        [
+        (
             {"name":"Standard Deviation", "key":"sd", "syntax": "sd[a,b]", "about": "Gets the standard deviation of the set of items within square brackets, where that set has at least two comma-demarcated items. An item may be a value or an expression that evaulates to a value wrapped within square brackets, e.g. var[a,[b+x]]."},
             
             {"name":"Variance", "key":"var", "syntax": "var[a,b]", "about": "Gets the variance of the set of items within square brackets, where that set has at least two comma-demarcated items. An item may be a value or an expression that evaulates to a value wrapped within square brackets, e.g. sd[a,[b+x]]."},
@@ -219,11 +242,11 @@ info = {
             {"name":"Logarithm", "key":"log", "syntax": "log[x,b]", "about": "Gets the logarithm of x with base b, where x and b are values or expressions wrapped in square brackets that evaluate to a value, e.g. log[x,[b+2]]."},
 
             {"name":"Natural Log", "key":"ln", "syntax": "ln(x)", "about": "Gets the natural log of x with base e, where x is a value or an expression that evaluates to a value, e.g. ln(2-1*0)."},
-        ],
+        ),
 
         # Algebraic
         # note: algebraic module must be at end index of key_functions
-        [
+        (
             {"name":"Polynomial Exponentiation", "key":"expon", "syntax":"expon[[a],x]", "about":"Gets the exponentiation of a polynomial expression given a polynomial expression a and power x, where x is a value or an arithmetic expression that evaluates to a positive integer value wrapped within square brackets, e.g. expon[[x+1],[1+2]] = (x+1)*(x+1)*(x+1)"},
             
             {"name":"Polynomial Expansion", "key":"expand", "syntax":"expand[[x][y]]", "about":"Gets a polynomial expansion given a list of at least 2 polynomial expressions x and y, where each expression may have a unique number of any number of terms, e.g. expand[[a][b+c][d+e+f]]"},
@@ -233,8 +256,8 @@ info = {
         # add:
         #  - Polynomial Factorization: deterministic algorithm for worst-case complexity polynomial is an open problem in mathematics
         #  - complex conjugate
-        ],
-    ],
+        ),
+    ),
     
     "limits": {
         "paren_limit": parameters["paren_limit"],
@@ -268,60 +291,60 @@ info = {
         "parameter": {
             # limit parameters
             "limit": {
-                "paren_limit": [
+                "paren_limit": (
                     {"code": "ERROR_001_0", "description": "parameter error: parenthesis limit. Problems are not to exceed %s pairs of parenthesis." % parameters["const_limit"] }
-                ],
-                "const_limit": [
+                ),
+                "const_limit": (
                     {"code": "ERROR_002_0", "description": "parameter error: constant limit. Problems are not to exceed %s instances of any one constant." % parameters["const_limit"]}
-                ],
-                "key_limit": [
+                ),
+                "key_limit": (
                     {"code": "ERROR_003_0", "description": "parameter error: key function limit. Problems are not to exceed %s calls for any one key function." % parameters["key_limit"]}
-                ],
-                "simp_limit": [
+                ),
+                "simp_limit": (
                     {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]}
-                ],
-                "imagin_limit": [
+                ),
+                "imagin_limit": (
                     {"code": "ERROR_005_0", "description": "parameter error: imaginary limit. Problems are not to exceed %s number of imaginary or complex numbers." % parameters["imagin_limit"]}
-                ],
+                ),
             },
         },
 
-        "prestructure": [
+        "prestructure": (
             {"code": "ERROR_101_0", "description": "prestructure error: empty string"},
             {"code": "ERROR_102_1", "description": "prestructure error: repeating non-numeral character"},
             {"code": "ERROR_103_2", "description": "prestructure error: invalid character in problem string"},
             {"code": "ERROR_104_3", "description": "prestructure error: invalid parenthesis"},
             {"code": "ERROR_105_4", "description": "prestructure error: invalid brackets"},
-        ],
+        ),
 
-        "poststructure": [
+        "poststructure": (
             {"code": "ERROR_201_0", "description": "poststructure error: non-entity detected"},
             {"code": "ERROR_202_1", "description": "poststructure error: invalid key function syntax"},
             {"code": "ERROR_203_2", "description": "poststructure error: no consecutive variables"},
             {"code": "ERROR_204_3", "description": "poststructure error: no consecutive operations"},
             {"code": "ERROR_205_4", "description": "poststructure error: operations require operands"},
-        ],
+        ),
 
         "operator": {
-            "addition": [
+            "addition": (
                 {"code": "ERROR_301_0", "description": "addition error: invalid operand number type"}
-            ],
-            "subtraction": [
+            ),
+            "subtraction": (
                 {"code": "ERROR_302_0", "description": "subtraction error: invalid operand number type"}
-            ],
-            "multiplication": [
+            ),
+            "multiplication": (
                 {"code": "ERROR_303_0", "description": "multiplication error: invalid operand number type"}
-            ],
-            "division": [
+            ),
+            "division": (
                 {"code": "ERROR_304_0", "description": "division error: invalid operand number type"},
                 {"code": "ERROR_304_1", "description": "division error: no division by zero"},
-            ],
-            "exponentiation": [
+            ),
+            "exponentiation": (
                 {"code": "ERROR_305_0", "description": "exponentiation error: invalid operand number type"}
-            ],
-            "radication": [
+            ),
+            "radication": (
                 {"code": "ERROR_306_0", "description": "radication error: invalid operand number type"}
-            ],
+            ),
         },
 
         "key_function": {
@@ -330,68 +353,68 @@ info = {
             "trigonomic": {
 
                 # Reciprocal
-                "acsc": [
+                "acsc": (
                     {"code": "ERROR_504_0", "description": "acsc key function error: invalid argument = x, -1 < x < 1"},
-                ],
-                "csc": [
+                ),
+                "csc": (
                     {"code": "ERROR_502_0", "description": "csc key function error: invalid argument = x, x = 0"},
-                ],
-                "asec": [
+                ),
+                "asec": (
                     {"code": "ERROR_506_0", "description": "asec key argument error: invalid argument = x, -1 < x < 1"},
-                ],
-                "sec": [
+                ),
+                "sec": (
                     {"code": "ERROR_505_0", "description": "sec key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_505_1", "description": "sec key function error: invalid argument = x, x >= π"},
-                ],
-                "acot": [
+                ),
+                "acot": (
                     {"code": "ERROR_508_0", "description": "acot key function error: invalid argument = x, x = 0"},
-                ],
-                "cot": [
+                ),
+                "cot": (
                     {"code": "ERROR_507_0", "description": "cot key function error: invalid argument = x, x = 0"},
                     {"code": "ERROR_507_1", "description": "cot key function error: invalid argument = x, x mod π = 0, x mod π is rounded to nearest 13th decimal"},
-                ],
+                ),
 
                 # Hyperbolic
-                # "asinh": [
+                # "asinh": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "sinh": [
+                # ),
+                # "sinh": (
                 #     {"code": "", "description": ""},
-                # ],
-                "acosh": [
+                # ),
+                "acosh": (
                     {"code": "ERROR_509_0", "description": "acosh key function error: invalid argument = x, x < 1"},
-                ],
-                # "cosh": [
+                ),
+                # "cosh": (
                 #     {"code": "", "description": ""},
-                # ],
-                "atanh": [
+                # ),
+                "atanh": (
                     {"code": "ERROR_510_0", "description": "atanh key function error: invalid argument = x, -1 < x < 1"},
-                ],
-                # "tanh": [
+                ),
+                # "tanh": (
                 #     {"code": "", "description": ""},
-                # ],
+                # ),
 
                 # Fundamental
-                "asin": [
+                "asin": (
                     {"code": "ERROR_501", "description": "asin key function error: invalid argument = x, x < -1"},
                     {"code": "ERROR_501_1", "description": "asin key function error: invalid argument = x, x > 1"},
-                ],
-                # "sin": [
+                ),
+                # "sin": (
                 #     {"code": "", "description": ""},
-                # ],
-                "acos": [
+                # ),
+                "acos": (
                     {"code": "ERROR_502", "description": "acos key function error: invalid argument = x, x < -1"},
                     {"code": "ERROR_502_1", "description": "acos key function error: invalid argument = x, x > 1"},
-                ],
-                # "cos": [
+                ),
+                # "cos": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "atan": [
+                # ),
+                # "atan": (
                 #     {"code": "", "description": ""},
-                # ],
-                "tan": [
+                # ),
+                "tan": (
                     {"code": "ERROR_503_0", "description": "tan key function error: invalid argument = x, x mod (π/2) = 0 and x/(π/2) mod 2 ≠ 0, where x mod (π/2) is rounded to nearest 13th decimal place. The tangent function cannot accept odd multiples of (π/2), because those values lie on a vertical asymptote."},
-                ],
+                ),
 
             },
 
@@ -399,144 +422,144 @@ info = {
             "geometric": {
 
                 # Triangles
-                "hypot": [
+                "hypot": (
                     {"code": "ERROR_511_0", "description": "hypot key function error: invalid argument = x, x <= 0"},
-                ],
-                "heron": [
+                ),
+                "heron": (
                     {"code": "ERROR_512_0", "description": "heron key function error: invalid argument = x, x <= 0"},
-                ],
+                ),
                 
                 # Regular n-gons
-                "ngonas": [
+                "ngonas": (
                     {"code": "ERROR_513_0", "description": "ngonas key function error: invalid argument = x, x <= 0"},
-                ],
-                "ngonar": [
+                ),
+                "ngonar": (
                     {"code": "ERROR_514_0", "description": "ngonar key function error: invalid argument = x, x <= 0"},
-                ],
-                "ngonaa": [
+                ),
+                "ngonaa": (
                     {"code": "ERROR_515_0", "description": "ngonaa key function error: invalid argument = x, x <= 0"},
-                ],
-                "ngonperim": [
+                ),
+                "ngonperim": (
                     {"code": "ERROR_516_0", "description": "ngonperim key function error: invalid argument = x, x <= 0"},
-                ],
+                ),
                 
                 # Platonic Solids
-                "tetrahedronv": [
+                "tetrahedronv": (
                     {"code": "ERROR_517_0", "description": "tetrahedronv key function error: invalid argument = x, x <= 0"},
-                ],
-                "tetrahedronsa": [
+                ),
+                "tetrahedronsa": (
                     {"code": "ERROR_518_0", "description": "tetrahedronsa key function error: invalid argument = x, x <= 0"},
-                ],
-                "hexahedronv": [
+                ),
+                "hexahedronv": (
                     {"code": "ERROR_519_0", "description": "hexahedronv key function error: invalid argument = x, x <= 0"},
-                ],
-                "hexahedronsa": [
+                ),
+                "hexahedronsa": (
                     {"code": "ERROR_520_0", "description": "hexahedronsa key function error: invalid argument = x, x <= 0"},
-                ],
-                "octahedronv": [
+                ),
+                "octahedronv": (
                     {"code": "ERROR_521_0", "description": "ocrahedronv key function error: invalid argument = x, x <= 0"},
-                ],
-                "octahedronsa": [
+                ),
+                "octahedronsa": (
                     {"code": "ERROR_522_0", "description": "ocrahedronsa key function error: invalid argument = x, x <= 0"},
-                ],
-                "dodecahedronv": [
+                ),
+                "dodecahedronv": (
                     {"code": "ERROR_523_0", "description": "dodecahedronv key function error: invalid argument = x, x <= 0"},
-                ],
-                "dodecahedronsa": [
+                ),
+                "dodecahedronsa": (
                     {"code": "ERROR_524_0", "description": "dodecahedronsa key function error: invalid argument = x, x <= 0"},
-                ],
-                "icosahedronv": [
+                ),
+                "icosahedronv": (
                     {"code": "ERROR_525_0", "description": "icosahedronv key function error: invalid argument = x, x <= 0"},
-                ],
-                "icosahedronsa": [
+                ),
+                "icosahedronsa": (
                     {"code": "ERROR_526_0", "description": "icosahedronsa key function error: invalid argument = x, x <= 0"},
-                ],
+                ),
             },
 
             # Combinatoric Module
             "combinatoric": {
-                "fact": [
+                "fact": (
                     {"code": "ERROR_527_0", "description": "fact key function error: invalid argument = x, x <= 0"},
-                ],
-                "perm": [
+                ),
+                "perm": (
                     {"code": "ERROR_528_0", "description": "perm key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_528_1", "description": "perm key function error: invalid arguments: n < r"},
-                ],
-                "permr": [
+                ),
+                "permr": (
                     {"code": "ERROR_529_0", "description": "permr key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_529_1", "description": "permr key function error: invalid arguments: n < r"},
-                ],
-                "comb": [
+                ),
+                "comb": (
                     {"code": "ERROR_530_0", "description": "comb key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_530_1", "description": "comb key function error: invalid arguments: n < r"},
-                ],
-                "combr": [
+                ),
+                "combr": (
                     {"code": "ERROR_531_0", "description": "combr key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_531_1", "description": "combr key function error: invalid arguments: n < r"},
-                ],
-                "comp": [
+                ),
+                "comp": (
                     {"code": "ERROR_532_0", "description": "comp key function error: invalid argument = x, x <= 0"},
-                ],
-                "multiples": [
+                ),
+                "multiples": (
                     {"code": "ERROR_533_0", "description": "multiples key function error: invalid arguments: zero interval"},
                     {"code": "ERROR_533_1", "description": "multiples key function error: invalid argument: x <= 1"},
                     {"code": "ERROR_533_2", "description": "multiples key function error: invalid argument: maximum value in interval cannot be less than or equal to x"},
-                ],
-                "gcf": [
+                ),
+                "gcf": (
                     {"code": "ERROR_534_0", "description": "gcf key function error: invalid argument = x, x <= 0"},
-                ],
-                "lcm": [
+                ),
+                "lcm": (
                     {"code": "ERROR_535_0", "description": "lcm key function error: invalid argument = x, x <= 0"},
                     {"code": "ERROR_535_1", "description": "lcm key function error: no common multiple found within 100 multiples of given arguments"},
-                ],
+                ),
             },
 
             # Statistical Module
             "statistical": {
-                # "sd": [
+                # "sd": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "var": [
+                # ),
+                # "var": (
                 #     {"code": "", "description": ""},
-                # ],
+                # ),
 
                 # means
-                "meanh": [
+                "meanh": (
                     {"code": "ERROR_536_0", "description": "meanh key function error: no zero argument"},
-                ],
-                # "meang": [
+                ),
+                # "meang": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "meanw": [
+                # ),
+                # "meanw": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "mean": [
+                # ),
+                # "mean": (
                 #     {"code": "", "description": ""},
-                # ],
-                # "rms": [
+                # ),
+                # "rms": (
                 #     {"code": "", "description": ""},
-                # ],
+                # ),
 
                 # et cetera
-                "log": [
+                "log": (
                     {"code": "ERROR_537_0", "description": "log key function error: invalid argument = x, x <= 0. when x = 0, the result is negative infinity or undefined, and when x is negative, the result is complex."},
-                ],
-                "ln": [
+                ),
+                "ln": (
                     {"code": "ERROR_538_0", "description": "ln key function error: invalid argument = x, x <= 0. when x = 0, the result is negative infinity or undefined, and when x is negative, the result is complex."},
-                ],
+                ),
             },
 
             # Algebraic
             "algebraic": {
 
                 # polynomial
-                "expon": [
+                "expon": (
                     {"code": "ERROR_539_0", "description": "expon key function error: invalid exponent argument: no variables and must evaluate to a single value"},
                     {"code": "ERROR_539_1", "description": "expon key function error: invalid base argument: must be an algebraic expression and conatain at least one variable"},
-                ],
-                "expand": [
+                ),
+                "expand": (
                     {"code": "ERROR_540_0", "description": "exapnd key function error: requires at least 1 argument"},
-                ]
+                )
             }
         }
     
@@ -1238,16 +1261,19 @@ def evaluator(input):
     # ARITHMETIC OPERATIONS START
 
     def exponentiate(base, exponent):
-        base = num_cast(base)
-        exponent = num_cast(exponent)
-        if isinstance(base, bool) or isinstance(exponent, bool):
+        base_test = num_cast(base)
+        exponent_test = num_cast(exponent)
+        if isinstance(base_test, bool) or isinstance(exponent_test, bool):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["exponentiation"][0]["code"]
-        complex1 = isinstance(base, complex)
-        complex2 = isinstance(exponent, complex)
+        complex1 = isinstance(base_test, complex)
+        complex2 = isinstance(exponent_test, complex)
         if complex1 == True or complex2 == True:
             # complex exponentiation
+
+            base = base_test
+            exponent = exponent_test
 
             # exclude unsolvable forms from arithmetic
             # exclude forms with expression solutions from arithmetic
@@ -1396,34 +1422,38 @@ def evaluator(input):
 
         else:
             # real exponentiation
-            power = math.pow(base, exponent)
+            power = str(math.pow(Decimal(base), Decimal(exponent)))
 
             return power
 
     def root(radicand, degree):
-        radicand = num_cast(radicand)
-        degree = num_cast(degree)
-        if isinstance(radicand, bool) or isinstance(degree, bool):
+        radicand_test = num_cast(radicand)
+        degree_test = num_cast(degree)
+        if isinstance(radicand_test, bool) or isinstance(radicand_test, complex) or isinstance(degree_test, bool) or isinstance(degree_test, complex):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["radication"][0]["code"]
         # real radication
-        root = math.pow(radicand, 1/degree)
+        root = str(math.pow(Decimal(radicand), 1/Decimal(degree)))
 
         return root
 
     def multiply(multiplicand, multiplier):
         product = 1
-        multiplicand = num_cast(multiplicand)
-        multiplier = num_cast(multiplier)
-        if isinstance(multiplicand, bool) or isinstance(multiplier, bool):
+        multiplicand_test = num_cast(multiplicand)
+        multiplier_test = num_cast(multiplier)
+        if isinstance(multiplicand_test, bool) or isinstance(multiplier_test, bool):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["multiplication"][0]["code"]
-        complex1 = isinstance(multiplicand, complex)
-        complex2 = isinstance(multiplier, complex)
+        complex1 = isinstance(multiplicand_test, complex)
+        complex2 = isinstance(multiplier_test, complex)
         if complex1 == True or complex2 == True:
             # complex multiplication
+
+            multiplicand = multiplicand_test
+            multiplier = multiplier_test
+
             if complex1 == True and complex2 == True:
                 a_real = multiplicand.real
                 a_imag = multiplicand.imag
@@ -1452,25 +1482,28 @@ def evaluator(input):
                 product = complex(multiplicand * b_real, multiplicand * b_imag)
         else:
             # real multiplication
-            product = multiplicand * multiplier
+            product = str(Decimal(multiplicand) * Decimal(multiplier))
 
         return product
 
     def divide(dividend, divisor):
         nonlocal global_bypass
         quotient = 1
-        dividend = num_cast(dividend)
-        divisor = num_cast(divisor)
-        if isinstance(dividend, bool) or isinstance(divisor, bool):
+        dividend_test = num_cast(dividend)
+        divisor_test = num_cast(divisor)
+        if isinstance(dividend_test, bool) or isinstance(divisor_test, bool):
             global_bypass = True
             return info["error"]["operator"]["division"][0]["code"]
-        if divisor == 0:
+        if divisor_test == 0:
             global_bypass = True
             return info["error"]["operator"]["division"][1]["code"]
-        complex1 = isinstance(dividend, complex)
-        complex2 = isinstance(divisor, complex)
+        complex1 = isinstance(dividend_test, complex)
+        complex2 = isinstance(divisor_test, complex)
         if complex1 == True or complex2 == True:
             # complex division
+
+            dividend = dividend_test
+            divisor = divisor_test
 
             # (i) / (i) => 1
             # (i) / (b*i) => 1/b
@@ -1623,22 +1656,24 @@ def evaluator(input):
             
         else:
             # real division
-            quotient = str(num_cast(dividend / divisor))
+            quotient = str(Decimal(dividend) / Decimal(divisor))
 
         return quotient
     
     def add(augend, addend):
         total = 0
-        augend = num_cast(augend)
-        addend = num_cast(addend)
-        if isinstance(augend, bool) or isinstance(addend, bool):
+        augend_test = num_cast(augend)
+        addend_test = num_cast(addend)
+        if isinstance(augend_test, bool) or isinstance(addend_test, bool):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["addition"][0]["code"]
-        complex1 = isinstance(augend, complex)
-        complex2 = isinstance(addend, complex)
+        complex1 = isinstance(augend_test, complex)
+        complex2 = isinstance(addend_test, complex)
         if complex1 == True or complex2 == True:
             # complex addition
+            augend = augend_test
+            addend = addend_test
             if complex1 == True and complex2 == True:
                 a_real = augend.real
                 a_imag = augend.imag
@@ -1655,22 +1690,24 @@ def evaluator(input):
                 total = complex(augend + b_real, b_imag)
         else:
             # real addition
-            total = str(augend + addend)
+            total = str(Decimal(augend) + Decimal(addend))
 
         return total
 
     def subtract(minuend, subtrahend):
         difference = 0
-        minuend = num_cast(minuend)
-        subtrahend = num_cast(subtrahend)
-        if isinstance(minuend, bool) or isinstance(subtrahend, bool):
+        minuend_test = num_cast(minuend)
+        subtrahend_test = num_cast(subtrahend)
+        if isinstance(minuend_test, bool) or isinstance(subtrahend_test, bool):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["subtraction"][0]["code"]
-        complex1 = isinstance(minuend, complex)
-        complex2 = isinstance(subtrahend, complex)
+        complex1 = isinstance(minuend_test, complex)
+        complex2 = isinstance(subtrahend_test, complex)
         if complex1 == True or complex2 == True:
             # complex subtraction
+            minuend = minuend_test
+            subtrahend = subtrahend_test
             if complex1 == True and complex2 == True:
                 a_real = minuend.real
                 a_imag = minuend.imag
@@ -1687,7 +1724,7 @@ def evaluator(input):
                 difference = complex(minuend - b_real, b_imag)
         else:
             # real subtraction
-            difference = str(minuend - subtrahend)
+            difference = str(Decimal(minuend) - Decimal(subtrahend))
 
         return difference
 
@@ -2204,6 +2241,7 @@ def evaluator(input):
                     else:
                         end = length
                 
+                # sort variables into alphabetical and alphabetical_not
                 for i in range(0, var_count):
 
                     # store difference ommitting variables below previous minimum alphabetic index
@@ -6903,8 +6941,8 @@ def evaluator(input):
         # return result
         return arrVar
     
-    def structure_problem(str):
-        # I. structure problem string into problem structure
+    def decode(str):
+        # I. Decoding: structure problem string into problem structure
         #   I. Single-index tokenization: multi-digit numbers, negative numbers, decimal numbers, mathematical operations, parenthesis, and square brackets
         #   II. Multi-index tokenization: constants (keyword that becomes a value), key function key (remains a keyword)
         # II. Identify program entities && detect non-entities
@@ -7369,6 +7407,146 @@ def evaluator(input):
 
             return structure
     
+    def encode(ans):
+        nonlocal global_bypass
+        nonlocal is_var
+        nonlocal operation
+        # skip answer formatting if globally bypassed without variables
+        # algebraic system uses global bypass to stop evaluation upon reaching an unsimplifiable expression
+        # the rest of the program typically uses it to serve an error code
+        if global_bypass == True and is_var != True:
+            # error code
+            return ans
+
+        # format expression list
+        if isinstance(ans, list) and len(ans) > 1:
+            string = ""
+            for a in ans:
+                # store buffer value
+                buffer = str(a)
+
+                # apply formatting
+                typ = num_cast(a)
+                if not isinstance(typ, bool):
+
+                    # test complex
+                    if isinstance(typ, complex):
+                        i = variables[len(variables) - 1] # imaginary variable
+                        real = num_cast(typ.real) # real component
+                        imag = num_cast(typ.imag) # imaginary coefficient
+
+                        if real == 0:
+                            # format imaginary numbers
+                            if imag == 1:
+                                # form: (i)
+                                buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
+                            else:
+                                # form: (b*i)
+                                if imag < 0:
+                                    # negative imaginary coefficient
+                                    imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
+                                else:
+                                    # positive imaginary coefficient
+                                    imag = str(imag)
+
+                                # update buffer with format
+                                buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                        else:
+                            # format complex numbers
+                            # form: (a+b*i)
+                            if real < 0:
+                                # format negative real component
+                                real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
+                            else:
+                                real = str(real)
+
+                            if imag < 0:
+                                # format negative imaginary component
+                                imag = str(abs(imag))
+                                # update buffer with format
+                                buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                            else:
+                                # format positive imaginary component
+                                imag = str(imag)
+                                # update buffer with format
+                                buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+
+                    # format negatives
+                    elif typ < 0:
+                        # update buffer with format
+                        buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
+
+                string = string + buffer
+            
+            # apply converted answer
+            return string
+        
+        # format singleton list
+        else:
+
+            # store buffer value
+            buffer = ans
+            if not isinstance(buffer, complex):
+                buffer = num_cast(str(buffer))
+
+            # apply formatting
+            typ = buffer
+            if isinstance(typ, bool):
+                # not a number => no encoding
+                return ans
+                
+            else:
+                
+                # test complex
+                if isinstance(typ, complex):
+                    i = variables[len(variables) - 1] # imaginary variable
+                    real = num_cast(typ.real) # real component
+                    imag = num_cast(typ.imag) # imaginary coefficient
+
+                    if real == 0:
+                        # format imaginary numbers
+                        if imag == 1:
+                            # form: (i)
+                            buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
+                        else:
+                            # form: (b*i)
+                            if imag < 0:
+                                # negative imaginary coefficient
+                                imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
+                            else:
+                                # positive imaginary coefficient
+                                imag = str(imag)
+
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                    else:
+                        # format complex numbers
+                        # form: (a+b*i)
+                        if real < 0:
+                            # format negative real component
+                            real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
+                        else:
+                            real = str(real)
+
+                        if imag < 0:
+                            # format negative imaginary component
+                            imag = str(abs(imag))
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+                        else:
+                            # format positive imaginary component
+                            imag = str(imag)
+                            # update buffer with format
+                            buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
+
+                # format negatives
+                elif typ < 0:
+                    # update buffer with format
+                    buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
+                
+                # apply converted answer
+                return buffer
+
     # TOP LEVEL FUNCTIONS END
 
     # ---------------------- #
@@ -7506,12 +7684,15 @@ def evaluator(input):
                 
                 if test1 == False:
                     # zero division
+                    global_bypass = True
                     answer = info["error"]["operator"]["division"][1]["code"]
                 elif test2 == False:
                     # invalid parenthesis
+                    global_bypass = True
                     answer = info["error"]["prestructure"][3]["code"]
                 elif test3 == False:
                     # invalid brackets
+                    global_bypass = True
                     answer = info["error"]["prestructure"][4]["code"]
                 else:
                     
@@ -7519,8 +7700,8 @@ def evaluator(input):
                     # POST STRUCTURE VALIDATION #
                     # ------------------------- #
 
-                    # perform single index tokenization, lexicalization and post structure validation
-                    structure = structure_problem(problem)
+                    # decode problem string into problem structure and perform post structure validation
+                    structure = decode(problem)
                     if global_bypass == True:
                         # invalid structure
                         answer = structure # contains error code
@@ -7558,145 +7739,12 @@ def evaluator(input):
         global_bypass = True
         answer = info["error"]["prestructure"][0]["code"]
 
-    
-    # skip answer formatting if globally bypassed without variables
-    if global_bypass == True and is_var != True:
-        # assign output object
-        output = {
-            "problem": problem,
-            "answer": answer,
-            "logs": process_log,
-        }
-        return output
-    
-    # ----------------- #
-    # ANSWER FORMATTING #
-    # ----------------- #
+    # ----------------------- #
+    # EVALUATION POST-PROCESS #
+    # ----------------------- #
 
-    # format expression list
-    if isinstance(answer, list) and len(answer) > 1:
-        string = ""
-        for a in answer:
-            # store buffer value
-            buffer = str(a)
-
-            # apply formatting
-            typ = num_cast(a)
-            if not isinstance(typ, bool):
-
-                # test complex
-                if isinstance(typ, complex):
-                    i = variables[len(variables) - 1] # imaginary variable
-                    real = num_cast(typ.real) # real component
-                    imag = num_cast(typ.imag) # imaginary coefficient
-
-                    if real == 0:
-                        # format imaginary numbers
-                        if imag == 1:
-                            # form: (i)
-                            buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
-                        else:
-                            # form: (b*i)
-                            if imag < 0:
-                                # negative imaginary coefficient
-                                imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
-                            else:
-                                # positive imaginary coefficient
-                                imag = str(imag)
-
-                            # update buffer with format
-                            buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-                    else:
-                        # format complex numbers
-                        # form: (a+b*i)
-                        if real < 0:
-                            # format negative real component
-                            real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
-                        else:
-                            real = str(real)
-
-                        if imag < 0:
-                            # format negative imaginary component
-                            imag = str(abs(imag))
-                            # update buffer with format
-                            buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-                        else:
-                            # format positive imaginary component
-                            imag = str(imag)
-                            # update buffer with format
-                            buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-
-                # format negatives
-                elif typ < 0:
-                    # update buffer with format
-                    buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
-
-            string = string + buffer
-        
-        # apply converted answer
-        answer = string
-    
-    # format singleton list
-    else:
-
-        # store buffer value
-        buffer = answer
-        if not isinstance(buffer, complex):
-            buffer = num_cast(str(buffer))
-
-        # apply formatting
-        typ = buffer
-        if not isinstance(typ, bool):
-            
-            # test complex
-            if isinstance(typ, complex):
-                i = variables[len(variables) - 1] # imaginary variable
-                real = num_cast(typ.real) # real component
-                imag = num_cast(typ.imag) # imaginary coefficient
-
-                if real == 0:
-                    # format imaginary numbers
-                    if imag == 1:
-                        # form: (i)
-                        buffer = operation["open_parenthesis"] + i + operation["close_parenthesis"]
-                    else:
-                        # form: (b*i)
-                        if imag < 0:
-                            # negative imaginary coefficient
-                            imag = operation["open_parenthesis"] + str(imag) + operation["close_parenthesis"]
-                        else:
-                            # positive imaginary coefficient
-                            imag = str(imag)
-
-                        # update buffer with format
-                        buffer = operation["open_parenthesis"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-                else:
-                    # format complex numbers
-                    # form: (a+b*i)
-                    if real < 0:
-                        # format negative real component
-                        real = operation["open_parenthesis"] + str(real) + operation["close_parenthesis"]
-                    else:
-                        real = str(real)
-
-                    if imag < 0:
-                        # format negative imaginary component
-                        imag = str(abs(imag))
-                        # update buffer with format
-                        buffer = operation["open_parenthesis"] + real + operation["subtraction"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-                    else:
-                        # format positive imaginary component
-                        imag = str(imag)
-                        # update buffer with format
-                        buffer = operation["open_parenthesis"] + real + operation["addition"] + imag + operation["multiplication"] + i + operation["close_parenthesis"]
-
-            # format negatives
-            elif typ < 0:
-                # update buffer with format
-                buffer = operation["open_parenthesis"] + str(typ) + operation["close_parenthesis"]
-            
-            # apply converted answer
-            answer = buffer
+    # encode answer to adhere to problem string rules
+    answer = encode(answer)
 
     # assign output object
     output = {
@@ -7705,10 +7753,11 @@ def evaluator(input):
         "logs": process_log,
     }
 
+    # return output object
     return output
 
-# # comprehensive test
-# tests = [
+# comprehensive test
+# tests = (
 
 #     # PRE-STRUCTURE VALIDATION
 
@@ -7802,6 +7851,12 @@ def evaluator(input):
 #     {"problem": "√4", "answer": "2"}, # implicit square root for radication without radical
 #     {"problem": "3√8", "answer": "2"}, # performs nth roots where n = given radical
 
+#     # FLOATING POINT ERROR TEST
+#     {"problem": "√.25^2", "answer":"0.25"}, # decimal exponentiation test and radication test
+#     {"problem": "1/3*3", "answer":"1"}, # decimal multiplication test
+#     {"problem": "1/10", "answer":"0.1"}, # decimal division test
+#     {"problem": "1.7+.3", "answer":"2"}, # decimal addition test
+#     {"problem": "2.3-.3", "answer":"2"}, # decimal subtraction test
     
 #     # KEY FUNCTION ARGUMENT DOMAIN VALIDATION
 
@@ -7985,7 +8040,6 @@ def evaluator(input):
 
 #     {"problem": "log[10,10]", "answer": "1"}, # pass = 1
 #     {"problem": "ln(1)", "answer": "0"}, # pass = 0
-
     
 #     # KEY FUNCTION COMPOSITION TEST
 #     {"problem": "sd[[sin(0)],[cos(0)]]", "answer": "0.5"}, # should get 0.5; key functions can run as arguments to other key functions for key function composition
@@ -8342,19 +8396,19 @@ def evaluator(input):
 
 #     # complex √ rational
 #     {"problem": "(3+2*i)√2", "answer": "(3+2*i)√2"},
-# ]
+# )
 
-# # expirimental testing
-# tests = [
-#     {"problem": "", "answer":""}, #
-# ]
+# expirimental testing
+# tests = (
+#     # {"problem": "(2-1)+(4/2)", "answer":""}, #
+# )
 
 # def diagnostic():
 #     global tests
 #     tests_len = len(tests)
 #     print('Total number of tests: %s' % tests_len)
 #     for i, obj in enumerate(tests):
-#         # print(obj["problem"])
+#         print(obj["problem"])
 #         output = evaluator({"problem": obj["problem"], "use_logs": ''})
 #         if str(output["answer"]) != obj["answer"]:
 #             return 'tests passed: %s' % str(i) + "\nproblem: " + obj["problem"] + "\ncorrect answer: " + obj["answer"] + "\ngiven answer: " + str(output["answer"])
