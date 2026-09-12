@@ -194,6 +194,9 @@ info = {
             {"name":"Icosahedron Volume", "key":"icosahedronv", "syntax": "icosahedronv[s]", "about": "Gets the volume of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronv[[s+x]]."},
             {"name":"Icosahedron Surface Area", "key":"icosahedronsa", "syntax": "icosahedronsa[s]", "about": "Gets the surface area of a icosahedron given side length s, where s is a value or an expression that evaluates to a value wrapped within square brackets, e.g. icosahedronsa[[s+x]]."},
 
+            # Circle functions
+            {"name":"Sagitta", "key":"sagitta", "syntax": "sagitta[r,C]", "about": "Gets the sagitta length of an arc with radius r and chord length C, where r and C are a value or an expression that evaluates to a value."},
+
         ),
 
         # Combinatoric Module
@@ -474,6 +477,12 @@ info = {
                 "icosahedronsa": (
                     {"code": "ERROR_526_0", "description": "icosahedronsa key function error: invalid argument = x, x <= 0"},
                 ),
+                # Circle Arc
+                "sagitta": (
+                    {"code": "ERROR_541_0", "description": "sagitta key function error: invalid argument = x, x <= 0"},
+                    {"code": "ERROR_541_1", "description": "sagitta key function error: diameter length cannot be less than chord length"},
+                ),
+
             },
 
             # Combinatoric Module
@@ -5279,6 +5288,48 @@ def evaluator(input):
                     arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
                     ref = getIdx("icosahedronsa", arrVar)
 
+            # Circle functions
+
+            # perform all sagitta length functions
+            ref = getIdx("sagitta", arrVar)
+            itr = 0
+            while itr < key_limit and ref is not None:
+                itr = itr + 1
+                # Log keyword
+                log_process(arrVar[ref])
+                
+                # get string set
+                set_1 = arrVar[ref + 1]
+                log_process(set_1)
+
+                # convert string set to numeral set
+                set_2 = []
+                for i in set_1:
+                    if isinstance(i, str):
+                        x = num_cast(i)
+                        set_2.append(x)
+                    else:
+                        x = num_cast(section(i))
+                        set_2.append(x)
+
+                # perform calculation using numeral set
+                r = set_2[0] # diameter
+                C = set_2[1] # C = chord length, l = C/2 
+                if r <= 0 or C <= 0:
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["sagitta"][0]["code"]
+                elif C > r*2: # chord length cannot exceed diameter, diameter = 2 * radius
+                    # invalid argument
+                    global_bypass = True
+                    return info["error"]["key_function"]["geometric"]["sagitta"][1]["code"]
+
+                saggita = r - (r**2 - (C/2)**2)**.5
+
+                # apply answer and search for new problem
+                arrVar = restructure(saggita, ref, ref + 1, arrVar)
+                ref = getIdx("sagitta", arrVar)
+
         return arrVar
 
     def combinatoric(arr):
@@ -7932,6 +7983,9 @@ def evaluator(input):
 
 #     {"problem": "icosahedronsa[(-10)]", "answer": "ERROR_526_0"},
 
+#     {"problem": "sagitta[1,0]", "answer":"ERROR_541_0"},
+#     {"problem": "sagitta[1,3]", "answer":"ERROR_541_1"},
+
 #     # COMBINATORIC
 #     {"problem": "fact((-6))", "answer": "ERROR_527_0"},
 
@@ -8017,6 +8071,8 @@ def evaluator(input):
     
 #     {"problem": "icosahedronv[10]", "answer": "2181.6949906249124"}, # 
 #     {"problem": "icosahedronsa[10]", "answer": "866.0254037844386"}, # 
+
+#     {"problem": "sagitta[1,0.5]", "answer":"0.031754163448145745"}, #
 
 #     # COMBINATORIC
 #     {"problem": "fact(5)", "answer": "120"}, # pass = 120
@@ -8401,6 +8457,7 @@ def evaluator(input):
 # expirimental testing
 # tests = (
 #     # {"problem": "(2-1)+(4/2)", "answer":""}, #
+#     {"problem": "", "answer":""}, #
 # )
 
 # def diagnostic():
