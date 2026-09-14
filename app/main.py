@@ -99,8 +99,7 @@ info = {
 
     "key_functions": (
         # Trigonomic Module
-        (
-                
+        (  
             # Reciprocal
             {"name":"Arcus Cosecant", "key":"acsc", "syntax": "acsc(x)", "about": "Gets the arcus cosecant, i.e. the inverse reciprocal sine, of x, where x is a value or an expression that evaluates to a value."},
             
@@ -139,6 +138,9 @@ info = {
             {"name":"Arcus Tangent", "key": "atan", "syntax": "atan(x)", "about": "Gets the arcus tangent, i.e. the inverse tangent, of x, where x is a value or an expression that evaluates to a value."},
             
             {"name":"Tangent", "key":"tan", "syntax": "tan(x)", "about": "Gets the tangent of x, where x is a value or an expression that evaluates to a value."},
+
+            # Conversion
+            {"name":"Radians to Degrees Conversion", "key":"degree", "syntax": "degree(x)", "about": "Gets the degree conversion of radian x, where x is a value or an expression that evaluates to a value."},
         ),
 
         # Geometeric Module
@@ -290,6 +292,7 @@ info = {
 
         # default code format: ERROR_XXX_'index of error in list'
         # e.g. ERROR_527_0 @ zeroth index, ERROR_527_1 @ first index
+        # last error code reference: ERROR_541
         
         "parameter": {
             # limit parameters
@@ -355,6 +358,11 @@ info = {
             # Trigonomic Module
             "trigonomic": {
 
+                # Conversion
+                # "degree": (
+                #     {"code": "ERROR_542_0", "description": "degree key functon error: "}
+                # ),
+
                 # Reciprocal
                 "acsc": (
                     {"code": "ERROR_504_0", "description": "acsc key function error: invalid argument = x, -1 < x < 1"},
@@ -391,7 +399,7 @@ info = {
                 #     {"code": "", "description": ""},
                 # ),
                 "atanh": (
-                    {"code": "ERROR_510_0", "description": "atanh key function error: invalid argument = x, -1 < x < 1"},
+                    {"code": "ERROR_510_0", "description": "atanh key function error: invalid argument = x, x <= -1 or x >= 1"},
                 ),
                 # "tanh": (
                 #     {"code": "", "description": ""},
@@ -694,6 +702,9 @@ def evaluator(input):
         {"module":"statistical", "use":False},
         {"module":"algebraic", "use":False},
     ]
+
+    # stores keyword function pairs for keys in is_key
+    f_log = {}
 
     # use_logs indicates whether to use logs, True, or not, False
     # if use_logs is "1", then logging is active, otherwise it remains defaultly inactive
@@ -4323,1986 +4334,1482 @@ def evaluator(input):
 
     # KEY FUNCTIONS START
 
-    def trigonomic(arr):
+    def trigonomic():
         # key function module for trigonomic functions
-        arrVar = arr
         nonlocal global_bypass
-        nonlocal pi
+        nonlocal is_key
+        nonlocal key_modules
 
         if key_modules[0]["use"] == True and global_bypass == False:
             log_process("Trigonomic Key Module")
 
-            # fundamental functions
+            # FUNDAMENTAL
 
-            # perform all sine functions
-            ref = getIdx("sin", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+            if "sin" in is_key:
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.sin(x)
-
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("sin", arrVar)
-
-            # perform all arcus sine functions
-            ref = getIdx("asin", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    x = num_cast(a[0])
+                    log_process("sin")
+                    return np.sin(x)
                 
-                x = num_cast(arrVar[ref + 1])
+                # store in f_log
+                f_log["sin"] = F
 
-                if x < -1:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["asin"][0]["code"]
-                elif x > 1:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["asin"][1]["code"]
-                else:
-                    y = np.arcsin(x)
+            if "asin" in is_key:
 
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("asin", arrVar)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x < -1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["asin"][0]["code"]
+                    elif x > 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["asin"][1]["code"]
+
+                    else:
+                        log_process("asin")
+                        return np.arcsin(x)
                 
-            # perform all cosine functions
-            ref = getIdx("cos", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # store in f_log
+                f_log["asin"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.cos(x)
+            if "cos" in is_key:
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("cos", arrVar)
-            
-            # perform all arcus cosine functions
-            ref = getIdx("acos", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    x = num_cast(a[0])
+                    log_process("cos")
+                    return np.cos(x)
                 
-                x = num_cast(arrVar[ref + 1])
-                if x < -1:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["acos"][0]["code"]
-                elif x > 1:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["acos"][1]["code"]
-                else:
-                    y = np.arccos(x)
+                # store in f_log
+                f_log["cos"] = F
 
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("acos", arrVar)
+            if "acos" in is_key:
 
-            # perform all tangent functions
-            ref = getIdx("tan", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x < -1:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acos"][0]["code"]
+                    elif x > 1:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acos"][1]["code"]
 
-                x = num_cast(arrVar[ref + 1])
-
-                if round(x % (pi/2), 13) == 0 and math.floor(x/(pi/2))%2 != 0:
-                    # no odd multiples of pi/2: is multiple and number of multiples is not even
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["tan"][0]["code"]
-
-                else:
-                    y = np.tan(x)
-
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("tan", arrVar)
+                    else:
+                        log_process("acos")
+                        return np.arccos(x)
                 
-            # perform all arcus tangent functions
-            ref = getIdx("atan", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # store in f_log
+                f_log["acos"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.arctan(x)
+            if "tan" in is_key:
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("atan", arrVar)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    nonlocal pi
+                    x = num_cast(a[0])
+                    if round(x % (pi/2), 13) == 0 and math.floor(x/(pi/2))%2 != 0:
+                        # no odd multiples of pi/2: is multiple and number of multiples is not even
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["tan"][0]["code"]
 
-            # reciprocal functions
-            
-            # perform all cosecant functions
-            ref = getIdx("csc", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                x = num_cast(arrVar[ref + 1])
-                if x == 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["csc"][0]["code"]
-                else:
-                    y = 1 / np.sin(x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("csc", arrVar)
+                    else:
+                        log_process("tan")
+                        return np.tan(x)
                 
-            # perform all arc cosecant functions
-            ref = getIdx("acsc", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # store in f_log
+                f_log["tan"] = F
 
-                x = num_cast(arrVar[ref + 1])
+            if "atan" in is_key:
 
-                if x > -1 and x < 1:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["acsc"][0]["code"]
-
-                else:
-                    y = np.arcsin(1/x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("acsc", arrVar)
-
-            # perform all secant functions
-            ref = getIdx("sec", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                x = num_cast(arrVar[ref + 1])
-                if x <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["sec"][0]["code"]
-                elif x >= pi:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["sec"][1]["code"]
+                # declare function
+                def F(a):
+                    x = num_cast(a[0])
+                    log_process("atan")
+                    return np.atan(x)
                 
-                else:
-                    y = 1 / np.cos(x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("sec", arrVar)
+                # store in f_log
+                f_log["atan"] = F
+
+            # RECIPROCAL
+
+            if "csc" in is_key:
+
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x == 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["csc"][0]["code"]
+                    else:
+                        log_process("csc")
+                        return 1/np.sin(x)
                 
-            # perform all arc secant functions
-            ref = getIdx("asec", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # store in f_log
+                f_log["csc"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                if x > -1 and x < 1:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["asec"][0]["code"]
+            if "acsc" in is_key:
+
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x > -1 and x < 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acsc"][0]["code"]
+    
+                    else:
+                        log_process("acsc")
+                        return np.arcsin(1/x)
                 
-                else:
-                    y = np.arccos(1/x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("asec", arrVar)
+                # store in f_log
+                f_log["acsc"] = F
 
-            # perform all cotangent functions
-            ref = getIdx("cot", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+            if "sec" in is_key:
 
-                x = num_cast(arrVar[ref + 1])
-                if x == 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["cot"][0]["code"]
-                elif round(x % pi, 13) == 0:
-                    # no integer multiples of pi
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["cot"][1]["code"]
+                # declare function
+                def x(a):
+                    nonlocal global_bypass
+                    nonlocal pi
+                    x = num_cast(a[0])
+                    if x <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["sec"][0]["code"]
+                    elif x >= pi:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["sec"][1]["code"]
+                    
+                    else:
+                        log_process("sec")
+                        return 1/np.cos(x)
                 
-                else:
-                    y = 1 / np.tan(x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("cot", arrVar)
-            
-            # perform all arc cotangent functions
-            ref = getIdx("acot", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # store in f_log
+                f_log["sec"] = x
 
-                x = num_cast(arrVar[ref + 1])
-                if x == 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["acot"][0]["code"]
-                else:
-                    y = np.arctan(1/x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("acot", arrVar)
+            if "asec" in is_key:
 
-            # hyperbolic functions
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x > -1 and x < 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["asec"][0]["code"]
+                    
+                    else:
+                        log_process("asec")
+                        return np.arccos(1/x)
+                
+                # store in f_log
+                f_log["asec"] = F
 
-            # perform all hyperbolic sine functions
-            ref = getIdx("sinh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+            if "cot" in is_key:
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.sinh(x)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    nonlocal pi
+                    x = num_cast(a[0])
+                    if x == 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["cot"][0]["code"]
+                    elif round(x % pi, 13) == 0:
+                        # no integer multiples of pi
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["cot"][1]["code"]
+                    
+                    else:
+                        log_process("cot")
+                        return 1/np.tan(x)
+                
+                # store in f_log
+                f_log["cot"] = F
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("sinh", arrVar)
-            
-            # perform all arcus hyperbolic sine functions
-            ref = getIdx("asinh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+            if "acot" in is_key:
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.asinh(x)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x == 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acot"][0]["code"]
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("asinh", arrVar)
-            
-            # perform all hyperbolic cosine functions
-            ref = getIdx("cosh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                    else:
+                        log_process("acot")
+                        return np.atan(1/x)
+                
+                # store in f_log
+                f_log["acot"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.sinh(x)
+            # HYPERBOLIC
+                
+            if "sinh" in is_key:
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("cosh", arrVar)
-            
-            # perform all arcus hyperbolic cosine functions
-            ref = getIdx("acosh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    x = num_cast(a[0])
+                    log_process("sinh")
+                    return np.sinh(x)
+                
+                # store in f_log
+                f_log["sinh"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                if x < 1:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["acosh"][0]["code"]
+            if "asinh" in is_key:
 
-                else:
-                    y = np.asinh(x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("acosh", arrVar)
-        
-            # perform all hyperbolic tangent functions
-            ref = getIdx("tanh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    x = num_cast(a[0])
+                    log_process("asinh")
+                    return np.arcsinh(x)
+                
+                # store in f_log
+                f_log["asinh"] = F
 
-                x = num_cast(arrVar[ref + 1])
-                y = np.sinh(x)
+            if "cosh" in is_key:
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("tanh", arrVar)
-        
-            # perform all arcus hyperbolic tangent functions
-            ref = getIdx("atanh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x < 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acosh"][0]["code"]
 
-                x = num_cast(arrVar[ref + 1])
-                if x > -1 and x < 1:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["trigonomic"]["atanh"][0]["code"]
+                    else:
+                        log_process("cosh")
+                        return np.cosh(x)
+                
+                # store in f_log
+                f_log["cosh"] = F
 
-                else:
-                    y = np.asinh(x)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("atanh", arrVar)
+            if "acosh" in is_key:
 
-        return arrVar
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x < 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acosh"][0]["code"]
 
-    def geometric(arr):
+                    else:
+                        log_process("acosh")
+                        return np.arccosh(x)
+                
+                # store in f_log
+                f_log["acosh"] = F
+
+            if "tanh" in is_key:
+
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x < 1:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["acosh"][0]["code"]
+    
+                    else:
+                        log_process("tanh")
+                        return np.tanh(x)
+                
+                # store in f_log
+                f_log["tanh"] = F
+
+            if "atanh" in is_key:
+
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    if x <= -1 or x >= 1:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["trigonomic"]["atanh"][0]["code"]
+
+                    else:
+                        log_process("atanh")
+                        return np.arctanh(x)
+                
+                # store in f_log
+                f_log["atanh"] = F
+
+            if "degree" in is_key:
+
+                # declare function
+                def F(a):
+                    nonlocal pi
+                    return 180/pi * a[0]
+                
+                # store in f_log
+                log_process("degree")
+                f_log["degree"] = F
+
+    def geometric():
         # key function module for geometric functions
-        arrVar = arr
         nonlocal global_bypass
+        nonlocal key_modules
 
         if key_modules[1]["use"] == True and global_bypass == False:
             log_process("Geometric Key Module")
-
+            
             # TRIANGLE
 
-            # perform all right triangle hypotenuse functions
-            ref = getIdx("hypot", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+            if "hypot" in is_key:
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    leg1 = num_cast(a[0])
+                    leg2 = num_cast(a[1])
+                    if leg1 <= 0 or leg2 <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["hypot"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                leg1 = set_2[0]
-                leg2 = set_2[1]
+                        log_process("hypot")
+                        return np.hypot(leg1, leg2)
                 
-                if leg1 <= 0 or leg2 <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["hypot"][0]["code"]
+                # store in f_log
+                f_log["hypot"] = F
+
+            if "heron" in is_key:
+            
+                # declare function
+                def F(x):
+                    nonlocal global_bypass
+                    # side lengths
+                    a = num_cast(x[0])
+                    b = num_cast(x[1])
+                    c = num_cast(x[2])
                     
-                else:
-                    y = np.hypot(leg1, leg2)
-                    # apply answer and search for new problem
-                    arrVar = restructure(y, ref, ref + 1, arrVar)
-                    ref = getIdx("hypot", arrVar)
-
-            # perform all Heron's Formula functions
-            ref = getIdx("heron", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if a <= 0 or b <= 0 or c <= 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["heron"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        # semiperimeter
+                        s = (a + b + c) / 2
+                        
+                        # area calculation
+                        log_process("heron")
+                        return (s * (s - a) * (s - b) * (s - c))**0.5
                 
-                # perform calculation using numeral set
-                # side lengths
-                a = set_2[0]
-                b = set_2[1]
-                c = set_2[2]
-                
-                if a <= 0 or b <= 0 or c <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["heron"][0]["code"]
-                    
-                else:
-                    # semiperimeter
-                    s = (a + b + c) / 2
-                    
-                    # area calculation
-                    area = (s * (s - a) * (s - b) * (s - c))**0.5
+                # store in f_log
+                f_log["heron"] = F
 
-                    # apply answer and search for new problem
-                    arrVar = restructure(area, ref, ref + 1, arrVar)
-                    ref = getIdx("heron", arrVar)
+            # CIRCLE
+
+            if "sagitta" in is_key:
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    r = num_cast(a[0]) # diameter
+                    C = num_cast(a[1]) # C = chord length, l = C/2 
+                    if r <= 0 or C <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["sagitta"][0]["code"]
+                    elif C > r*2: # chord length cannot exceed diameter, diameter = 2 * radius
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["sagitta"][1]["code"]
+    
+                    log_process("sagitta")
+                    return r - (r**2 - (C/2)**2)**.5
+                        
+                # store in f_log
+                f_log["sagitta"] = F
 
             # REGULAR n-GON
-
-            # perform all ngon area by side length functions
-            ref = getIdx("ngonas", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0] # number of sides
-                s = set_2[1] # side length
-                
-                if n <= 0 or s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["ngonas"][0]["code"]
-
-                else:
-                    Area = ngon_area(n, s)
-                    # apply answer and search for new problem
-                    arrVar = restructure(Area, ref, ref + 1, arrVar)
-                    ref = getIdx("ngonas", arrVar)
             
-            # perform all ngon area by radius length functions
-            ref = getIdx("ngonar", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0] # number of sides
-                r = set_2[1] # radius length
-                
-                if n <= 0 or r <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["ngonar"][0]["code"]
-                    
-                else:
-                    Area = round(r**2*n*np.sin(2*pi/n)/2, 12)
-                    # apply answer and search for new problem
-                    arrVar = restructure(Area, ref, ref + 1, arrVar)
-                    ref = getIdx("ngonar", arrVar)
+            if "ngonas" in is_key:
+                # ngon area by side length
             
-            # perform all ngon area by apothem length functions
-            ref = getIdx("ngonaa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0] # number of sides
-                a = set_2[1] # apothem length
-                
-                if n <= 0 or a <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["ngonaa"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of sides
+                    s = num_cast(a[1]) # side length
                     
-                else:
-                    Area = round(a**2*np.tan(pi/n), 12)
-                    # apply answer and search for new problem
-                    arrVar = restructure(Area, ref, ref + 1, arrVar)
-                    ref = getIdx("ngonaa", arrVar)
-        
-            # perform all ngon perimeter functions
-            ref = getIdx("ngonperim", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if n <= 0 or s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["ngonas"][0]["code"]
+    
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        log_process("ngonas")
+                        return ngon_area(n, s)
+    
+                # store in f_log
+                f_log["ngonas"] = F
 
-                # perform calculation using numeral set
-                n = set_2[0] # number of sides
-                s = set_2[1] # side length
-                
-                if n <= 0 or s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["ngonperim"][0]["code"]
+            if "ngonar" in is_key:
+                # ngon area by radius length
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    nonlocal pi
+                    n = num_cast(a[0]) # number of sides
+                    r = num_cast(a[1]) # side length
                     
-                else:
-                    Perimeter = n*s # the perimeter of regular n-gons is a single multiplication
-                    # apply answer and search for new problem
-                    arrVar = restructure(Perimeter, ref, ref + 1, arrVar)
-                    ref = getIdx("ngonperim", arrVar)
+                    if n <= 0 or r <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["ngonar"][0]["code"]
+                        
+                    else:
+                        log_process("ngonar")
+                        return round(r**2*n*np.sin(2*pi/n)/2, 12)
+    
+                # store in f_log
+                f_log["ngonar"] = F
+            
+            if "ngonaa" in is_key:
+                # ngon area by apothem length
+            
+                # declare function
+                def F(x):
+                    nonlocal global_bypass
+                    nonlocal pi
+                    n = num_cast(x[0]) # number of sides
+                    a = num_cast(x[1]) # apothem length
+                    
+                    if n <= 0 or a <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["ngonaa"][0]["code"]
+                        
+                    else:
+                        log_process("ngonaa")
+                        return round(a**2*np.tan(pi/n), 12)
+    
+                # store in f_log
+                f_log["ngonaa"] = F
+            
+            if "ngonperim" in is_key:
+                # ngon perimeter
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of sides
+                    s = num_cast(a[1]) # side length
+                    
+                    if n <= 0 or s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["ngonperim"][0]["code"]
+                        
+                    else:
+                        log_process("ngonperim")
+                        return n*s
+    
+                # store in f_log
+                f_log["ngonperim"] = F
             
             # PLATONIC SOLIDS
 
-            # perform all tetrahedron volume functions
-            ref = getIdx("tetrahedronv", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["tetrahedronv"][0]["code"]
-                    
-                else:
-                    Volume = s**3/(2**.5*6)
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("tetrahedronv", arrVar)
-                
-            # perform all tetrahedron surface area functions
-            ref = getIdx("tetrahedronsa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["tetrahedronsa"][0]["code"]
-                    
-                else:
-                    Volume = 3**.5*s**2
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("tetrahedronsa", arrVar)
+            if "tetrahedronv" in is_key:
+                # tetrahedron volume
             
-            # perform all hexahedron volume functions
-            ref = getIdx("hexahedronv", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["hexahedronv"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
                     
-                else:
-                    Volume = s**3
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("hexahedronv", arrVar)
-                
-            # perform all hexahedron surface area functions
-            ref = getIdx("hexahedronsa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["tetrahedronv"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        log_process("tetrahedronv")
+                        return s**3/(2**.5*6)
+    
+                # store in f_log
+                f_log["tetrahedronv"] = F
 
-                # perform calculation using numeral set
-                s = set_2[0] # sides length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["hexahedronsa"][0]["code"]
-                    
-                else:
-                    Surface_Area = s**2*6
-                    # apply answer and search for new problem
-                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
-                    ref = getIdx("hexahedronsa", arrVar)
+            if "tetrahedronsa" in is_key:
+                # tetrahedron surface area
             
-            # perform all octahedron volume functions
-            ref = getIdx("octahedronv", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["octahedronv"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
                     
-                else:
-                    Volume = 2**.5*s**3/3
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("octahedronv", arrVar)
-                
-            # perform all octahedron surface area functions
-            ref = getIdx("octahedronsa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["tetrahedronsa"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        log_process("tetrahedronsa")
+                        return 3**.5*s**2
+    
+                # store in f_log
+                f_log["tetrahedronsa"] = F
 
-                # perform calculation using numeral set
-                s = set_2[0] # sides length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["octahedronsa"][0]["code"]
-                    
-                else:
-                    Surface_Area = 3**.5*2*s**2
-                    # apply answer and search for new problem
-                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
-                    ref = getIdx("octahedronsa", arrVar)
+            if "hexahedronv" in is_key:
+                # hexahedron volume
             
-            # perform all dodecahedron volume functions
-            ref = getIdx("dodecahedronv", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["dodecahedronv"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
                     
-                else:
-                    Volume = s**3*(5**.5*7+15)/4
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("dodecahedronv", arrVar)
-                
-            # perform all dodecahedronsa surface area functions
-            ref = getIdx("dodecahedronsa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["hexahedronv"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        log_process("hexahedronv")
+                        return s**3
+    
+                # store in f_log
+                f_log["hexahedronv"] = F
 
-                # perform calculation using numeral set
-                s = set_2[0] # sides length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["dodecahedronsa"][0]["code"]
-                    
-                else:
-                    Surface_Area = (5**.5*10+25)**.5*3*s**2
-                    # apply answer and search for new problem
-                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
-                    ref = getIdx("dodecahedronsa", arrVar)
+            if "hexahedronsa" in is_key:
+                # hexahedron surface area
             
-            # perform all icosahedron volume functions
-            ref = getIdx("icosahedronv", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # side length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["icosahedronv"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
                     
-                else:
-                    Volume = s**3*(5**.5+3)*5/12
-                    # apply answer and search for new problem
-                    arrVar = restructure(Volume, ref, ref + 1, arrVar)
-                    ref = getIdx("icosahedronv", arrVar)
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["hexahedronsa"][0]["code"]
+                        
+                    else:
+                        log_process("hexahedronsa")
+                        return s**2*6
+    
+                # store in f_log
+                f_log["hexahedronsa"] = F
+
+            if "octahedronv" in is_key:
+                # octahedron volume
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
+                    
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["octahedronv"][0]["code"]
+                        
+                    else:
+                        log_process("octahedronv")
+                        return 2**.5*s**3/3
+    
+                # store in f_log
+                f_log["octahedronv"] = F
+
+            if "octahedronsa" in is_key:
+                # octahedron surfacec area
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
+                    
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["octahedronsa"][0]["code"]
+                        
+                    else:
+                        log_process("octahedronsa")
+                        return 3**.5*2*s**2
+    
+                # store in f_log
+                f_log["octahedronsa"] = F
+
+            if "dodecahedronv" in is_key:
+                # dodecahedron volume
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
+                    
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["dodecahedronv"][0]["code"]
+                        
+                    else:
+                        log_process("dodecahedronv")
+                        return s**3*(5**.5*7+15)/4
+    
+                # store in f_log
+                f_log["dodecahedronv"] = F
+
+            if "dodecahedronsa" in is_key:
+                # dodecahedron surface area
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
+                    
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["dodecahedronsa"][0]["code"]
+                        
+                    else:
+                        log_process("dodecahedronsa")
+                        return (5**.5*10+25)**.5*3*s**2
+    
+                # store in f_log
+                f_log["dodecahedronsa"] = F
+
+            if "icosahedronv" in is_key:
+                # icosahedron volume
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
+                    
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["icosahedronv"][0]["code"]
+                        
+                    else:
+                        log_process("icosahedronv")
+                        return s**3*(5**.5+3)*5/12
+    
+                # store in f_log
+                f_log["icosahedronv"] = F
         
-            # perform all icosahedron surface area functions
-            ref = getIdx("icosahedronsa", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                s = set_2[0] # sides length
-                
-                if s <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["icosahedronsa"][0]["code"]
+            if "icosahedronsa" in is_key:
+                # icosahedron surface area
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    s = num_cast(a[0]) # side length
                     
-                else:
-                    Surface_Area = 3**.5*5*s**2
-                    # apply answer and search for new problem
-                    arrVar = restructure(Surface_Area, ref, ref + 1, arrVar)
-                    ref = getIdx("icosahedronsa", arrVar)
-
-            # Circle functions
-
-            # perform all sagitta length functions
-            ref = getIdx("sagitta", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
+                    if s <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["geometric"]["icosahedronsa"][0]["code"]
+                        
                     else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
+                        log_process("icosahedronsa")
+                        return 3**.5*5*s**2
+    
+                # store in f_log
+                f_log["icosahedronsa"] = F
 
-                # perform calculation using numeral set
-                r = set_2[0] # diameter
-                C = set_2[1] # C = chord length, l = C/2 
-                if r <= 0 or C <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["sagitta"][0]["code"]
-                elif C > r*2: # chord length cannot exceed diameter, diameter = 2 * radius
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["geometric"]["sagitta"][1]["code"]
-
-                saggita = r - (r**2 - (C/2)**2)**.5
-
-                # apply answer and search for new problem
-                arrVar = restructure(saggita, ref, ref + 1, arrVar)
-                ref = getIdx("sagitta", arrVar)
-
-        return arrVar
-
-    def combinatoric(arr):
+    def combinatoric():
         # key function module for combinatoric functions
-        arrVar = arr
         nonlocal global_bypass
+        nonlocal key_modules
 
         if key_modules[2]["use"] == True and global_bypass == False:
             log_process("Combinatoric Key Module")
 
-            # perform all Factorial functions
-            ref = getIdx("fact", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                x = num_cast(arrVar[ref + 1])
-                if x <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["fact"][0]["code"]
-                
-                y = factorial(x)
-
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("fact", arrVar)
-
-            # perform all Permutation functions
-            ref = getIdx("perm", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0] # number of objects
-                r = set_2[1] # number of objects per permutation
-
-                if n <= 0 or r <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["perm"][0]["code"]
-                elif n < r:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["perm"][1]["code"]
-
-                if n == r:
-                    perm  = 1
-                    # apply answer and search for new problem
-                    arrVar = restructure(perm, ref, ref + 1, arrVar)
-                    ref = getIdx("perm", arrVar)
-
-                else:
-                    perm = factorial(n) / factorial(n - r)
+            if "fact" in is_key:
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
                     
-                    # apply answer and search for new problem
-                    arrVar = restructure(perm, ref, ref + 1, arrVar)
-                    ref = getIdx("perm", arrVar)
-            
-            # perform all Permutation with Repetition functions
-            ref = getIdx("permr", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0] # number of objects
-                r = set_2[1] # number of objects per permutation
-
-                if n <= 0 or r <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["permr"][0]["code"]
-                elif n < r:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["permr"][1]["code"]
-                
-                else:
-                    perm = n**r
-                    # apply answer and search for new problem
-                    arrVar = restructure(perm, ref, ref + 1, arrVar)
-                    ref = getIdx("permr", arrVar)
-
-            # perform all Combination functions
-            ref = getIdx("comb", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0]
-                r = set_2[1]
-
-                if n <= 0 or r <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["comb"][0]["code"]
-                elif n < r:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["comb"][1]["code"]
-                
-                else:
-                    comb = factorial(n) / (factorial(r) * factorial(n - r))
-                    # apply answer and search for new problem
-                    arrVar = restructure(comb, ref, ref + 1, arrVar)
-                    ref = getIdx("comb", arrVar)
-            
-            # perform all Combination with Repetition functions
-            ref = getIdx("combr", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n = set_2[0]
-                r = set_2[1]
-
-                if n <= 0 or r <= 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["combr"][0]["code"]
-                elif n < r:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["combr"][1]["code"]
-                
-                else:
-                    comb = factorial(n + r - 1) / (r * factorial(n - 1))
-                    # apply answer and search for new problem
-                    arrVar = restructure(comb, ref, ref + 1, arrVar)
-                    ref = getIdx("combr", arrVar)
-
-            # perform all Composition functions
-            ref = getIdx("comp", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # log keyword
-                log_process(arrVar[ref])
-
-                x = num_cast(arrVar[ref + 1])
-
-                if x < 0:
-                    # invalid arguments
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["comp"][0]["code"]
-                
-                else:
-                    comp = 2**(x-1)
-                    # apply answer and search for new problem
-                    arrVar = restructure(comp, ref, ref + 1, arrVar)
-                    ref = getIdx("comp", arrVar)
-            
-            # perform all Multiples in Interval functions
-            ref = getIdx("multiples", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                n1 = set_2[0] # end of interval 1
-                n2 = set_2[1] # end of inerval 2
-                x = set_2[2] # multiples of this number
-
-                if n1 == n2:
-                    # minimum value in interval cannot be less than or equal to x
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["multiples"][0]["code"]
-                elif x <= 1:
-                    # x cannot be less than or equal to 1
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["multiples"][1]["code"]
-                else:
-                    # determine max an min
-                    minimum = min(n1, n2)
-                    maximum = max(n1, n2)
-
-                    if maximum <= x:
-                        # maximum value in interval cannot be less than or equal to x
+                    if x <= 0:
+                        # invalid argument
                         global_bypass = True
-                        return info["error"]["key_function"]["combinatoric"]["multiples"][2]["code"]
+                        return info["error"]["key_function"]["combinatoric"]["fact"][0]["code"]
+                        
                     else:
-                        multiples = math.floor((maximum-minimum)/x)
+                        log_process("fact")
+                        return factorial(x)
+    
+                # store in f_log
+                f_log["fact"] = F
 
-                        # apply answer and search for new problem
-                        arrVar = restructure(multiples, ref, ref + 1, arrVar)
-                        ref = getIdx("multiples", arrVar)
-
-            # perform all Greatest Common Factor functions
-            ref = getIdx("gcf", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["combinatoric"]["gcf"][0]["code"]
-                    else:
-                        x = num_cast(section(i))
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["combinatoric"]["gcf"][0]["code"]
-
-                # perform calculation using numeral set
-                gcf = 0
-                val1 = set_2[0]
-                val2 = set_2[1]
-                if val1 != val2:
-                    facts_1 = []
-                    facts_2 = []
+            if "perm" in is_key:
+                # permuatation
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of objects
+                    r = num_cast(a[1]) # number of objects per permutation
                     
-                    # account for limiting factor
-                    if val1 > val2:
-                        # filter extra factors
-                        facts = factor(val1)
-                        for i in facts:
-                            if i < val2:
-                                facts_1.append(i)
-                        facts_2 = factor(val2)
+                    if n <= 0 or r <= 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["perm"][0]["code"]
+                    elif n < r:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["perm"][1]["code"]
+
+                    if n == r:
+                        log_process("perm")
+                        return 1
                     else:
-                        # filter extra factors
-                        facts = factor(val2)
-                        for i in facts:
-                            if i < val1:
-                                facts_2.append(i)
-                        facts_1 = factor(val1)
+                        log_process("perm")
+                        return  factorial(n) / factorial(n - r)
+                        
+    
+                # store in f_log
+                f_log["perm"] = F
 
-                    log_process(facts_1)
-                    log_process(facts_2)
-
-                    # search for common factors
-                    for i in facts_1:
-                        for j in facts_2:
-                            if i == j:
-                                gcf = j
-                                break
-                        if gcf != 0:
-                            break
-                else:
-                    gcf = set_2[0]
-                
-                # apply answer and search for new problem
-                arrVar = restructure(gcf, ref, ref + 1, arrVar)
-                ref = getIdx("gcf", arrVar)
+            if "permr" in is_key:
+                # permutation with repetition
             
-            # perform all Least Common Multiple functions
-            ref = getIdx("lcm", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of objects
+                    r = num_cast(a[1]) # number of objects per permutation
+                    
+                    if n <= 0 or r <= 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["permr"][0]["code"]
+                    elif n < r:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["permr"][1]["code"]
 
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["combinatoric"]["lcm"][0]["code"]
                     else:
-                        x = num_cast(section(i))
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["combinatoric"]["lcm"][0]["code"]
-
-                # perform calculation using numeral set
-                lcm = 0
-                multiples = 100
-                mult_1 = [set_2[0]]
-                mult_2 = [set_2[1]]
-                same = False
-                x = 0
-                while x < multiples and same != True:
-                    x = x + 1
-
-                    # search for common multiples
-                    for i in mult_1:
-                        for j in mult_2:
-                            if i == j:
-                                same = True
-                                lcm = i
-                                break
-                        if same == True:
-                            break
-
-                    # if no multiples were found, add next multiple to each list, and test again
-                    if same != True:
-                        mult_1.append(mult_1[0] * x)
-                        mult_2.append(mult_2[0] * x)
-
-                if x == multiples:
-                    # error no common multiple
-                    global_bypass = True
-                    return info["error"]["key_function"]["combinatoric"]["lcm"][1]["code"]
-
-                # apply answer and search for new problem
-                arrVar = restructure(lcm, ref, ref + 1, arrVar)
-                ref = getIdx("lcm", arrVar)
+                        log_process("permr")
+                        return  n**r
+                        
+    
+                # store in f_log
+                f_log["permr"] = F
             
-        return arrVar
+            if "comb" in is_key:
+                # combination
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of objects
+                    r = num_cast(a[1]) # number of objects per combination
+                    
+                    if n <= 0 or r <= 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["comb"][0]["code"]
+                    elif n < r:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["comb"][1]["code"]
+                    
+                    else:
+                        log_process("comb")
+                        return factorial(n) / (factorial(r) * factorial(n - r))
+                        
+    
+                # store in f_log
+                f_log["comb"] = F
+            
+            if "combr" in is_key:
+                # combination with repetition
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = num_cast(a[0]) # number of objects
+                    r = num_cast(a[1]) # number of objects per combination
+                    
+                    if n <= 0 or r <= 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["combr"][0]["code"]
+                    elif n < r:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["combr"][1]["code"]
+                    
+                    else:
+                        log_process("combr")
+                        return factorial(n + r - 1) / (r * factorial(n - 1))
+                        
+    
+                # store in f_log
+                f_log["combr"] = F
+            
+            if "comp" in is_key:
+                # composition
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    
+                    if x < 0:
+                        # invalid arguments
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["comp"][0]["code"]
+                    
+                    else:
+                        log_process("comp")
+                        return 2**(x-1)
+    
+                # store in f_log
+                f_log["comp"] = F
 
-    def statistical(arr):
+            if "multiples" in is_key:
+                # maximum number of multiples of a given number within in a range between two given numbers
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n1 = num_cast(a[0]) # end of interval 1
+                    n2 = num_cast(a[1]) # end of inerval 2
+                    x = num_cast(a[2]) # multiples of this number
+
+                    if n1 == n2:
+                        # minimum value in interval cannot be less than or equal to x
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["multiples"][0]["code"]
+                    elif x <= 1:
+                        # x cannot be less than or equal to 1
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["multiples"][1]["code"]
+                    else:
+                        # determine max an min
+                        minimum = min(n1, n2)
+                        maximum = max(n1, n2)
+
+                        if maximum <= x:
+                            # maximum value in interval cannot be less than or equal to x
+                            global_bypass = True
+                            return info["error"]["key_function"]["combinatoric"]["multiples"][2]["code"]
+                        else:
+                            log_process("multiples")
+                            return math.floor((maximum-minimum)/x)
+    
+                # store in f_log
+                f_log["multiples"] = F
+            
+            if "gcf" in is_key:
+                # greatest common factor
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    gcf = 0
+                    val1 = num_cast(a[0])
+                    val2 = num_cast(a[1])
+
+                    if val1 <= 0 or val2 <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["gcf"][0]["code"]
+                    
+                    if val1 != val2:
+                        facts_1 = []
+                        facts_2 = []
+                        
+                        # account for limiting factor
+                        if val1 > val2:
+                            # filter extra factors
+                            facts = factor(val1)
+                            for i in facts:
+                                if i < val2:
+                                    facts_1.append(i)
+                            facts_2 = factor(val2)
+                        else:
+                            # filter extra factors
+                            facts = factor(val2)
+                            for i in facts:
+                                if i < val1:
+                                    facts_2.append(i)
+                            facts_1 = factor(val1)
+    
+                        log_process(facts_1)
+                        log_process(facts_2)
+    
+                        # search for common factors
+                        for i in facts_1:
+                            for j in facts_2:
+                                if i == j:
+                                    gcf = j
+                                    break
+                            if gcf != 0:
+                                break
+                    else:
+                        gcf = val1
+
+                    log_process("gfc")
+                    return gcf
+                
+                # store in f_log
+                f_log["gcf"] = F
+
+            if "lcm" in is_key:
+                # least common multiple
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    lcm = 0
+                    multiples = 100
+                    mult_1 = [num_cast(a[0])]
+                    mult_2 = [num_cast(a[1])]
+                    same = False
+                    x = 0
+                    while x < multiples and same != True:
+                        x = x + 1
+    
+                        # search for common multiples
+                        for i in mult_1:
+                            for j in mult_2:
+                                if i == j:
+                                    same = True
+                                    lcm = i
+                                    break
+                            if same == True:
+                                break
+    
+                        # if no multiples were found, add next multiple to each list, and test again
+                        if same != True:
+                            mult_1.append(mult_1[0] * x)
+                            mult_2.append(mult_2[0] * x)
+    
+                    if x == multiples:
+                        # error no common multiple
+                        global_bypass = True
+                        return info["error"]["key_function"]["combinatoric"]["lcm"][0]["code"]
+
+                    log_process("lcm")
+                    return lcm
+                
+                # store in f_log
+                f_log["lcm"] = F
+
+    def statistical():
         # key function module for statistical functions
-        arrVar = arr
         nonlocal global_bypass
+        nonlocal key_modules
 
         if key_modules[3]["use"] == True and global_bypass == False:
             log_process("Statistical Key Module")
+
+            if "sd" in is_key:
+                        
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    args = []
+                    for arg in a:
+                        args.append(num_cast(arg))
+                    
+                    mean = get_mean(args)
+                    powerset = []
+                    for i in args:
+                        powerset.append(math.pow(i - mean, 2))
+
+                    log_process("sd")
+                    return math.pow(sum(powerset)/len(powerset), 1/2)
+    
+                # store in f_log
+                f_log["sd"] = F
+                
+            if "var" in is_key:
+                        
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    args = []
+                    for arg in a:
+                        args.append(num_cast(arg))
+                    
+                    mean = get_mean(args)
+                    powerset = []
+                    for i in args:
+                        powerset.append(math.pow(i - mean, 2))
+
+                    log_process("var")
+                    return sum(powerset) / len(powerset)
+    
+                # store in f_log
+                f_log["var"] = F
             
-            # perform all Standard Deviation functions
-            ref = getIdx("sd", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
+            if "meanh" in is_key:
+                # harmonic mean
 
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = section(i)
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                mean = get_mean(set_2)
-                set_3 = []
-                for i in set_2:
-                    set_3.append(math.pow(i - mean, 2))
-                sd = math.pow(sum(set_3)/len(set_3), 1/2)
-
-                # apply answer and search for new problem
-                arrVar = restructure(sd, ref, ref + 1, arrVar)
-                ref = getIdx("sd", arrVar)
-                
-            # perform all Variance functions
-            ref = getIdx("var", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                mean = get_mean(set_2)
-                set_3 = []
-                for i in set_2:
-                    set_3.append(math.pow(i - mean, 2))
-                sd = sum(set_3)/len(set_3)
-
-                # apply answer and search for new problem
-                arrVar = restructure(sd, ref, ref + 1, arrVar)
-                ref = getIdx("var", arrVar)
-
-            # perform all Harmonic Mean functions
-            ref = getIdx("meanh", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    args = []
+                    for arg in a:
+                        x = num_cast(arg)
                         if x != 0:
-                            set_2.append(1/x)
+                            x = 1 / x
                         else:
-                            # invalid argument
                             global_bypass = True
                             return info["error"]["key_function"]["statistical"]["meanh"][0]["code"]
                         
-                    else:
-                        x = num_cast(section(i))
-                        if x != False and x != 0:
-                            set_2.append(1/x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["statistical"]["meanh"][0]["code"]
+                        args.append(x)
+                    
+                    log_process("meanh")
+                    return len(args) / sum(args)
+    
+                # store in f_log
+                f_log["meanh"] = F
 
-                # perform calculation using numeral set
-                mean = len(set_2) / sum(set_2)
+            if "meang" in is_key:
+                # geometric mean
 
-                # apply answer and search for new problem
-                arrVar = restructure(mean, ref, ref + 1, arrVar)
-                ref = getIdx("meanh", arrVar)
-                
-            # perform all Geometeric Mean functions
-            ref = getIdx("meang", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    args = []
+                    product = 1
+                    for arg in a:
+                        x = num_cast(arg)
+                        product = product * x
+                        args.append(x)
+                    
+                    log_process("meang")
+                    return math.pow(product, 1/len(args))
+    
+                # store in f_log
+                f_log["meang"] = F
 
-                set_2 = 1
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = float(i)
-                        set_2 = set_2 * x
-                    else:
-                        x = num_cast(section(i))
-                        set_2 = set_2 * x
+            if "meanw" in is_key:
+                # weighted mean
 
-                # perform calculation using numeral set
-                mean = math.pow(set_2, 1/len(set_1))
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    values = []
+                    weights = []
+                    total_weight = 0
+                    for pair in a:
+                        # each pair in the list = [value, weight]
+                        x = num_cast(pair[0])
+                        y = num_cast(pair[1])
+                        values.append(x)
+                        weights.append(y)
+                        total_weight += y
 
-                # apply answer and search for new problem
-                arrVar = restructure(mean, ref, ref + 1, arrVar)
-                ref = getIdx("meang", arrVar)
-
-            # perform all Weighted Mean functions
-            ref = getIdx("meanw", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # get weights and total of weights
-                n = 0
-                weights = []
-                for i in set_1:
-                    weight = float(i[1])
-                    weights.append(weight)
-                    n = n + weight
-                
-                # get weighted numeral set
-                set_2 = []
-                iter = 0
-                for i in set_1:
-                    val = float(i[0])
-                    set_2.append(weights[iter] * val)
-                    iter = iter + 1
-
-                # perform calculation using numeral set
-                mean = sum(set_2) / n
-
-                # apply answer and search for new problem
-                arrVar = restructure(mean, ref, ref + 1, arrVar)
-                ref = getIdx("meanw", arrVar)
-
-            # perform all Mean functions
-            ref = getIdx("mean", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
-
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                mean = get_mean(set_2)
-
-                # apply answer and search for new problem
-                arrVar = restructure(mean, ref, ref + 1, arrVar)
-                ref = getIdx("mean", arrVar)
+                    mean = 0
+                    for i in range(len(values)):
+                        mean += weights[i]/total_weight * values[i]
+                    
+                    log_process("meanw")
+                    return mean
+    
+                # store in f_log
+                f_log["meanw"] = F
             
-            # perform all Root Mean Square functions
-            ref = getIdx("rms", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
+            if "mean" in is_key:
+                # mean
 
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        set_2.append(x)
-                    else:
-                        x = num_cast(section(i))
-                        set_2.append(x)
-
-                # perform calculation using numeral set
-                square = []
-                for i in set_2:
-                    square.append(math.pow(i, 2))
-                mean = get_mean(square)
-                root = math.pow(mean, 1/2)
-
-                # apply answer and search for new problem
-                arrVar = restructure(root, ref, ref + 1, arrVar)
-                ref = getIdx("rms", arrVar)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    n = 0
+                    total = 0
+                    for arg in a:
+                        # each pair in the list = [value, weight]
+                        total += num_cast(arg)
+                        n += 1
+                    log_process("mean")
+                    return total / n
+    
+                # store in f_log
+                f_log["mean"] = F
             
-            # perform all Logarithm functions
-            ref = getIdx("log", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-                
-                # get string string set
-                set_1 = arrVar[ref + 1]
-                log_process(set_1)
+            if "rms" in is_key:
+                # root mean square
 
-                # convert string set to numeral set
-                set_2 = []
-                for i in set_1:
-                    if isinstance(i, str):
-                        x = num_cast(i)
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["statistical"]["log"][0]["code"]
-                    else:
-                        x = num_cast(section(i))
-                        if x > 0:
-                            set_2.append(x)
-                        else:
-                            # invalid argument
-                            global_bypass = True
-                            return info["error"]["key_function"]["statistical"]["log"][0]["code"]
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    squares = []
+                    for arg in a:
+                        # each pair in the list = [value, weight]
+                        x = num_cast(arg)
+                        squares.append(x**2)
+                    
+                    log_process("rms")
+                    return math.pow(sum(squares) / len(squares), .5)
                 
-                x = set_2[0]
-                b = set_2[1]
-                y = np.emath.logn(b, x)
+                # store in f_log
+                f_log["rms"] = F
 
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("log", arrVar)
+            if "log" in is_key:
             
-            # perform all Natural Logarithm functions
-            ref = getIdx("ln", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                arg = arrVar[ref + 1]
-                x = 0
-
-                if isinstance(arg, list):
-                    x = num_cast(section(arg))
-                elif isinstance(arg, str):
-                    x = num_cast(arg)
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    b = num_cast(a[1])
+                    
+                    if x <= 0 or b <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["statistical"]["log"][0]["code"]
+                    
+                    log_process("log")
+                    return np.emath.logn(b, x)
                 
-                if x <= 0:
-                    # invalid argument
-                    global_bypass = True
-                    return info["error"]["key_function"]["statistical"]["ln"][0]["code"]
+                # store in f_log
+                f_log["log"] = F
+            
+            if "ln" in is_key:
+            
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    x = num_cast(a[0])
+                    
+                    if x <= 0:
+                        # invalid argument
+                        global_bypass = True
+                        return info["error"]["key_function"]["statistical"]["ln"][0]["code"]
+                    
+                    log_process("ln")
+                    return np.log(x)
                 
-                y = np.log(x)
-
-                # apply answer and search for new problem
-                arrVar = restructure(y, ref, ref + 1, arrVar)
-                ref = getIdx("ln", arrVar)
-                
-        return arrVar
-
-    def algebraic(arr):
+                # store in f_log
+                f_log["ln"] = F
+    
+    def algebraic():
         # key function module for algebraic functions
         # algebraic operations translate to algebraic expressions
         # rather than solving for single value
-        arrVar = arr
         nonlocal global_bypass
+        nonlocal key_modules
         nonlocal subtract_key
 
         if key_modules[4]["use"] == True and global_bypass == False:
             log_process("Algebraic Key Module")
 
-            # performs all polynomial exponentiation
-            ref = getIdx("expon", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-                # Log keyword
-                log_process(arrVar[ref])
-
-                # get arguments
-                args = arrVar[ref + 1]
-
-                # handle power
-                if isinstance(args[1], str):
-                    # convert then append power value
-                    x = num_cast(args[1])
-                    if x == False:
-                        # invalid arguments
-                        global_bypass = True
-                        return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
-                    else:
-                        args[1] = x
-
-                elif isinstance(args[1], list):
-                    # power expression then append power value
-                    x = num_cast(section(args[1]))
-                    if x == False:
-                        # invalid arguments
-                        global_bypass = True
-                        return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
-                    else:
-                        args[1] = x
-
-                # handle base
-                if not isinstance(args[0], list) and has_var(args[0]):
-                    global_bypass = True
-                    return info["error"]["key_function"]["algebraic"]["expon"][1]["code"]
-
-                # perform algebraic operation using numeral set
-                base = simplify(args[0]) # base expression
-                if global_bypass == True:
-                    # exceeded simp_limit
-                    return base # contains error
-                power = args[1] # power value
-
-                # log values
-                log_process("Base expression = %s" % base)
-                log_process("Power value = %s" % power)
-
-                # build exponentiation by power value
-                if power == 0:
-                    # x^0 = 1
-
-                    # restructure with section
-                    arrVar = restructure(["1"], ref, ref + 1, arrVar)
-                    # get next instance
-                    ref = getIdx("expon", arrVar)
-
-                elif power < 0:
-                    # x^-y = 1/(x^y)
-
-                    sect = ["1", "/", "("] + base
-                    for j in range(0, abs(power) - 1):
-                        sect = sect + ["*"]
-                        sect = sect + base
-                    sect = sect + [")"]
-
-                    # restructure with section
-                    arrVar = restructure(sect, ref, ref + 1, arrVar)
-                    # get next instance
-                    ref = getIdx("expon", arrVar)
-
-                else:
-                    # general
-                    # build section
-                    sect = ["("] + base + [")"]
-                    for j in range(0, power - 1):
-                        sect = sect + ["*"]
-                        sect = sect + ["("] + base + [")"]
+            if "expon" in is_key:
+                # polynomial exponentiation
+                                    
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    log_process("expon")
                     
-                    # restructure with section
-                    arrVar = restructure(sect, ref, ref + 1, arrVar)
-                    # get next instance
-                    ref = getIdx("expon", arrVar)
-
-            # performs all polynomial expansions
-            ref = getIdx("expand", arrVar)
-            itr = 0
-            while itr < key_limit and ref is not None:
-                itr = itr + 1
-
-                # get arguments
-                nomials = arrVar[ref + 1]
-                nomials_len = len(nomials)
-
-                # Log keyword
-                log_process(arrVar[ref])
-                log_process(nomials)
-
-                if nomials_len == 0:
-                    global_bypass == True
-                    return info["error"]["key_function"]["algebraic"]["expand"][0]["code"]
-
-                elif nomials_len == 1:
-                    # cannot expand a single nomial or no nomial
-
-                    # Log keyword
-                    log_process(arrVar[ref])
-                    # standardize
-                    nomials = simplify(nomials)
+                    # handle arguments
+                    args = a
+                    
+                    # handle power
+                    if isinstance(args[1], str):
+                        # convert then append power value
+                        x = num_cast(args[1])
+                        if x == False:
+                            # invalid arguments
+                            global_bypass = True
+                            return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
+                        else:
+                            args[1] = x
+    
+                    elif isinstance(args[1], list):
+                        # power expression then append power value
+                        x = num_cast(section(args[1]))
+                        if x == False:
+                            # invalid arguments
+                            global_bypass = True
+                            return info["error"]["key_function"]["algebraic"]["expon"][0]["code"]
+                        else:
+                            args[1] = x
+    
+                    # handle base
+                    if not isinstance(args[0], list) and has_var(args[0]):
+                        global_bypass = True
+                        return info["error"]["key_function"]["algebraic"]["expon"][1]["code"]
+    
+                    # perform algebraic operation
+                    base = simplify(args[0]) # base expression
                     if global_bypass == True:
                         # exceeded simp_limit
-                        return nomials # contains error
-                    # restructure with product expression
-                    arrVar = restructure(nomials, ref, ref + 1, arrVar)
-                    # identify further cases of polynomial expansion
-                    ref = getIdx("expand", arrVar)
-
-                else:
-                    # multiple nomials can be expanded
-
-                    # reference structure for section with distribution
-                    sect_struct = []
-
-                    # Use nomials to create sect_struct
-                    for nomial in nomials:
-                        # simplify nomial
-                        x = simplify(nomial)
+                        return base # contains error
+                    power = args[1] # power value
+    
+                    # log values
+                    log_process("Base expression = %s" % base)
+                    log_process("Power value = %s" % power)
+    
+                    # build exponentiation by power value
+                    if power == 0:
+                        # x^0 = 1
+                        return [1]
+    
+                    elif power < 0:
+                        # x^-y = 1/(x^y)
+    
+                        sect = ["1", "/", "("] + base
+                        for j in range(abs(power) - 1):
+                            sect = sect + ["*"]
+                            sect = sect + base
+                        sect = sect + [")"]
+                        
+                        return sect
+    
+                    else:
+                        # general
+                        # build section
+                        sect = ["("] + base + [")"]
+                        for j in range(power - 1):
+                            sect = sect + ["*"]
+                            sect = sect + ["("] + base + [")"]
+                        
+                        return sect
+    
+                # store in f_log
+                f_log["expon"] = F
+     
+            if "expand" in is_key:
+                # polynomial expansion
+                                    
+                # declare function
+                def F(a):
+                    nonlocal global_bypass
+                    log_process("expand")
+                    
+                    # get arguments
+                    nomials = a
+                    nomials_len = len(nomials)
+                    log_process(nomials)
+    
+                    if nomials_len == 0:
+                        global_bypass == True
+                        return info["error"]["key_function"]["algebraic"]["expand"][0]["code"]
+    
+                    elif nomials_len == 1:
+                        # cannot expand a single nomial or no nomial
+    
+                        # Log keyword
+                        log_process("expand")
+                        # standardize
+                        nomials = simplify(nomials)
                         if global_bypass == True:
-                            print("this one")
                             # exceeded simp_limit
-                            return x
-                        # structure by terms
-                        x = get_terms(x)
-                        # concatenate with sect_struct
-                        sect_struct += get_terms(x)
+                            return nomials # contains error
 
-                    # initialize sect_product with the first nomial in sect_struct
-                    sect_product = sect_struct[0]
-
-                    # multiply each nomial with the data in the sect_product variable
-                    for i in range(1, len(sect_struct)):
-                        # each expansion of nomials
-                        product = []
-                        for x in sect_product:
-                            # x = each term in sect_product
-                            if x[0] == subtract_key:
-                                x.pop(0) # remove subtract key
-                                n = num_cast(x[0])
-                                if not isinstance(n, bool):
-                                    # negate coefficient
-                                    x[0] = -n
-                                else:
-                                    # -1 coefficient
-                                    x.insert(0, operation["multiplication"])
-                                    x.insert(0, "%s1" % (operation["subtraction"]))
-
-                            for y in sect_struct[i]:
-                                # y = each term in the next nomial
-                                if y[0] == subtract_key:
-                                    y.pop(0) # remove subtract key
-                                    n = num_cast(y[0])
+                        return nomials
+    
+                    else:
+                        # multiple nomials can be expanded
+    
+                        # reference structure for section with distribution
+                        sect_struct = []
+    
+                        # Use nomials to create sect_struct
+                        for nomial in nomials:
+                            # simplify nomial
+                            x = simplify(nomial)
+                            if global_bypass == True:
+                                # exceeded simp_limit
+                                return x
+                            # structure by terms
+                            x = get_terms(x)
+                            # concatenate with sect_struct
+                            sect_struct += get_terms(x)
+    
+                        # initialize sect_product with the first nomial in sect_struct
+                        sect_product = sect_struct[0]
+    
+                        # multiply each nomial with the data in the sect_product variable
+                        for i in range(1, len(sect_struct)):
+                            # each expansion of nomials
+                            product = []
+                            for x in sect_product:
+                                # x = each term in sect_product
+                                if x[0] == subtract_key:
+                                    x.pop(0) # remove subtract key
+                                    n = num_cast(x[0])
                                     if not isinstance(n, bool):
                                         # negate coefficient
-                                        y[0] = -n
+                                        x[0] = -n
                                     else:
-                                        # negate variable
-                                        y[0]
-                                        op = operation["subtraction"]
-                                        if len(y[0]) > 1 and y[0][0] == op:
-                                            y[0] = y[0][1]
+                                        # -1 coefficient
+                                        x.insert(0, operation["multiplication"])
+                                        x.insert(0, "%s1" % (operation["subtraction"]))
+    
+                                for y in sect_struct[i]:
+                                    # y = each term in the next nomial
+                                    if y[0] == subtract_key:
+                                        y.pop(0) # remove subtract key
+                                        n = num_cast(y[0])
+                                        if not isinstance(n, bool):
+                                            # negate coefficient
+                                            y[0] = -n
                                         else:
-                                            y[0] = op + y[0]
-
-                                # get product term
-                                product += simplify(product_term(x, y))
-                                if global_bypass == True:
-                                    # exceeded simp limit
-                                    return product
+                                            # negate variable
+                                            y[0]
+                                            op = operation["subtraction"]
+                                            if len(y[0]) > 1 and y[0][0] == op:
+                                                y[0] = y[0][1]
+                                            else:
+                                                y[0] = op + y[0]
+    
+                                    # get product term
+                                    product += simplify(product_term(x, y))
+                                    if global_bypass == True:
+                                        # exceeded simp limit
+                                        return product
+                                    product.append(operation["addition"])
+                            
+                                # update sect product with last product for next expansion
+                                product.pop() #remove extra addition symbol
+                                sect_product = get_terms(product)
                                 product.append(operation["addition"])
-                        
-                            # update sect product with last product for next expansion
-                            product.pop() #remove extra addition symbol
-                            sect_product = get_terms(product)
-                            product.append(operation["addition"])
-
+    
+                            expansion = []
+                            for i in sect_product:
+                                expansion += i
+                                expansion += operation["addition"]
+                            expansion.pop()
+                            
+                            expansion = simplify(expansion)
+                            if global_bypass == True:
+                                # exceeded simp limit
+                                return expansion
+    
+                            sect_product = get_terms(expansion)
+    
+                        # log_process(sect_product)
+    
                         expansion = []
                         for i in sect_product:
                             expansion += i
                             expansion += operation["addition"]
                         expansion.pop()
-                        
+    
                         expansion = simplify(expansion)
                         if global_bypass == True:
                             # exceeded simp limit
                             return expansion
-
-                        sect_product = get_terms(expansion)
-
-                    # log_process(sect_product)
-
-                    expansion = []
-                    for i in sect_product:
-                        expansion += i
-                        expansion += operation["addition"]
-                    expansion.pop()
-
-                    expansion = simplify(expansion)
-                    if global_bypass == True:
-                        # exceeded simp limit
+                        
+                        log_process(expansion)
                         return expansion
-                    
-                    # restructure with product expression
-                    arrVar = restructure(expansion, ref, ref + 1, arrVar)
-                    # identify further cases of polynomial expansion
-                    ref = getIdx("expand", arrVar)
+    
+                # store in f_log
+                f_log["expand"] = F
 
-        return arrVar
+    def next_key(arr, key_list = None):
+        # identifies index next key in section of structure
+        # make key list if none
+        if key_list == None:
+            k = []
+            p1 = info["key_functions"]
+            for module in range(0, len(p1)): # each module
+                p2 = p1[module]
+                for i in range(0, len(p2)): # each key in module
+                    k.append(p2[i]["key"])
+            # all keys in list
+            key_list = k
+
+        for i in range(len(arr) - 1, -1, -1):
+            if arr[i] in key_list:
+                return i
+        return None
 
     def key_functions(arr):
-        # runs key function modules
+        # runs key functions from f_log
         nonlocal is_var
+        nonlocal is_key
+        nonlocal global_bypass
         arrVar = arr
 
+        # build key list
+        key_list = is_key
+        if is_var == True: # is a variable
+            k = []
+            p1 = info["key_functions"]
+            p2 = p1[len(p1) - 1] # last module is algebraic
+            for i in range(0, len(p2)): # each key in module
+                k.append(p2[i]["key"])
+            key_list = k # only search for algebraic key functions
+
+        # identify next key
+        itr = 0
+        ref = next_key(arrVar, key_list)
+        
         # Log process label for key functions
-        log_process("Key Functions")
-
-        if is_var == True:
-            # ALGEBRAIC MODULE
-            arrVar = algebraic(arrVar)
+        ran = ref is not None
+        if ran:
+            log_process("Key Functions")
         else:
-            # TRIGONOMIC MODULE
-            arrVar = trigonomic(arrVar)
-            # GEOMETRIC MODULE
-            arrVar = geometric(arrVar)
-            # COMBINATORIC MODULE
-            arrVar = combinatoric(arrVar)
-            # STATISTICAL MODULE
-            arrVar = statistical(arrVar)
+            # prevent running key functions if none
+            return arrVar
+        
+        # loop the process of key function running until no more keys are found
+        while itr < key_limit and ref is not None:
+            solution = 0
+            # get arguments
+            tokens = arrVar[ref + 1]
 
-        log_process("Key Functions Complete")
+            # convert token set to arguments
+            arguments = []
+            if isinstance(tokens, list):
+                # multiple argument token list
+                for i in tokens:
+                    x = section(i)
+                    arguments.append(x)
+            else:
+                # single argument token
+                x = num_cast(tokens)
+                arguments.append(x)
+
+            # get key function from f_log, pass arguments to function and store resulting solution
+            solution = f_log[arrVar[ref]](arguments)
+
+            # test for error in function
+            if global_bypass == True:
+                return solution # solution contains error code
+
+            # restructure problem with solution
+            arrVar = restructure(solution, ref, ref + 1, arrVar)
+
+            # identify next key
+            ref = next_key(arrVar, is_key)
+
+        if ran:
+            log_process("Key Functions Complete")
+
         return arrVar
     
     # KEY FUNCTIONS END
@@ -6311,6 +5818,7 @@ def evaluator(input):
 
     def calculate(arr):
         nonlocal global_bypass
+        nonlocal is_key
         arrVar = arr
         if global_bypass == True:
             return arrVar
@@ -6318,26 +5826,11 @@ def evaluator(input):
             # scans for operations and calculates then simplifies
 
             # perform all key functions (in section)
-
-            # if there are identified key functions
-            is_key_len = len(is_key)
-            if is_key_len > 0:
-                # test if there are keys in section
-                keys_in_section = False
-                for i in range(0, is_key_len):
-                    for j in range(0, len(arrVar)):
-                        if is_key[i] == arrVar[j]:
-                            keys_in_section = True
-                            break
-                    if keys_in_section == True:
-                        break
-                if keys_in_section == True:
-                    # run key functions on section
-                    arrVar = key_functions(arrVar)
-            
+            arrVar = key_functions(arrVar)
             if global_bypass == True:
                 return arrVar
             else:
+
                 # perform all arithmetic operations accounting for operator precedence
                 log_process("Calculating Arithmetic Operations in Operator Precedence")
                 log_process(arrVar)
@@ -7737,6 +7230,7 @@ def evaluator(input):
                     # zero division
                     global_bypass = True
                     answer = info["error"]["operator"]["division"][1]["code"]
+                    print()
                 elif test2 == False:
                     # invalid parenthesis
                     global_bypass = True
@@ -7757,6 +7251,19 @@ def evaluator(input):
                         # invalid structure
                         answer = structure # contains error code
                     else:
+
+                        # populate f_log with key functions relevant problem
+                        
+                        # print(is_key)
+                        # print(key_modules)
+
+                        trigonomic()
+                        geometric()
+                        combinatoric()
+                        statistical()
+                        algebraic()
+
+                        # print(f_log) # f_log should contain functions identical to those in is_key
                         
                         # -------------------- #
                         #  EVALUATION PROCESS  #
@@ -7930,7 +7437,8 @@ def evaluator(input):
     
 #     {"problem": "acosh(0)", "answer": "ERROR_509_0"},
 
-#     {"problem": "atanh(0)", "answer": "ERROR_510_0"},
+#     {"problem": "atanh(1)", "answer": "ERROR_510_0"},
+#     {"problem": "atanh((-1))", "answer": "ERROR_510_0"},
 
 #     {"problem": "asin(2)", "answer": "ERROR_501_1"},
 
@@ -8034,6 +7542,10 @@ def evaluator(input):
 
     
 #     # KEY FUNCTION LOGIC TESTS
+
+#     # multi-module composition test
+#     {"problem": "sd[[ngonperim[3,1]-3*sin(0)],[cos(0)]]", "answer": "1"}, # 
+    
     
 #     # TRIGONOMIC
 #     {"problem": "acsc(csc(1))", "answer": "1"}, # pass = 1
@@ -8042,7 +7554,7 @@ def evaluator(input):
 
 #     {"problem": "asinh(sinh(1))", "answer": "1"}, # pass = 1
 #     {"problem": "acosh(cosh(1))", "answer": "1"}, # pass = 1
-#     {"problem": "atanh(tanh(1))", "answer": "1"}, # pass = 1
+#     {"problem": "atanh(tanh(1))", "answer": "0.9999999999999999"}, # pass ~= 1
 
 #     {"problem": "asin(sin(1))", "answer": "1"}, # pass = 1
 #     {"problem": "acos(cos(1))", "answer": "1"}, # pass = 1
@@ -8457,7 +7969,8 @@ def evaluator(input):
 # expirimental testing
 # tests = (
 #     # {"problem": "(2-1)+(4/2)", "answer":""}, #
-#     {"problem": "", "answer":""}, #
+#     # {"problem": "degree(sin(pi))", "answer":""}, #
+#     {"problem": "sin(cos(sin(0)))", "answer":"0.8414709848078965"}, #
 # )
 
 # def diagnostic():
