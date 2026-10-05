@@ -1049,7 +1049,7 @@ def evaluator(input):
                                             break
 
                         # approve radication
-                        if dat == rad and i + 1 < length and not isinstance(num_cast(arr[i + 1]), bool) and not isinstance(num_cast(arr[i + 1]), complex):
+                        if dat == rad and i + 1 < length and not isinstance(num_cast(arr[i + 1]), bool):
                             cond1 = i - 1 > -1
                             if cond1 == False:
                                 # nothing before radication operator
@@ -6425,7 +6425,7 @@ def evaluator(input):
                         arrVar = restructure(x, ref - 1, ref + 1, arrVar)
                         ref = getIdx(operation["exponentiation"], arrVar)
 
-                # Perform all square roots
+                # Perform all radicals/roots
                 if is_root == True:
                     ref = getIdx(operation["radication"], arrVar)
                     while ref is not None:
@@ -8553,6 +8553,9 @@ def evaluator(input):
 
 #     # complex √ rational
 #     {"problem": "(1+1*i)√16", "answer":"(0.7338278989732068+3.9321109616449745*i)"}, # (a+b*i)√r, r = real
+
+#     # implicit square root for complex radicand
+#     {"problem": "√(4+16*i)", "answer":"(4.030658910306765+0.49619678680471224*i)"}, 
 
 #     # COMPLEX PRODUCT from REAL RADICATION
 #     {"problem": "√(-16)", "answer":"(4*i)"}, #
