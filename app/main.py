@@ -29,7 +29,7 @@ import copy
 #           II. expression result: conditionally distribute to remove parenthesis or stop evaluation
 #       IV. No sections => Final Calculation
 # III. Evaluation Post-process
-#   I. Encode Problem Structure: convert problem structure to answer string and enforce format rules for problem string on answer string
+#   I. Encode Problem Structure: convert problem structure to answer string and enforce same format rules for problem string on answer string
 
 # Environment variables
 load_dotenv()
@@ -44,6 +44,7 @@ parameters = {
     "key_limit": 10**1, # controls the number of any one kind of key function call in any given problem
     "simp_limit": 10**3, # controls the number of cases of simplification in any given problem
     "imagin_limit": 10**3, # controls the number of complex or imaginary numbers in any given problem
+    "decimal_limit": 1e-15, # controls the number of allowed decimal places (-15 "one quadrillionth" fempto- metric prefix)
     
     # operator parameters
     # operation syntax is made parametric to work with any available charset
@@ -83,6 +84,7 @@ info = {
         {"name":"standard complex number", "syntax":"(a+b*i)"},
         {"name":"complex number with negative imaginary component", "syntax":"(a-b*i)"},
         {"name":"complex number with negative real component", "syntax":"((-a)+b*i)"},
+        {"name":"complex number with negative imaginary and real component", "syntax":"((-a)-b*i)"},
     ),
 
     "constants": (
@@ -270,6 +272,7 @@ info = {
         "key_limit": parameters["key_limit"],
         "simp_limit": parameters["simp_limit"],
         "imagin_limit": parameters["imagin_limit"],
+        "decimal_limit": parameters["decimal_limit"]
     },
     
     "error": {
@@ -298,19 +301,19 @@ info = {
             # limit parameters
             "limit": {
                 "paren_limit": (
-                    {"code": "ERROR_001_0", "description": "parameter error: parenthesis limit. Problems are not to exceed %s pairs of parenthesis." % parameters["const_limit"] }
+                    {"code": "ERROR_001_0", "description": "parameter error: parenthesis limit. Problems are not to exceed %s pairs of parenthesis." % parameters["const_limit"] },
                 ),
                 "const_limit": (
-                    {"code": "ERROR_002_0", "description": "parameter error: constant limit. Problems are not to exceed %s instances of any one constant." % parameters["const_limit"]}
+                    {"code": "ERROR_002_0", "description": "parameter error: constant limit. Problems are not to exceed %s instances of any one constant." % parameters["const_limit"]},
                 ),
                 "key_limit": (
-                    {"code": "ERROR_003_0", "description": "parameter error: key function limit. Problems are not to exceed %s calls for any one key function." % parameters["key_limit"]}
+                    {"code": "ERROR_003_0", "description": "parameter error: key function limit. Problems are not to exceed %s calls for any one key function." % parameters["key_limit"]},
                 ),
                 "simp_limit": (
-                    {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]}
+                    {"code": "ERROR_004_0", "description": "parameter error: simplification limit. Problems are not to exceed %s cases of simplifications." % parameters["simp_limit"]},
                 ),
                 "imagin_limit": (
-                    {"code": "ERROR_005_0", "description": "parameter error: imaginary limit. Problems are not to exceed %s number of imaginary or complex numbers." % parameters["imagin_limit"]}
+                    {"code": "ERROR_005_0", "description": "parameter error: imaginary limit. Problems are not to exceed %s number of imaginary or complex numbers." % parameters["imagin_limit"]},
                 ),
             },
         },
@@ -333,23 +336,24 @@ info = {
 
         "operator": {
             "addition": (
-                {"code": "ERROR_301_0", "description": "addition error: invalid operand number type"}
+                {"code": "ERROR_301_0", "description": "addition error: invalid operand number type"},
             ),
             "subtraction": (
-                {"code": "ERROR_302_0", "description": "subtraction error: invalid operand number type"}
+                {"code": "ERROR_302_0", "description": "subtraction error: invalid operand number type"},
             ),
             "multiplication": (
-                {"code": "ERROR_303_0", "description": "multiplication error: invalid operand number type"}
+                {"code": "ERROR_303_0", "description": "multiplication error: invalid operand number type"},
             ),
             "division": (
                 {"code": "ERROR_304_0", "description": "division error: invalid operand number type"},
                 {"code": "ERROR_304_1", "description": "division error: no division by zero"},
             ),
             "exponentiation": (
-                {"code": "ERROR_305_0", "description": "exponentiation error: invalid operand number type"}
+                {"code": "ERROR_305_0", "description": "exponentiation error: invalid operand number type"},
             ),
             "radication": (
-                {"code": "ERROR_306_0", "description": "radication error: invalid operand number type"}
+                {"code": "ERROR_306_0", "description": "radication error: invalid operand number type"},
+                {"code": "ERROR_306_1", "description": "radication error: index of radication cannot be zero"},
             ),
         },
 
@@ -360,7 +364,7 @@ info = {
 
                 # Conversion
                 # "degree": (
-                #     {"code": "ERROR_542_0", "description": "degree key functon error: "}
+                #     {"code": "ERROR_542_0", "description": "degree key functon error: "},
                 # ),
 
                 # Reciprocal
@@ -609,6 +613,9 @@ def evaluator(input):
     # the imagin_limit parameter constrols the maximum number of complex and imaginary numbers in any one evaluation
     imagin_limit = info["limits"]["imagin_limit"]
 
+    # the decimal_limit parameter controls the numberr of allowed decimal places
+    decimal_limit = info["limits"]["decimal_limit"]
+
     # PROGRAM ENTITY REFERENCE
 
     # operator characters
@@ -768,8 +775,8 @@ def evaluator(input):
         # determines whether operand types are to be sent to arithmetic or algebraic systems
 
         # cast number types
-        a = num_cast(aa)
-        b = num_cast(bb)
+        a = num_cast(aa) # before operand
+        b = num_cast(bb) # after operand
 
         # prevent test on booleans
         if not isinstance(a, bool) and not isinstance(b, bool):
@@ -823,8 +830,15 @@ def evaluator(input):
                     return False
                 
                 elif op == rad:
+                    # inclusions (send to arithmetic system)
+                    # if cond1 == True or cond2 == True:
+                        # form: r√(a+b*i)
+                        # form: (a+b*i)√r
+                        # form: (a+b*i)√(a+b*i)
+                    return True
+                    
                     # exclusions (send to algebraic system)
-                    return False
+                    # return False
         
         return False
     
@@ -1011,7 +1025,6 @@ def evaluator(input):
 
                             # exclude operation on parenthesis and square brackets
                             if a != op_paren and a != cl_paren and a != op_brack and a != cl_brack and b != op_paren and b != cl_paren and b != op_brack and b != cl_brack:
-                                
                                 # exclude operation on variables
                                 if not var_test(a) or isinstance(a, complex) and not var_test(b) or isinstance(b, complex):
 
@@ -1278,15 +1291,275 @@ def evaluator(input):
     
     # STRUCTURE END
 
+    # SPECIAL OPERATIONS START
+
+    # def monus(a, b):
+    #     # monus; truncated minus; dot minus; doz (difference or zero)
+    #     a = float(a)
+    #     if a % 1 == 0:
+    #         a = int(a)
+    #     b = float(b)
+    #     if b % 1 == 0:
+    #         b = int(b)
+        
+    #     if a >= b:
+    #         return a - b
+    #     else:
+    #         return 0
+
+    def factorial(x):
+        if int(x) == x:
+            if x == 1:
+                return 1
+            elif x > 1:
+                # accumulate factorial in y
+                y = 1
+                for i in range(int(x), 1, -1):
+                    y = y * i
+                
+                # return answer
+                return y
+            
+            elif x < 0:
+                # accumulate factorial in y
+                y = 1
+                x = abs(x)
+                for i in range(int(x), 1, -1):
+                    y = y * i
+                
+                # test odd number of negative multiplications
+                if x % 2 != 0:
+                    y = -y
+
+                # return answer
+                return y
+            
+        else:
+            # x is not an integer
+            nonlocal global_bypass
+            global_bypass = True
+
+            # return error
+            return 0
+
+    def factor(x):
+        if x == 0:
+            return 0
+        elif x > 0: # positive x 
+            factors = []
+            # add positives
+            for i in range(int(x), 0, -1):
+                if x / i % 1 == 0:
+                    factors.append(i)
+            # add negatives
+            for i in range(len(factors) - 1, -1, -1):
+                factors.append(-factors[i])
+        
+            return factors
+        
+        else: # negative x
+            factors = []
+            # add positives
+            for i in range(int(-x), 0, -1):
+                if x / i % 1 == 0:
+                    factors.append(i)
+            # add negatives
+            for i in range(len(factors) - 1, -1, -1):
+                factors.append(-factors[i])
+            
+            return factors
+
+    def greatest_common_factor(a, b):
+        gcf = 0
+        val1 = int(a)
+        val2 = int(b)
+        if val1 != val2:
+            facts_1 = []
+            facts_2 = []
+            
+            # account for limiting factor
+            if val1 > val2:
+                # filter extra factors
+                facts = factor(val1)
+                for i in facts:
+                    if i <= val2 and i >= -val2:
+                        facts_1.append(i)
+                facts_2 = factor(val2)
+            else:
+                # filter extra factors
+                facts = factor(val2)
+                for i in facts:
+                    if i <= val1 and i >= -val1:
+                        facts_2.append(i)
+                facts_1 = factor(val1)
+
+            # search for common factors
+            for i in facts_1:
+                for j in facts_2:
+                    if i == j:
+                        gcf = j
+                        break
+                if gcf != 0:
+                    break
+        else:
+            gcf = val1
+
+        return gcf
+
+    def get_mean(arr):
+        # returns the mean of a list of values
+        return sum(arr) / len(arr)
+
+    def ngon_area(n,s):
+        # returns area of a regular n-gon with n number of sides where eac side has length s
+        nonlocal pi
+        return round(s**2*n*(1/np.tan(pi/n))/4, 12)
+
+    def complex_root(m, n, k):
+        # returns kth root for nth root of -1 from exponent of form Z + m/n
+        # convert exponent form to radical: x^(m/n) = (n√x)^m
+        # theta = n/m # index of radication
+        nonlocal pi
+        return complex( math.cos(( (pi + 2*pi*k) * m ) / n), math.sin(( (pi + 2*pi*k) * m ) / n) )
+
+    def fraction(x, simplify=False):
+        # converts float x into a fraction with numerator m and denominator n
+        nonlocal decimal_limit
+        place_limit = abs(int(str(decimal_limit).split("e")[1]))
+        
+        # determine correct method
+        
+        # test for repetition
+        x_split = str(x).split(".")
+        Z = x_split[0]
+        Q = x_split[1]
+        places = len(Q)
+        buffer = ""
+        buffer_len = 0
+        buffer_start = 0
+        terminating = False
+        repeating = False
+        if places < place_limit:
+            # finite decimal => terminating method
+            terminating = True
+        else:
+            # determine buffer, buffer length, buffer start
+            matching = True
+            while matching == True:
+
+                # test terminating condition
+                condition = math.floor( (places - buffer_start) / 2)
+                if condition == 0:
+                    # condition reached when no repetition found => terminating method
+                    break
+
+                # modify buffer
+                buffer_len += 1
+                if condition < buffer_len: # maximum buffer length exceeded
+                    buffer_len = 1
+                    buffer_start += 1
+                    buffer = ""
+                buffer = buffer + Q[buffer_start + buffer_len - 1]
+
+                # cyclically compare each digit in decimal after starting place to digit in buffer for the remainder of the decimal
+                # place_end = places - 2*buffer_len # stop searching if not room for at least one repetition (2X buffers) after current place
+                for i in range(places - 2*buffer_len):
+                    # don't compare buffer to itself
+                    if i == buffer_start:
+                        continue
+                    # search for counterexample
+                    matched = True
+                    for j in range(i, places):
+                        # test for exact match of decimal digits against buffer
+                        if Q[j] != buffer[j % buffer_len]: # use modulo operator to cycle over buffer
+                            matched = False # not a match at current starting place => go to next place
+                            break
+
+                    if matched == True:
+                        # match identified => store data from match + terminate search
+                        matching = False
+                        break
+            
+            # no repetition found => terminating method
+            if matching == True:
+                terminating = True
+  
+            # repetition found => repeating method
+            else:
+                repeating = True
+
+        # run correct method
+
+        # Terminating Method
+        if terminating == True:
+            # terminating method (no repetition)
+            # x = decimal
+            # i = number of decimal places
+            # m = 10^i * x
+            # n = 10^(i+1)
+            # f = gcf(m, n)
+            # m = m / f
+            # n = n / f
+            # x = m/n
+            a = math.pow(10, places) # use math to avoid special numpy type
+            m = a * x
+            n = a
+            if simplify == True:
+                f = greatest_common_factor(m, n)
+                m = m / f
+                n = n / f
+            return {"numerator": m, "denominator": n, "decimal": x}
+
+        elif repeating == True:
+            # repeating method (repetition)
+            # x = decimal
+            # i = identify number of digits from decimal point at which repeating starts starting from one
+            # b = 10^i
+            # a = b * 10
+            # m = a*x - b*x
+            # n = a - b
+            # f = gcf(m, n)
+            # m = m / f
+            # n = n / f
+            # x = m/n
+
+            # algebraic derivation
+            # x = decimal
+            # l = buffer length
+            # i = number of places to start of repetition
+            # 10^(i) * x = decimal * 10^(i)
+            # 10^(i) * x - x = decimal * 10^(i) - decimal
+            # m = decimal * 10^(i) - decimal
+            # n = x * 10^(i) - x = 10^(i) - 1
+
+            a = math.pow(10, buffer_start + buffer_len) # to one full cycle
+            b = math.pow(10, buffer_start) # to start of cycle
+            m = round(x * a - x * b) # remove remainder
+            n = a - b
+            if simplify == True:
+                f = greatest_common_factor(m, n)
+                m = m / f
+                n = n / f
+            return {"numerator": m, "denominator": n, "decimal": x}
+        
+        else:
+            return None
+
+    # SPECIAL OPERATIONS END
+
     # ARITHMETIC OPERATIONS START
 
     def exponentiate(base, exponent):
+        nonlocal decimal_limit
+        nonlocal pi
+        nonlocal euler
         base_test = num_cast(base)
         exponent_test = num_cast(exponent)
         if isinstance(base_test, bool) or isinstance(exponent_test, bool):
             nonlocal global_bypass
             global_bypass = True
             return info["error"]["operator"]["exponentiation"][0]["code"]
+        
         complex1 = isinstance(base_test, complex)
         complex2 = isinstance(exponent_test, complex)
         if complex1 == True or complex2 == True:
@@ -1442,21 +1715,417 @@ def evaluator(input):
 
         else:
             # real exponentiation
-            power = str(math.pow(Decimal(base), Decimal(exponent)))
 
-            return power
+            # test for special complex/imaginary cases
+            if base_test < 0 and isinstance(exponent_test, float):
+                # negative base + fractional exponent
+
+                split = str(exponent_test).split(".")
+                Z = int(split[0]) # integer component, stores negativity
+                # Q = float("0." + split[1]) # rational component holds deicmal part
+                fract = fraction(exponent_test, simplify=True)
+                m = fract["numerator"] # numerator
+                n = fract["denominator"] # denominator
+                
+                # half integer case
+                if Z > 0 and n % 2 == 0:
+
+                    # even denominator n
+
+                    # form: (-x)^(Z + m/n), where m = 1, n is an even integer and z is an integer becomes a complex product
+                    # exponent rule 1:  (x*y)^a = x^a * y^a
+                    # exponent rule 2:  x^(a+b) = x^a * x^b
+                    # rule 1 application:  (-x)^(Z + m/n) = (-1)^(Z + m/n) * x^(Z + m/n)
+                    # rule 2 application:  (-1)^(Z + m/n) = (-1)^Z * (-1)^(m/n)
+                    # resulting expansion: (-x)^(Z + m/n) = (-1)^Z * (-1)^(m/n) * x^(Z + m/n)
+
+                    # y = (-1)^Z * (-1)^(1/n) * x^(Z + 1/n)
+                    # a = negativity = (-1)^Z
+                    # b = complex_value = (-1)^(1/n)
+                    # c = coef = x^(Z + m/n)
+
+                    # a solution: negative Z => -1, positive Z => 1
+                    # b solution: pass n into complex root function
+                    # c solution: simplify arithmetic into a coefficient
+                    # y solution: take the product of a, b, c
+
+                    # x^(m/n) = (x^(1/n))^m = (n√(x))^m
+
+                    # complex 
+                    negativity = 1 if Z % 2 == 0 else -1 # a 
+                    k = 0 # k = 0, 1, ... n,  allow the princple root 
+                    complex_value = complex_root(Z*n + m, n, k) # b 
+                    coef = np.pow(np.pow(abs(base_test), 1/n), m) # c 
+                    coef_negativity = coef * negativity # c * a
+                    real = complex_value.real
+                    imag = complex_value.imag
+
+                    # round 1
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+
+                    real *= coef_negativity
+                    imag *= coef_negativity
+
+                    # round 2
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+
+                    return complex(real, imag) # y = complex product
+
+                # general complex case
+                else:
+                    # x^y = e^(y*ln(x)), where x is negative
+                    # (-x)^(m/n) = e^((m/n) * ln(-x))
+                    # ln(-x) = ln(x) + (2*k + 1)*pi * i
+                    # e^( (m/n)*ln(x) + ((2*k + 1)*pi * m)/n * i )
+                    # e^((m/n)*ln(x)) * e^((2*k + 1)*pi * m)/n * i)
+
+                    # convert expression to polar form
+                    # equate to rectangular form with Euler's Identity
+
+                    k = 0 # k = 0, 1, ... n,  allow the princple root 
+                    coef = np.pow(euler, np.log(abs(base_test)) * m / n)
+                    theta = pi * m / n
+                    real = np.cos(theta)
+                    imag = np.sin(theta)
+
+                    # round 1
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+
+                    real *= coef
+                    imag *= coef
+
+                    # round 2
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+                    
+                    return complex(real, imag)
+
+            # normal case
+            return str(np.pow(base_test, exponent_test))
 
     def root(radicand, degree):
+        nonlocal decimal_limit
+        nonlocal global_bypass
         radicand_test = num_cast(radicand)
         degree_test = num_cast(degree)
-        if isinstance(radicand_test, bool) or isinstance(radicand_test, complex) or isinstance(degree_test, bool) or isinstance(degree_test, complex):
-            nonlocal global_bypass
+        if isinstance(radicand_test, bool) or isinstance(degree_test, bool):
             global_bypass = True
             return info["error"]["operator"]["radication"][0]["code"]
-        # real radication
-        root = str(math.pow(Decimal(radicand), 1/Decimal(degree)))
+        if degree_test == 0:
+            global_bypass = True
+            return info["error"]["operator"]["radication"][1]["code"]
 
-        return root
+        complex1 = isinstance(radicand_test, complex)
+        complex2 = isinstance(degree_test, complex)
+        if complex1 == True or complex2 == True:
+            # complex exponentiation
+
+            nonlocal pi
+            nonlocal euler
+
+            radicand = radicand_test
+            degree = degree_test
+            # possible number type combinations
+            # r√i
+            # i√r
+            # i√i
+            
+            # r√(b*i)
+            # (b*i)√r
+            # i√(b*i)
+            # (b*i)√i
+            # (b*i)√(b*i)
+            
+            # r√(a+b*i)
+            # (a+b*i)√r
+            # i√(a+b*i)
+            # (a+b*i)√i
+            # (b*i)√(a+b*i)
+            # (a+b*i)√(b*i)
+            # (a+b*i)√(a+b*i)
+
+            # reduce combinations where able
+            # r√i = r√(b*i), where b = 1
+            # i√r = (b*i)√r, where b = 1
+            # r√(b*i) = r√(a+b*i), where a = 0
+            # (b*i)√r = (a+b*i)√r, where a = 0
+            
+            # i√i
+            # = i√(b*i), where b = 1
+            # = (b*i)√i, where b = 1
+            # = (b*i)√(b*i), where b = 1
+            # = (a+b*i)√i, where a = 0 and b = 1
+            # = i√(a+b*i), where a = 0 and b = 1
+            # = (a+b*i)√(b*i), where a = 0 and b = 1
+            # = (b*i)√(a+b*i), where a = 0 and b = 1
+            # = (a+b*i)√(a+b*i), where a = 0 and b = 1
+
+            # reduced combinations
+
+            # real and complex
+            # r√(a+b*i)
+            # (a+b*i)√r
+
+            # complex and complex
+            # (a+b*i)√(a+b*i)
+
+            # r√i
+            if complex1 == True and complex2 == False:
+                # r√(a+b*i) 
+                # = r^(1/n) * e^( (theta + 2*pi*k) / n) 
+                # = r^(1/n) * (cos( (theta + 2*pi*k) / n ) + i * sin( (theta + 2*pi*k) / n )) 
+                # k = 0 # k = 0, 1, ... n,  allow the princple root 
+                # a = radicand_test.real
+                # b = radicand_test.imag
+                # theta = math.atan2(b, a) # argument, atan2 evaluates b then a, preserving sign by a planar analysis for full rotational range
+                # r = abs(radicand_test) # modulus
+                # coef = math.pow(r, 1/degree_test)
+                # position = (theta + 2*pi*k)/degree_test
+                # real = np.cos(position)
+                # imag = np.sin(position)
+
+                # # round 1
+                # if math.isclose(real, round(real), abs_tol=decimal_limit):
+                #     real = round(real)
+                # if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                #     imag = round(imag)
+
+                # real *= coef
+                # imag *= coef
+
+                # # round 2
+                # if math.isclose(real, round(real), abs_tol=decimal_limit):
+                #     real = round(real)
+                # if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                #     imag = round(imag)
+
+                k = 0 # k = 0, 1, ... n,  allow the princple root 
+                modulus = abs(radicand) ** (1/degree) # magnitude
+                theta = np.atan2(radicand.real, radicand.imag) # argument
+                argument = (theta + 2*pi*k) / degree
+
+                # construct complex number with rect method
+                complex_value = cmath.rect(modulus, argument)
+                real = complex_value.real
+                imag = complex_value.imag
+
+                # round
+                if math.isclose(real, round(real), abs_tol=decimal_limit):
+                    real = round(real)
+                if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                    imag = round(imag)
+
+                return complex(real, imag)
+
+            # i√r
+            elif complex1 == False and complex2 == True:
+                # (a+b*i)√r
+                nat_log = np.log(radicand)
+                denominator = degree.real ** 2 + degree.imag ** 2
+                coef = np.pow(euler, degree.real * nat_log / denominator)
+                position = degree.imag * nat_log / denominator
+                real = np.cos(position)
+                imag = np.sin(position)
+
+                # round 1
+                if math.isclose(real, round(real), abs_tol=decimal_limit):
+                    real = round(real)
+                if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                    imag = round(imag)
+
+                real *= coef
+                imag *= coef
+
+                # round 2
+                if math.isclose(real, round(real), abs_tol=decimal_limit):
+                    real = round(real)
+                if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                    imag = round(imag)
+
+                return complex(real, imag)
+
+            # i√i
+            elif complex1 == True and complex2 == True:
+                # (a+b*i)√(x+y*i) => e^( (a*ln(|x+y*i|) + (b*arg(x+y*i))) / (a^2 + b^2) ) * [cos((a*arg(x+y*i) - b*ln(|x+y*i|))/(a^2 + b^2)) + i*sin((a*arg(x+y*i) - b*ln(|x+y*i|))/(a^2 + b^2))]
+                # coef = e^( (a*ln(|x+y*i|) + (b*arg(x+y*i))) / (a^2 + b^2) )
+                # position = (a*arg(x+y*i) - b*ln(|x+y*i|))/(a^2 + b^2)
+                # modulus = abs(z) = |x+y*i|
+                # argument = arg(z) = arg(x+y*i)
+                # denominator = a^2 + b^2
+                # e^z = exp(z)
+
+                modulus = abs(radicand)
+                nat_log = np.log(modulus)
+                denominator = degree.real ** 2 + degree.imag ** 2
+                theta = np.atan2(radicand.real, radicand.imag) # argument
+                coef = np.pow(euler, (degree.real * nat_log + degree.imag * theta) / denominator)
+                position = (degree.real * theta - degree.imag * nat_log) / denominator
+                real = np.cos(position)
+                imag = np.sin(position)
+
+                # round 1
+                if math.isclose(real, round(real), abs_tol=decimal_limit):
+                    real = round(real)
+                if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                    imag = round(imag)
+
+                real *= coef
+                imag *= coef
+
+                # round 2
+                if math.isclose(real, round(real), abs_tol=decimal_limit):
+                    real = round(real)
+                if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                    imag = round(imag)
+
+                return complex(real, imag)
+
+        else:
+            # real radication 
+            if radicand_test < 0: # negative 
+
+                # negative radicand with odd degree
+                if degree_test % 2 != 0:
+                    return str(-np.pow(-radicand_test, 1/degree_test))
+
+                # classical imaginary case n√(-x), where n is a positive even number
+                if degree_test > 0 and degree_test % 2 == 0: 
+
+                    # imaginary product when a negative radicand and positive even degree 
+                    k = 0 # k = 0, 1, ... n,  allow the princple root 
+                    complex_value = complex_root(1, degree_test, k) 
+                    coef = np.pow(abs(radicand_test), 1/degree_test) 
+                    real = complex_value.real 
+                    imag = complex_value.imag 
+
+                    # round 1
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+
+                    real = real * coef
+                    imag = imag * coef
+
+                    # round 2
+                    if math.isclose(real, round(real), abs_tol=decimal_limit):
+                        real = round(real)
+                    if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                        imag = round(imag)
+
+                    return complex(real, imag)
+                
+                # fractional degree of radication
+                if isinstance(degree_test, float):
+
+                    # (n/m)√x = x^(m/n)
+                    # convert degree of radication to exponent by taking reciprocal
+                    reciprocal = 1/degree_test
+                    # then treat problem as a case of fractional exponentiation
+                    split = str(reciprocal).split(".")
+                    Z = int(split[0]) # integer component, stores negativity
+                    # Q = float("0." + split[1]) # rational component holds deicmal part
+                    fract = fraction(reciprocal, simplify=True)
+                    m = fract["numerator"] # numerator
+                    n = fract["denominator"] # denominator
+
+                    # half integer case
+                    if Z > 0 and n % 2 == 0:
+
+                        # even denominator n
+
+                        # form: (-x)^(Z + m/n), where m = 1, n is an even integer and z is an integer becomes a complex product
+                        # exponent rule 1:  (x*y)^a = x^a * y^a
+                        # exponent rule 2:  x^(a+b) = x^a * x^b
+                        # rule 1 application:  (-x)^(Z + m/n) = (-1)^(Z + m/n) * x^(Z + m/n)
+                        # rule 2 application:  (-1)^(Z + m/n) = (-1)^Z * (-1)^(m/n)
+                        # resulting expansion: (-x)^(Z + m/n) = (-1)^Z * (-1)^(m/n) * x^(Z + m/n)
+
+                        # y = (-1)^Z * (-1)^(1/n) * x^(Z + 1/n)
+                        # a = negativity = (-1)^Z
+                        # b = complex_value = (-1)^(1/n)
+                        # c = coef = x^(Z + m/n)
+
+                        # a solution: negative Z => -1, positive Z => 1
+                        # b solution: pass n into complex root function
+                        # c solution: simplify arithmetic into a coefficient
+                        # y solution: take the product of a, b, c
+
+                        # x^(m/n) = (x^(1/n))^m = (n√(x))^m
+
+                        # complex 
+                        negativity = 1 if Z % 2 == 0 else -1 # a 
+                        k = 0 # k = 0, 1, ... n,  allow the princple root 
+                        complex_value = complex_root(Z*n + m, n, k) # b 
+                        coef = np.pow(np.pow(abs(radicand_test), 1/n), m) # c 
+                        coef_negativity = coef * negativity # c * a
+                        real = complex_value.real
+                        imag = complex_value.imag
+
+                        # round 1
+                        if math.isclose(real, round(real), abs_tol=decimal_limit):
+                            real = round(real)
+                        if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                            imag = round(imag)
+
+                        real *= coef_negativity
+                        imag *= coef_negativity
+
+                        # round 2
+                        if math.isclose(real, round(real), abs_tol=decimal_limit):
+                            real = round(real)
+                        if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                            imag = round(imag)
+
+                        return complex(real, imag) # y = complex product
+
+                    # general complex case
+                    else:
+                        # x^y = e^(y*ln(x)), where x is negative
+                        # (-x)^(m/n) = e^((m/n) * ln(-x))
+                        # ln(-x) = ln(x) + (2*k + 1)*pi * i
+                        # e^( (m/n)*ln(x) + ((2*k + 1)*pi * m)/n * i )
+                        # e^((m/n)*ln(x)) * e^((2*k + 1)*pi * m)/n * i)
+
+                        # convert expression to polar form
+                        # equate to rectangular form with Euler's Identity
+
+                        k = 0 # k = 0, 1, ... n,  allow the princple root 
+                        coef = np.pow(euler, np.log(abs(radicand_test)) * m / n)
+                        theta = pi * m / n
+                        real = np.cos(theta)
+                        imag = np.sin(theta)
+
+                        # round 1
+                        if math.isclose(real, round(real), abs_tol=decimal_limit):
+                            real = round(real)
+                        if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                            imag = round(imag)
+
+                        real *= coef
+                        imag *= coef
+
+                        # round 2
+                        if math.isclose(real, round(real), abs_tol=decimal_limit):
+                            real = round(real)
+                        if math.isclose(imag, round(imag), abs_tol=decimal_limit):
+                            imag = round(imag)
+                        
+                        return complex(real, imag)
+                
+            # normal case
+            return str(np.pow(radicand_test, 1/degree_test))
 
     def multiply(multiplicand, multiplier):
         product = 1
@@ -1749,95 +2418,6 @@ def evaluator(input):
         return difference
 
     # ARITHMETIC OPERATIONS END
-
-    # SPECIAL OPERATIONS START
-
-    def monus(a, b):
-        # monus; truncated minus; dot minus; doz (difference or zero)
-        a = float(a)
-        if a % 1 == 0:
-            a = int(a)
-        b = float(b)
-        if b % 1 == 0:
-            b = int(b)
-        
-        if a >= b:
-            return a - b
-        else:
-            return 0
-
-    def factorial(x):
-        if int(x) == x:
-            if x == 1:
-                return 1
-            elif x > 1:
-                # accumulate factorial in y
-                y = 1
-                for i in range(int(x), 1, -1):
-                    y = y * i
-                
-                # return answer
-                return y
-            
-            elif x < 0:
-                # accumulate factorial in y
-                y = 1
-                x = abs(x)
-                for i in range(int(x), 1, -1):
-                    y = y * i
-                
-                # test odd number of negative multiplications
-                if x % 2 != 0:
-                    y = -y
-
-                # return answer
-                return y
-            
-        else:
-            # x is not an integer
-            nonlocal global_bypass
-            global_bypass = True
-
-            # return error
-            return 0
-
-    def factor(x):
-        if x == 0:
-            return 0
-        elif x > 0: # positive x 
-            factors = []
-            # add positives
-            for i in range(x, 0, -1):
-                if x / i % 1 == 0:
-                    factors.append(i)
-            # add negatives
-            for i in range(len(factors) - 1, -1, -1):
-                factors.append(-factors[i])
-        
-            return factors
-        
-        else: # negative x
-            factors = []
-            # add positives
-            for i in range(-x, 0, -1):
-                if x / i % 1 == 0:
-                    factors.append(i)
-            # add negatives
-            for i in range(len(factors) - 1, -1, -1):
-                factors.append(-factors[i])
-            
-            return factors
-
-    def get_mean(arr):
-        # returns the mean of a list of values
-        return sum(arr) / len(arr)
-
-    def ngon_area(n,s):
-        # returns area of a regular n-gon with n number of sides where eac side has length s
-        nonlocal pi
-        return round(s**2*n*(1/np.tan(pi/n))/4, 12)
-    
-    # SPECIAL OPERATIONS END
 
     # ALGEBRAIC OPERATIONS START
 
@@ -5250,14 +5830,14 @@ def evaluator(input):
                             # filter extra factors
                             facts = factor(val1)
                             for i in facts:
-                                if i < val2:
+                                if i <= val2 and i >= -val2:
                                     facts_1.append(i)
                             facts_2 = factor(val2)
                         else:
                             # filter extra factors
                             facts = factor(val2)
                             for i in facts:
-                                if i < val1:
+                                if i <= val1 and i >= -val1:
                                     facts_2.append(i)
                             facts_1 = factor(val1)
     
@@ -5342,10 +5922,10 @@ def evaluator(input):
                     mean = get_mean(args)
                     powerset = []
                     for i in args:
-                        powerset.append(math.pow(i - mean, 2))
+                        powerset.append(np.pow(i - mean, 2))
 
                     log_process("sd")
-                    return math.pow(sum(powerset)/len(powerset), 1/2)
+                    return np.pow(sum(powerset)/len(powerset), 1/2)
     
                 # store in f_log
                 f_log["sd"] = F
@@ -5362,7 +5942,7 @@ def evaluator(input):
                     mean = get_mean(args)
                     powerset = []
                     for i in args:
-                        powerset.append(math.pow(i - mean, 2))
+                        powerset.append(np.pow(i - mean, 2))
 
                     log_process("var")
                     return sum(powerset) / len(powerset)
@@ -5407,7 +5987,7 @@ def evaluator(input):
                         args.append(x)
                     
                     log_process("meang")
-                    return math.pow(product, 1/len(args))
+                    return np.pow(product, 1/len(args))
     
                 # store in f_log
                 f_log["meang"] = F
@@ -5470,7 +6050,7 @@ def evaluator(input):
                         squares.append(x**2)
                     
                     log_process("rms")
-                    return math.pow(sum(squares) / len(squares), .5)
+                    return np.pow(sum(squares) / len(squares), .5)
                 
                 # store in f_log
                 f_log["rms"] = F
@@ -7230,7 +7810,6 @@ def evaluator(input):
                     # zero division
                     global_bypass = True
                     answer = info["error"]["operator"]["division"][1]["code"]
-                    print()
                 elif test2 == False:
                     # invalid parenthesis
                     global_bypass = True
@@ -7252,7 +7831,7 @@ def evaluator(input):
                         answer = structure # contains error code
                     else:
 
-                        # populate f_log with key functions relevant problem
+                        # populate f_log with key functions relevant to problem
                         
                         # print(is_key)
                         # print(key_modules)
@@ -7310,6 +7889,16 @@ def evaluator(input):
         "answer": answer,
         "logs": process_log,
     }
+
+    # FUNCTION TESTS
+
+    # DECIMAL TO FRACTION TEST
+    # print(fraction(0.125, simplify=True)) # test case for terminating method
+    # print(fraction(0.333333333333333, simplify=True)) # test case for repeating method
+    # print(fraction(0.125125125125125, simplify=True)) # test case for repeating method
+    # print(fraction(0.166666666666666, simplify=True)) # test case for mixed method
+    # print(fraction(0.123333333333333, simplify=True)) # test case for mixed method
+    # print(fraction(0.153535353535353, simplify=True)) # test case for mixed method
 
     # return output object
     return output
@@ -7957,20 +8546,42 @@ def evaluator(input):
 #     # complex radication
 
 #     # complex √ complex
-#     {"problem": "(1-1*i)√(3+2*i)", "answer": "(1-1*i)√(3+2*i)"},
+#     {"problem": "(2+2*i)√(8+8*i)", "answer":"(2.0467848879004746-0.8899719442077848*i)"}, # (a+b*i)√(a+b*i)
 
 #     # rational √ complex
-#     {"problem": "2√(3+2*i)", "answer": "2√(3+2*i)"},
+#     {"problem": "2√(16+16*i)", "answer":"(4.394736453871239+1.8203594422489093*i)"}, # r√(a+b*i), r = real
 
 #     # complex √ rational
-#     {"problem": "(3+2*i)√2", "answer": "(3+2*i)√2"},
+#     {"problem": "(1+1*i)√16", "answer":"(0.7338278989732068+3.9321109616449745*i)"}, # (a+b*i)√r, r = real
+
+#     # COMPLEX PRODUCT from REAL RADICATION
+#     {"problem": "√(-16)", "answer":"(4*i)"}, #
+#     {"problem": "3√(-27)", "answer":"(-3)"}, #
+#     {"problem": "4√(-16)", "answer":"(1.4142135623730951+1.4142135623730951*i)"}, #
+
+#     # COMPLEX PRODUCT from REAL EXPONENTIATION
+#     {"problem": "(-1)^(1/2)", "answer":"(i)"}, # 
+#     {"problem": "(-4)^(1/4)", "answer":"(1+1*i)"}, # 
+#     {"problem": "(-4)^(1+1/4)", "answer":"((-4)-4*i)"}, # 
+#     {"problem": "(-4)^(10/4)", "answer":"(32*i)"}, # 
+#     {"problem": "(-4)^(2/3)", "answer":"((-1.2599210498948723)+2.1822472719434427*i)"}, # general case for complex product from real exponentiation
+#     {"problem": "(-4)^(9/5)", "answer":"(9.809923687700456-7.127326755601565*i)"}, # general case for complex product from real exponentiation
+
+#     # COMPLEX PRODUCT from REAL RADICATION
+#     {"problem": "√(-16)", "answer":"(4*i)"}, #
+#     {"problem": "3√(-27)", "answer":"(-3)"}, # odd integer index of radication
+#     {"problem": "4√(-16)", "answer":"(1.4142135623730951+1.4142135623730951*i)"}, #
+#     {"problem": "(1/2)√(-4)", "answer":"(-16)"}, # fractional index of radication
+#     {"problem": "(1/3)√(-2)", "answer":"(-8)"}, # fractional index of radication
+
 # )
 
 # expirimental testing
 # tests = (
 #     # {"problem": "(2-1)+(4/2)", "answer":""}, #
 #     # {"problem": "degree(sin(pi))", "answer":""}, #
-#     {"problem": "sin(cos(sin(0)))", "answer":"0.8414709848078965"}, #
+#     {"problem": "sin(pi)", "answer":""}, #
+
 # )
 
 # def diagnostic():
